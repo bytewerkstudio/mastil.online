@@ -23,6 +23,22 @@
     return cachedConfig;
   }
 
+  function setBackendUrl(url) {
+    const backendUrl = String(url || '').trim().replace(/\/+$/, '');
+    localStorage.setItem('mastil-backend-url', backendUrl);
+    const webConfig = window.MASTIL_WEB_CONFIG || {};
+    cachedConfig = {
+      ...(cachedConfig || webConfig),
+      backendUrl,
+      websiteMode: !window.mastilNative
+    };
+    window.MASTIL_WEB_CONFIG = {
+      ...webConfig,
+      backendUrl
+    };
+    return cachedConfig;
+  }
+
   function getBackendUrl(config) {
     const backendUrl = String(config.backendUrl || '').trim().replace(/\/+$/, '');
     if (!backendUrl) {
@@ -134,6 +150,7 @@
   window.MastilLicense = {
     DEMO_MAX_WAVE,
     getConfig,
+    setBackendUrl,
     getDeviceId,
     getStoredLicense,
     saveLicense,

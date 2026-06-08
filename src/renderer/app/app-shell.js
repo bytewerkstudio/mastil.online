@@ -3,6 +3,22 @@
     initialized: false,
     licenseActive: false
   };
+  const SKIRMISH_KEY = 'mastil-skirmish-config';
+  const WORLD_REGIONS = [
+    { id: 'startgebiet', title: 'Startgebiet', waves: '1-5', boss: 'Grenzwacht Roderich', difficulty: 'Einsteiger', image: '../../assets/backgrounds/worlds/world-01-startgebiet.png' },
+    { id: 'grenzlande', title: 'Grenzlande', waves: '6-10', boss: 'Der Eisenvogt', difficulty: 'Normal', image: '../../assets/backgrounds/worlds/world-02-grenzlande.png' },
+    { id: 'wuestenreich', title: 'Wuestenreich', waves: '11-15', boss: 'Sultan der Sandkrone', difficulty: 'Hart', image: '../../assets/backgrounds/worlds/world-03-wuestenreich.png' },
+    { id: 'nachtfestung', title: 'Nachtfestung', waves: '16-20', boss: 'Nachtgraf Malrec', difficulty: 'Sehr hart', image: '../../assets/backgrounds/worlds/world-04-nachtfestung.png' },
+    { id: 'endboss', title: 'Endboss-Zitadelle', waves: '21-25', boss: 'Kaiser Veyron', difficulty: 'Endboss', image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png' }
+  ];
+  const DEFAULT_SKIRMISH = {
+    mode: 'campaign',
+    mapId: 'startgebiet',
+    size: 'standard',
+    difficulty: 'normal',
+    opponents: 2,
+    color: '#2f6fa5'
+  };
 
   function byId(id) {
     return document.getElementById(id);
@@ -147,6 +163,171 @@
     if (modal) modal.classList.remove('active');
   }
 
+  function readSkirmishConfig() {
+    try {
+      return { ...DEFAULT_SKIRMISH, ...JSON.parse(localStorage.getItem(SKIRMISH_KEY) || '{}') };
+    } catch {
+      return { ...DEFAULT_SKIRMISH };
+    }
+  }
+
+  function saveSkirmishConfig(config) {
+    const next = { ...DEFAULT_SKIRMISH, ...config };
+    try {
+      localStorage.setItem(SKIRMISH_KEY, JSON.stringify(next));
+    } catch {
+      // Lokale Speicherung darf den Spielstart nicht blockieren.
+    }
+    window.MASTIL_MATCH_CONFIG = next;
+    return next;
+  }
+
+  function getBestWave() {
+    try {
+      const highscores = JSON.parse(localStorage.getItem('highscores') || '[]');
+      return Array.isArray(highscores)
+        ? highscores.reduce((best, entry) => Math.max(best, Number(entry.wave) || 1), 1)
+        : 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  function getRegionProgress(region, bestWave) {
+    const start = Number(region.waves.split('-')[0]);
+    const end = Number(region.waves.split('-')[1]);
+    if (bestWave >= end) return 'Gesichert';
+    if (bestWave >= start) return 'Aktiv';
+    return 'Verschlossen';
+  }
+
+  function createWorldMapModal() {
+    if (byId('mastil-world-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'mastil-world-modal';
+    modal.className = 'mastil-modal mastil-world-modal';
+    modal.innerHTML = `
+      <div class="mastil-dialog mastil-world-dialog" role="dialog" aria-modal="true" aria-labelledby="mastil-world-title">
+        <button class="mastil-action secondary mastil-close-x" id="mastil-world-x-btn" type="button" aria-label="Schließen">×</button>
+        <div class="mastil-world-head">
+          <span>Weltkarte</span>
+          <h2 id="mastil-world-title">Die Reiche von MASTIL</h2>
+          <p>Waehle die Kampagne oder erstelle ein freies Gefecht gegen die KI.</p>
+        </div>
+        <div class="mastil-world-grid" id="mastil-world-grid"></div>
+        <div class="mastil-skirmish-panel">
+          <h3>Gefechtsmodus</h3>
+          <div class="mastil-skirmish-options">
+            <label>Karte<select id="mastil-skirmish-map"></select></label>
+            <label>Groesse<select id="mastil-skirmish-size">
+              <option value="compact">Kompakt</option>
+              <option value="standard">Standard</option>
+              <option value="large">Gross</option>
+              <option value="war">Kriegskarte</option>
+            </select></label>
+            <label>Schwierigkeit<select id="mastil-skirmish-difficulty">
+              <option value="easy">Training</option>
+              <option value="normal">Normal</option>
+              <option value="hard">Hart</option>
+              <option value="brutal">Brutal</option>
+            </select></label>
+            <label>Gegner<select id="mastil-skirmish-opponents">
+              <option value="1">1 KI-Reich</option>
+              <option value="2">2 KI-Reiche</option>
+              <option value="3">3 KI-Reiche</option>
+            </select></label>
+            <label>Farbe<input id="mastil-skirmish-color" type="color" value="#2f6fa5"></label>
+          </div>
+        </div>
+        <div class="mastil-actions">
+          <button class="mastil-action" id="mastil-start-campaign-btn" type="button">Kampagne starten</button>
+          <button class="mastil-action" id="mastil-start-skirmish-btn" type="button">Gefecht starten</button>
+          <button class="mastil-action secondary" id="mastil-world-close-btn" type="button">Schließen</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const mapSelect = byId('mastil-skirmish-map');
+    if (mapSelect) {
+      mapSelect.innerHTML = WORLD_REGIONS.map((region) => `<option value="${region.id}">${region.title}</option>`).join('');
+    }
+
+    byId('mastil-world-close-btn').addEventListener('click', hideWorldMap);
+    byId('mastil-world-x-btn').addEventListener('click', hideWorldMap);
+    byId('mastil-start-campaign-btn').addEventListener('click', () => startConfiguredMatch('campaign'));
+    byId('mastil-start-skirmish-btn').addEventListener('click', () => startConfiguredMatch('skirmish'));
+  }
+
+  function renderWorldMap(mode = 'campaign') {
+    createWorldMapModal();
+    const bestWave = getBestWave();
+    const config = readSkirmishConfig();
+    const grid = byId('mastil-world-grid');
+    if (grid) {
+      grid.innerHTML = WORLD_REGIONS.map((region, index) => {
+        const progress = getRegionProgress(region, bestWave);
+        return `
+          <article class="mastil-world-card ${progress.toLowerCase()}" style="--world-image: url('${region.image}')">
+            <span>Kapitel ${index + 1}</span>
+            <strong>${region.title}</strong>
+            <small>Wellen ${region.waves} | ${region.difficulty}</small>
+            <em>Boss: ${region.boss}</em>
+            <b>${progress}</b>
+          </article>
+        `;
+      }).join('');
+    }
+
+    const fields = {
+      mapId: byId('mastil-skirmish-map'),
+      size: byId('mastil-skirmish-size'),
+      difficulty: byId('mastil-skirmish-difficulty'),
+      opponents: byId('mastil-skirmish-opponents'),
+      color: byId('mastil-skirmish-color')
+    };
+    if (fields.mapId) fields.mapId.value = config.mapId;
+    if (fields.size) fields.size.value = config.size;
+    if (fields.difficulty) fields.difficulty.value = config.difficulty;
+    if (fields.opponents) fields.opponents.value = String(config.opponents);
+    if (fields.color) fields.color.value = config.color;
+
+    const campaign = byId('mastil-start-campaign-btn');
+    if (campaign) campaign.style.display = mode === 'skirmish' ? 'none' : '';
+  }
+
+  function showWorldMap(mode = 'campaign') {
+    renderWorldMap(mode);
+    const modal = byId('mastil-world-modal');
+    if (modal) modal.classList.add('active');
+  }
+
+  function hideWorldMap() {
+    const modal = byId('mastil-world-modal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function readBattleOptions(mode) {
+    const saved = readSkirmishConfig();
+    const mapId = (byId('mastil-skirmish-map') && byId('mastil-skirmish-map').value) || saved.mapId;
+    const size = (byId('mastil-skirmish-size') && byId('mastil-skirmish-size').value) || saved.size;
+    const difficulty = (byId('mastil-skirmish-difficulty') && byId('mastil-skirmish-difficulty').value) || saved.difficulty;
+    const opponents = Number((byId('mastil-skirmish-opponents') && byId('mastil-skirmish-opponents').value) || saved.opponents);
+    const color = (byId('mastil-skirmish-color') && byId('mastil-skirmish-color').value) || saved.color;
+    if (mode === 'campaign') return { ...DEFAULT_SKIRMISH, mode: 'campaign', color };
+    return { mode: 'skirmish', mapId, size, difficulty, opponents: Math.max(1, Math.min(3, opponents)), color };
+  }
+
+  function startConfiguredMatch(mode) {
+    saveSkirmishConfig(readBattleOptions(mode));
+    hideWorldMap();
+    if (typeof window.startGame === 'function') {
+      window.startGame();
+    } else if (typeof startGame === 'function') {
+      startGame();
+    }
+  }
+
   function showLicenseModal(message) {
     createLicenseModal();
     const modal = byId('mastil-license-modal');
@@ -187,6 +368,58 @@
       await window.MastilLicense.checkout(email);
     } catch (error) {
       showMessage(error.message);
+    }
+  }
+
+  function getBackendInputValue() {
+    return String(localStorage.getItem('mastil-backend-url') || (window.MASTIL_WEB_CONFIG && window.MASTIL_WEB_CONFIG.backendUrl) || '').trim();
+  }
+
+  function installBackendOptions() {
+    const modal = byId('options-modal');
+    if (!modal || byId('mastil-backend-url')) return;
+    const closeButton = byId('options-close-btn');
+    const row = document.createElement('div');
+    row.className = 'mastil-backend-options';
+    row.innerHTML = `
+      <span class="option-label">Online-Server:</span>
+      <div class="mastil-backend-control">
+        <input id="mastil-backend-url" type="url" placeholder="https://api.mastil.online">
+        <button class="option-btn" id="mastil-backend-save-btn" type="button">Speichern</button>
+        <button class="option-btn" id="mastil-backend-test-btn" type="button">Test</button>
+        <small id="mastil-backend-status">Offline gegen KI funktioniert ohne Server.</small>
+      </div>
+    `;
+    modal.insertBefore(row, closeButton || null);
+    const input = byId('mastil-backend-url');
+    if (input) input.value = getBackendInputValue();
+    byId('mastil-backend-save-btn').addEventListener('click', () => {
+      const value = input.value.trim().replace(/\/+$/, '');
+      localStorage.setItem('mastil-backend-url', value);
+      if (window.MastilLicense && typeof window.MastilLicense.setBackendUrl === 'function') {
+        window.MastilLicense.setBackendUrl(value);
+      }
+      byId('mastil-backend-status').textContent = value ? 'Server-Adresse gespeichert.' : 'Server entfernt. Offline bleibt spielbar.';
+    });
+    byId('mastil-backend-test-btn').addEventListener('click', testBackendConnection);
+  }
+
+  async function testBackendConnection() {
+    const input = byId('mastil-backend-url');
+    const status = byId('mastil-backend-status');
+    const value = input ? input.value.trim().replace(/\/+$/, '') : '';
+    if (!status) return;
+    if (!value) {
+      status.textContent = 'Keine Server-Adresse eingetragen.';
+      return;
+    }
+    status.textContent = 'Verbindung wird geprüft...';
+    try {
+      const response = await fetch(`${value}/health`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      status.textContent = 'Online-Server erreichbar.';
+    } catch {
+      status.textContent = 'Noch nicht erreichbar. Offline-Spiel bleibt aktiv.';
     }
   }
 
@@ -237,10 +470,14 @@
     if (firstButton) {
       const text = firstButton.querySelector('.button-text');
       if (text) text.textContent = 'Offline gegen KI';
+      firstButton.removeAttribute('onclick');
+      firstButton.addEventListener('click', () => showWorldMap('campaign'));
     }
 
     const insertAfter = firstButton ? firstButton.nextSibling : null;
     menu.insertBefore(buildMenuButton('Online 1v1', () => window.MastilOnline.open()), insertAfter);
+    menu.insertBefore(buildMenuButton('Gefechtsmodus', () => showWorldMap('skirmish')), insertAfter);
+    menu.insertBefore(buildMenuButton('Weltkarte', () => showWorldMap('campaign')), insertAfter);
     menu.insertBefore(buildMenuButton('Lizenz aktivieren', () => showLicenseModal('')), insertAfter);
     menu.insertBefore(buildMenuButton('Kaufen 10,99 EUR', () => showLicenseModal('Zum Kaufen bitte E-Mail eintragen.')), insertAfter);
     const highscoreButton = Array.from(menu.querySelectorAll('.menu-button')).find((button) => button.textContent.includes('Highscore'));
@@ -286,8 +523,10 @@
     createBadge();
     createLicenseModal();
     createProgressModal();
+    createWorldMapModal();
     addBranding();
     enhanceMenu();
+    installBackendOptions();
     installDemoGate();
     await refreshLicenseBadge();
   }
@@ -297,6 +536,7 @@
     showLicenseModal,
     hideLicenseModal,
     showProgressModal,
+    showWorldMap,
     refreshLicenseBadge
   };
 

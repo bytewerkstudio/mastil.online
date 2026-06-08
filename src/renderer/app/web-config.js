@@ -17,10 +17,11 @@
   const storedBackend = readStoredBackend().trim();
   const configuredBackend = typeof existing.backendUrl === 'string' ? existing.backendUrl.trim() : '';
   const localBackend = isLocalHost() ? 'http://localhost:3787' : '';
+  const liveBackend = !isLocalHost() ? 'https://api.mastil.online' : '';
 
   window.MASTIL_WEB_CONFIG = {
-    backendUrl: storedBackend || configuredBackend || localBackend,
+    backendUrl: storedBackend || configuredBackend || localBackend || liveBackend,
     websiteMode: !window.mastilNative,
-    offlineMessage: 'Website-Version: Offline gegen KI spielbar. Online 1v1, Kauf und Aktivierung werden verbunden, sobald ein MASTIL-Server hinterlegt ist.'
+    offlineMessage: 'Website-Version: Offline gegen KI spielbar. Online 1v1 nutzt spaeter den MASTIL-Server unter api.mastil.online.'
   };
 })();

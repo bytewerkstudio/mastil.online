@@ -8,6 +8,43 @@
   let worldBackgroundCacheRatio = 1;
   let worldBackgroundRevision = 0;
   let worldBackgroundCacheRevision = -1;
+  let activeWorldPath = '';
+  const WORLD_REGIONS = [
+    { id: 'startgebiet', title: 'Startgebiet', waves: [1, 5], boss: 'Grenzwacht Roderich', image: '../../assets/backgrounds/worlds/world-01-startgebiet.png' },
+    { id: 'grenzlande', title: 'Grenzlande', waves: [6, 10], boss: 'Der Eisenvogt', image: '../../assets/backgrounds/worlds/world-02-grenzlande.png' },
+    { id: 'wuestenreich', title: 'Wuestenreich', waves: [11, 15], boss: 'Sultan der Sandkrone', image: '../../assets/backgrounds/worlds/world-03-wuestenreich.png' },
+    { id: 'nachtfestung', title: 'Nachtfestung', waves: [16, 20], boss: 'Nachtgraf Malrec', image: '../../assets/backgrounds/worlds/world-04-nachtfestung.png' },
+    { id: 'endboss', title: 'Endboss-Zitadelle', waves: [21, 25], boss: 'Kaiser Veyron', image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png' }
+  ];
+  const MAP_NODES = [
+    { x: 0.16, y: 0.52, role: 'player', type: 'normal', rank: 0 },
+    { x: 0.29, y: 0.39, role: 'neutral', type: 'watch', rank: 1 },
+    { x: 0.30, y: 0.66, role: 'neutral', type: 'gold', rank: 1 },
+    { x: 0.43, y: 0.27, role: 'neutral', type: 'troop', rank: 2 },
+    { x: 0.46, y: 0.53, role: 'neutral', type: 'normal', rank: 2 },
+    { x: 0.46, y: 0.78, role: 'neutral', type: 'watch', rank: 2 },
+    { x: 0.60, y: 0.37, role: 'neutral', type: 'gold', rank: 3 },
+    { x: 0.62, y: 0.64, role: 'neutral', type: 'troop', rank: 3 },
+    { x: 0.74, y: 0.23, role: 'enemy', type: 'troop', rank: 4 },
+    { x: 0.79, y: 0.52, role: 'enemy', type: 'normal', rank: 4 },
+    { x: 0.72, y: 0.80, role: 'enemy', type: 'gold', rank: 4 },
+    { x: 0.88, y: 0.36, role: 'enemy', type: 'watch', rank: 5 },
+    { x: 0.90, y: 0.68, role: 'enemy', type: 'troop', rank: 5 },
+    { x: 0.22, y: 0.20, role: 'neutral', type: 'gold', rank: 6 },
+    { x: 0.22, y: 0.84, role: 'neutral', type: 'troop', rank: 6 },
+    { x: 0.55, y: 0.16, role: 'enemy', type: 'watch', rank: 7 },
+    { x: 0.56, y: 0.88, role: 'enemy', type: 'normal', rank: 7 },
+    { x: 0.38, y: 0.13, role: 'neutral', type: 'watch', rank: 8 },
+    { x: 0.39, y: 0.90, role: 'neutral', type: 'gold', rank: 8 },
+    { x: 0.93, y: 0.50, role: 'enemy', type: 'normal', rank: 9 }
+  ];
+  const SIZE_LIMITS = { compact: 10, standard: 13, large: 16, war: 20 };
+  const DIFFICULTY = {
+    easy: { gold: 155, enemyUnits: 0.48, enemyLevel: 0, label: 'Training' },
+    normal: { gold: 130, enemyUnits: 0.62, enemyLevel: 0, label: 'Normal' },
+    hard: { gold: 115, enemyUnits: 0.76, enemyLevel: 1, label: 'Hart' },
+    brutal: { gold: 100, enemyUnits: 0.9, enemyLevel: 1, label: 'Brutal' }
+  };
   worldImage.onload = () => {
     worldImageReady = true;
     worldBackgroundRevision += 1;
@@ -18,7 +55,7 @@
     worldBackgroundRevision += 1;
     worldBackgroundCache = null;
   };
-  worldImage.src = '../../assets/backgrounds/game-world.png';
+  setWorldImage('../../assets/backgrounds/worlds/world-01-startgebiet.png');
   const ACHIEVEMENTS_KEY = 'mastil-achievements';
   const HIGHSCORES_KEY = 'highscores';
   const ACHIEVEMENTS = {
@@ -141,6 +178,62 @@
     }
   }
 
+  function setWorldImage(path) {
+    if (!path || activeWorldPath === path) return;
+    activeWorldPath = path;
+    worldImageReady = false;
+    worldBackgroundCache = null;
+    worldBackgroundRevision += 1;
+    worldImage.src = path;
+  }
+
+  function getMatchConfig() {
+    return {
+      mode: 'campaign',
+      mapId: 'startgebiet',
+      size: 'standard',
+      difficulty: 'normal',
+      opponents: 2,
+      color: '#2f6fa5',
+      ...(window.MASTIL_MATCH_CONFIG || {})
+    };
+  }
+
+  function getRegionForWave(waveNumber) {
+    const current = Math.max(1, Number(waveNumber) || 1);
+    return WORLD_REGIONS.find((region) => current >= region.waves[0] && current <= region.waves[1]) || WORLD_REGIONS[WORLD_REGIONS.length - 1];
+  }
+
+  function getRegionById(id) {
+    return WORLD_REGIONS.find((region) => region.id === id) || WORLD_REGIONS[0];
+  }
+
+  function getActiveRegion() {
+    const config = getMatchConfig();
+    const currentWave = safe(() => wave, 1);
+    if (config.mode === 'skirmish' && currentWave <= 5) return getRegionById(config.mapId);
+    return getRegionForWave(currentWave);
+  }
+
+  function updateWorldImageForCurrentWave() {
+    const region = getActiveRegion();
+    setWorldImage(region.image);
+    return region;
+  }
+
+  function isBossWave(waveNumber) {
+    return [5, 10, 15, 20, 25].includes(Number(waveNumber) || 0);
+  }
+
+  function typeFromKey(type) {
+    const types = safe(() => TOWER_TYPES, null);
+    if (!types) return type;
+    if (type === 'gold') return types.GOLD;
+    if (type === 'troop') return types.TROOP;
+    if (type === 'watch') return types.WATCH;
+    return types.NORMAL;
+  }
+
   function readJsonStorage(key, fallback) {
     try {
       const raw = localStorage.getItem(key);
@@ -179,6 +272,9 @@
   }
 
   function colorForFaction(faction) {
+    if (faction === 'player') return getMatchConfig().color || '#2f6fa5';
+    const configured = safe(() => FACTION_COLORS && FACTION_COLORS[faction], '');
+    if (configured) return configured;
     const palette = {
       player: '#2f6fa5',
       enemy1: '#b8483f',
@@ -462,6 +558,7 @@
   }
 
   function renderEnhancedWorld() {
+    updateWorldImageForCurrentWave();
     ctx.save();
     const cache = buildWorldBackgroundCache();
     if (cache) {
@@ -550,6 +647,24 @@
     ctx.ellipse(4, height * 0.34, width * 0.82, height * 0.22, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    const foundation = ctx.createLinearGradient(-width, height * 0.14, width, height * 0.58);
+    foundation.addColorStop(0, 'rgba(56, 43, 31, 0.88)');
+    foundation.addColorStop(1, 'rgba(18, 12, 8, 0.92)');
+    ctx.fillStyle = foundation;
+    roundRect(ctx, -width * 0.54, height * 0.16, width * 1.08, height * 0.38, 9);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(244, 222, 158, 0.22)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    if (level >= 4) {
+      ctx.fillStyle = 'rgba(36, 23, 14, 0.92)';
+      roundRect(ctx, -width * 0.28, -height * 0.92, width * 0.56, height * 0.42, 7);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(244, 222, 158, 0.24)';
+      ctx.stroke();
+    }
+
     if (isSelected) {
       ctx.shadowBlur = 0;
       ctx.strokeStyle = 'rgba(255, 226, 136, 0.95)';
@@ -583,10 +698,23 @@
     ctx.stroke();
 
     ctx.fillStyle = shade(base, 88);
-    const crenels = 5;
+    const crenels = level >= 5 ? 7 : level >= 3 ? 6 : 5;
     for (let i = 0; i < crenels; i += 1) {
       const cx = -mainW / 2 + i * (mainW / (crenels - 1)) - 4;
-      ctx.fillRect(cx, -mainH * 0.66, 8, 11);
+      ctx.fillRect(cx, -mainH * 0.66, 8, level >= 4 ? 14 : 11);
+    }
+
+    if (level >= 2) {
+      const roof = faction === 'player' ? '#254a6f' : faction === 'neutral' ? '#77684f' : '#70302a';
+      ctx.fillStyle = roof;
+      ctx.beginPath();
+      ctx.moveTo(-mainW * 0.6, -mainH * 0.66);
+      ctx.lineTo(0, -mainH * (level >= 4 ? 1.02 : 0.88));
+      ctx.lineTo(mainW * 0.6, -mainH * 0.66);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(38, 24, 14, 0.8)';
+      ctx.stroke();
     }
 
     const sideCount = level >= 4 ? 4 : 2;
@@ -1338,6 +1466,15 @@
 
   function getObjectiveState(own, enemy, neutral) {
     const currentWave = safe(() => wave, 1);
+    if (isBossWave(currentWave) && enemy.length > 0) {
+      const region = getRegionForWave(currentWave);
+      return {
+        title: `Boss: ${region.boss}`,
+        detail: `Halte die Linien und besiege ${enemy.length} Boss-Tuerme.`,
+        progress: Math.min(1, own.length / Math.max(1, enemy.length + own.length))
+      };
+    }
+
     if (!own.length) {
       return {
         title: 'Reich retten',
@@ -1370,12 +1507,136 @@
     };
   }
 
+  function applyBossWavePressure(waveNumber) {
+    if (!isBossWave(waveNumber)) return;
+    const region = getRegionForWave(waveNumber);
+    const enemy = getEnemyTowers();
+    enemy.forEach((tower) => {
+      tower.level = Math.min(5, (tower.level || 1) + 1);
+      tower.maxUnits = typeof getTowerMaxUnits === 'function'
+        ? getTowerMaxUnits(tower.faction, tower.type, tower.level)
+        : tower.maxUnits + 8;
+      tower.units = Math.min(tower.maxUnits, Math.max(tower.units, Math.floor(tower.maxUnits * 0.78)));
+      spawnEffect(tower.x, tower.y, 'achievement', {
+        color: '#e2bd5a',
+        text: 'Boss',
+        duration: 1400,
+        size: 1.12
+      });
+    });
+    pushEvent(`Bosswelle: ${region.boss}`, 'danger');
+    showEnhancementNotice(`Bosswelle ${waveNumber}: ${region.boss} betritt die Karte.`);
+    playSound('wave');
+  }
+
   function getPlayerTowers() {
     return safe(() => towers.filter((tower) => tower.faction === FACTIONS.PLAYER), []);
   }
 
   function getAttackTargets() {
     return safe(() => towers.filter((tower) => tower.faction !== FACTIONS.PLAYER), []);
+  }
+
+  function getEnemyFaction(index, opponentCount) {
+    const factions = safe(() => [FACTIONS.ENEMY_1, FACTIONS.ENEMY_2, FACTIONS.ENEMY_3], ['enemy1', 'enemy2', 'enemy3']);
+    return factions[index % Math.max(1, Math.min(opponentCount, factions.length))];
+  }
+
+  function applyPlayerColor(config) {
+    const color = config.color || '#2f6fa5';
+    window.MASTIL_PLAYER_COLOR = color;
+    safe(() => {
+      FACTION_COLORS[FACTIONS.PLAYER] = color;
+    });
+  }
+
+  function createBattleTower(node, faction, level, unitFactor) {
+    const tower = createTower(
+      gameWidth * node.x,
+      gameHeight * node.y,
+      faction,
+      typeFromKey(node.type),
+      Math.max(1, Math.min(5, level))
+    );
+    if (faction !== safe(() => FACTIONS.PLAYER, 'player')) {
+      tower.units = Math.max(1, Math.floor(tower.maxUnits * unitFactor));
+    }
+    tower.routeRank = node.rank;
+    return tower;
+  }
+
+  function buildBattleMap(options = {}) {
+    const config = getMatchConfig();
+    const difficulty = DIFFICULTY[config.difficulty] || DIFFICULTY.normal;
+    const currentWave = Math.max(1, safe(() => wave, 1));
+    const bossWave = isBossWave(currentWave);
+    const limit = SIZE_LIMITS[config.size] || SIZE_LIMITS.standard;
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
+    const opponentCount = Math.max(1, Math.min(3, Number(config.opponents) || 2));
+
+    applyPlayerColor(config);
+    updateWorldImageForCurrentWave();
+
+    const previousHome = safe(() => towers.find((tower) => tower.faction === playerFaction), null);
+    const previousGold = safe(() => gold, 0);
+    towers = [];
+    units = [];
+    gold = options.preserveHome ? previousGold : (config.mode === 'skirmish' ? difficulty.gold : 120);
+
+    const activeNodes = MAP_NODES
+      .slice(0, limit)
+      .filter((node) => node.role !== 'enemy' || node.rank <= 3 + opponentCount + Math.floor(currentWave / 4) || config.mode === 'skirmish');
+
+    let enemyIndex = 0;
+    for (const node of activeNodes) {
+      if (node.role === 'player') {
+        const home = createBattleTower(node, playerFaction, previousHome && options.preserveHome ? previousHome.level : 1, 0.65);
+        if (previousHome && options.preserveHome) {
+          home.units = Math.min(home.maxUnits, Math.max(10, Math.floor(previousHome.units * 0.65)));
+          home.type = previousHome.type || home.type;
+        }
+        towers.push(home);
+        continue;
+      }
+
+      if (node.role === 'enemy') {
+        const faction = getEnemyFaction(enemyIndex, opponentCount);
+        const level = 1 + difficulty.enemyLevel + Math.floor(currentWave / 6) + (bossWave ? 1 : 0);
+        const factor = Math.min(0.96, difficulty.enemyUnits + currentWave * 0.018 + (bossWave ? 0.16 : 0));
+        towers.push(createBattleTower(node, faction, level, factor));
+        enemyIndex += 1;
+        continue;
+      }
+
+      const neutralLevel = currentWave >= 10 && node.rank >= 4 ? 2 : 1;
+      towers.push(createBattleTower(node, neutralFaction, neutralLevel, 0.36 + Math.min(0.16, currentWave * 0.01)));
+    }
+
+    if (enemyIndex === 0) {
+      const front = MAP_NODES.find((node) => node.role === 'enemy') || { x: 0.82, y: 0.5, type: 'normal', rank: 4 };
+      towers.push(createBattleTower(front, getEnemyFaction(0, opponentCount), 1 + difficulty.enemyLevel, difficulty.enemyUnits));
+    }
+
+    window.MASTIL_ACTIVE_REGION = getActiveRegion();
+    window.MASTIL_ACTIVE_BOSS_WAVE = bossWave;
+    safe(() => saveGameState());
+    pushEvent(config.mode === 'skirmish' ? `Gefecht: ${difficulty.label}` : 'Kampagne gestartet', 'wave');
+  }
+
+  function installMapOverrides() {
+    if (typeof initMap === 'function' && !initMap.__mastilMapWrapped) {
+      initMap = function enhancedInitMap() {
+        buildBattleMap({ preserveHome: false });
+      };
+      initMap.__mastilMapWrapped = true;
+    }
+    if (typeof resetGameBoard === 'function' && !resetGameBoard.__mastilMapWrapped) {
+      resetGameBoard = function enhancedResetGameBoard() {
+        buildBattleMap({ preserveHome: true });
+      };
+      resetGameBoard.__mastilMapWrapped = true;
+    }
   }
 
   function selectStrongestTower() {
@@ -1623,6 +1884,7 @@
             if (afterWave >= 5) {
               unlockAchievement('trialBreaker');
             }
+            applyBossWavePressure(afterWave);
           }
         }, 160);
     }
@@ -1721,6 +1983,7 @@
         <strong id="mastil-objective-title">Grenzen sichern</strong>
       </div>
       <div class="mastil-objective-detail" id="mastil-objective-detail">Erobere neutrale Türme.</div>
+      <div class="mastil-boss-status" id="mastil-boss-status">Keine Bosswelle</div>
       <div class="mastil-objective-bar" aria-hidden="true">
         <span id="mastil-objective-progress"></span>
       </div>
@@ -1781,6 +2044,7 @@
 
     const title = document.getElementById('mastil-objective-title');
     const detail = document.getElementById('mastil-objective-detail');
+    const bossStatus = document.getElementById('mastil-boss-status');
     const progress = document.getElementById('mastil-objective-progress');
     const captured = document.getElementById('mastil-stat-captured');
     const upgrades = document.getElementById('mastil-stat-upgrades');
@@ -1790,6 +2054,14 @@
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
+    if (bossStatus) {
+      const currentWave = safe(() => wave, 1);
+      const region = getRegionForWave(currentWave);
+      bossStatus.textContent = isBossWave(currentWave)
+        ? `Boss aktiv: ${region.boss}`
+        : `Naechster Boss: ${region.boss} in Welle ${region.waves[1]}`;
+      bossStatus.classList.toggle('active', isBossWave(currentWave));
+    }
     progress.style.width = `${Math.round(objective.progress * 100)}%`;
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
@@ -1837,6 +2109,7 @@
 
   function init() {
     installRenderOverrides();
+    installMapOverrides();
     installMechanicFeedback();
     createGameControls();
     createStrategyPanel();

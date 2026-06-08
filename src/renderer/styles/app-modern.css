@@ -531,6 +531,133 @@
   width: min(860px, 100%);
 }
 
+.mastil-world-dialog {
+  width: min(1120px, 96vw);
+  max-height: 90vh;
+}
+
+.mastil-world-head {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.mastil-world-head span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-world-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mastil-world-card {
+  min-height: 178px;
+  display: grid;
+  align-content: end;
+  gap: 5px;
+  overflow: hidden;
+  position: relative;
+  padding: 12px;
+  color: #fff2bf;
+  border: 1px solid rgba(226, 189, 90, 0.34);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(8, 5, 4, 0.08), rgba(8, 5, 4, 0.78)),
+    var(--world-image) center/cover no-repeat;
+}
+
+.mastil-world-card span,
+.mastil-world-card b {
+  justify-self: start;
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: rgba(10, 7, 5, 0.72);
+  color: #f4d77a;
+  font: 900 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-world-card strong {
+  font: 950 18px/1.05 "Segoe UI", sans-serif;
+}
+
+.mastil-world-card small,
+.mastil-world-card em {
+  color: rgba(244, 230, 191, 0.86);
+  font: 750 12px/1.25 "Segoe UI", sans-serif;
+  font-style: normal;
+}
+
+.mastil-world-card.verschlossen {
+  opacity: 0.72;
+}
+
+.mastil-world-card.aktiv {
+  border-color: rgba(255, 226, 138, 0.78);
+  box-shadow: 0 0 0 1px rgba(255, 226, 138, 0.24), 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.mastil-skirmish-panel {
+  padding: 14px;
+  border: 1px solid rgba(226, 189, 90, 0.3);
+  border-radius: 8px;
+  background: rgba(8, 5, 4, 0.46);
+}
+
+.mastil-skirmish-panel h3 {
+  margin-bottom: 10px;
+}
+
+.mastil-skirmish-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mastil-skirmish-options label,
+.mastil-backend-options {
+  display: grid;
+  gap: 6px;
+  color: rgba(244, 230, 191, 0.82);
+  font: 850 12px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-skirmish-options select,
+.mastil-skirmish-options input,
+.mastil-backend-control input {
+  width: 100%;
+  min-height: 38px;
+  color: #fff7dc;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 6px;
+  background: rgba(8, 5, 4, 0.72);
+  padding: 0 10px;
+}
+
+.mastil-backend-options {
+  grid-template-columns: 170px minmax(0, 1fr);
+  align-items: start;
+  margin: 10px 0;
+}
+
+.mastil-backend-control {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.mastil-backend-control small {
+  grid-column: 1 / -1;
+  color: rgba(244, 230, 191, 0.68);
+  font: 750 12px/1.3 "Segoe UI", sans-serif;
+}
+
 .mastil-progress-overview {
   display: grid;
   gap: 8px;
@@ -1171,6 +1298,22 @@
   font: 750 12px/1.35 "Segoe UI", sans-serif;
 }
 
+.mastil-boss-status {
+  margin-top: 7px;
+  padding: 6px 8px;
+  color: rgba(244, 230, 191, 0.78);
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.045);
+  font: 850 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-boss-status.active {
+  color: #fff2bf;
+  border-color: rgba(255, 177, 126, 0.52);
+  background: rgba(143, 37, 36, 0.32);
+}
+
 .mastil-objective-bar {
   height: 9px;
   margin: 10px 0 8px;
@@ -1711,6 +1854,20 @@ body:has(#game-container[style*="block"]) #info-panel {
   }
 
   .mastil-awards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-world-grid,
+  .mastil-skirmish-options {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-world-card {
+    min-height: 128px;
+  }
+
+  .mastil-backend-options,
+  .mastil-backend-control {
     grid-template-columns: 1fr;
   }
 
