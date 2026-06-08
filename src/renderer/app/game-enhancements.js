@@ -97,6 +97,38 @@
       color: '#d8c49a'
     }
   };
+  const ENEMY_COMMANDERS = {
+    enemy1: {
+      name: 'Rotmarschall Vargan',
+      tactic: 'Sturmkeil',
+      detail: 'führt kurze, harte Angriffe auf schwache Fronttürme.',
+      short: 'V',
+      color: '#ff8a6d',
+      interval: 13800,
+      stagger: 1200,
+      pressure: 16
+    },
+    enemy2: {
+      name: 'Fürst Orondo',
+      tactic: 'Goldene Reserve',
+      detail: 'füllt entfernte Burgen mit frischen Reserven.',
+      short: 'O',
+      color: '#f0b45a',
+      interval: 16500,
+      stagger: 4300,
+      pressure: 12
+    },
+    enemy3: {
+      name: 'Nachtseher Miral',
+      tactic: 'Schattenschritt',
+      detail: 'schwächt isolierte Türme vor dem nächsten Angriff.',
+      short: 'M',
+      color: '#b99cff',
+      interval: 17800,
+      stagger: 7200,
+      pressure: 14
+    }
+  };
   worldImage.onload = () => {
     worldImageReady = true;
     worldBackgroundRevision += 1;
@@ -190,6 +222,14 @@
     quartermaster: {
       title: 'Quartiermeister',
       detail: 'Drei Geländebeuten in einer Partie gesammelt.'
+    },
+    firstEnemyOrder: {
+      title: 'Feindkontakt',
+      detail: 'Ersten KI-Kommandantenbefehl überstanden.'
+    },
+    breakCommander: {
+      title: 'Kommandantur gebrochen',
+      detail: 'Einen feindlichen Kommandantenposten erobert.'
     }
   };
   const TOTAL_ACHIEVEMENTS = Object.keys(ACHIEVEMENTS).length;
@@ -262,7 +302,15 @@
     assaults: 0,
     rallies: 0,
     abilities: 0,
-    spoils: 0
+    spoils: 0,
+    enemyOrders: 0
+  };
+  const enemyCommandState = {
+    readyAt: new Map(),
+    lastOrderText: 'Feindliche Kommandanten sondieren die Front.',
+    lastCommanderId: '',
+    globalReadyAt: 0,
+    warningUntil: 0
   };
 
   function safe(fn, fallback) {
@@ -363,6 +411,25 @@
 
   function getFactionTrait() {
     return FACTION_TRAITS[getPlayerFactionId()] || FACTION_TRAITS.england;
+  }
+
+  function getEnemyCommander(faction) {
+    return ENEMY_COMMANDERS[faction] || null;
+  }
+
+  function isEnemyFaction(faction) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
+    return faction && faction !== playerFaction && faction !== neutralFaction;
+  }
+
+  function assignEnemyCommander(tower) {
+    if (!tower || !isEnemyFaction(tower.faction)) {
+      if (tower) tower.commander = null;
+      return null;
+    }
+    tower.commander = getEnemyCommander(tower.faction);
+    return tower.commander;
   }
 
   function getCommandCooldownMs(key) {
@@ -1234,6 +1301,29 @@
       ctx.fillStyle = '#171009';
       ctx.fillText('S', -width * 0.2 - 11, height * 0.34 + 9);
     }
+
+    const commander = tower.commander || getEnemyCommander(tower.faction);
+    if (commander && isEnemyFaction(tower.faction)) {
+      const x = width * 0.22 + 29;
+      const y = height * 0.34 + 9;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = rgba(commander.color, 0.94);
+      ctx.strokeStyle = 'rgba(23, 16, 9, 0.92)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(0, -12);
+      ctx.lineTo(12, 0);
+      ctx.lineTo(0, 12);
+      ctx.lineTo(-12, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#171009';
+      ctx.font = '950 10px Segoe UI';
+      ctx.fillText(commander.short, 0, 1);
+      ctx.restore();
+    }
   }
 
   function drawEnhancedMinimap() {
@@ -1577,6 +1667,7 @@
         <span><strong>${matchStats.fortified}</strong> befestigt</span>
         <span><strong>${matchStats.spoils}</strong> Beute</span>
         <span><strong>${matchStats.edicts}</strong> Edikte</span>
+        <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
         <span><strong>${unlockedAchievements.size}/${TOTAL_ACHIEVEMENTS}</strong> Auszeichnungen</span>
       </div>
@@ -1590,6 +1681,11 @@
   function resetMatchProgress() {
     eventLog.length = 0;
     impactThrottle.clear();
+    enemyCommandState.readyAt.clear();
+    enemyCommandState.lastOrderText = 'Feindliche Kommandanten sondieren die Front.';
+    enemyCommandState.lastCommanderId = '';
+    enemyCommandState.globalReadyAt = 0;
+    enemyCommandState.warningUntil = 0;
     matchAchievements.clear();
     matchSummarySaved = false;
     lastLowUnitWarningAt = 0;
@@ -1605,6 +1701,7 @@
     matchStats.rallies = 0;
     matchStats.abilities = 0;
     matchStats.spoils = 0;
+    matchStats.enemyOrders = 0;
     commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
@@ -2123,6 +2220,193 @@
     };
   }
 
+  function getCommanderGroups(enemy = getEnemyTowers()) {
+    const groups = new Map();
+    enemy.forEach((tower) => {
+      const commander = assignEnemyCommander(tower);
+      if (!commander) return;
+      if (!groups.has(tower.faction)) {
+        groups.set(tower.faction, {
+          faction: tower.faction,
+          commander,
+          towers: [],
+          units: 0,
+          levelScore: 0,
+          bossCount: 0
+        });
+      }
+      const group = groups.get(tower.faction);
+      group.towers.push(tower);
+      group.units += Math.max(0, Math.floor(tower.units || 0));
+      group.levelScore += (tower.level || 1) * 8;
+      if (tower.boss) group.bossCount += 1;
+    });
+    return Array.from(groups.values()).map((group) => ({
+      ...group,
+      score: group.units + group.levelScore + group.towers.length * 7 + group.bossCount * 32 + group.commander.pressure
+    }));
+  }
+
+  function getEnemyThreatState(own, enemy) {
+    const groups = getCommanderGroups(enemy);
+    if (!groups.length) {
+      return {
+        active: false,
+        title: 'Feindkommando',
+        detail: 'Keine feindliche Kommandantur aktiv.',
+        progress: 0,
+        color: '#8fc3f0',
+        warning: false
+      };
+    }
+
+    const ownStrength = Math.max(
+      24,
+      own.reduce((sum, tower) => sum + Math.max(0, Math.floor(tower.units || 0)) + (tower.level || 1) * 6, 0)
+    );
+    const lead = groups.sort((a, b) => b.score - a.score)[0];
+    const ratio = lead.score / ownStrength;
+    const level = ratio >= 1.28 ? 'kritisch' : ratio >= 0.92 ? 'hoch' : ratio >= 0.62 ? 'wachsend' : 'unter Kontrolle';
+    const recentOrder = enemyCommandState.lastCommanderId === lead.faction
+      ? enemyCommandState.lastOrderText
+      : lead.commander.detail;
+
+    return {
+      active: true,
+      title: `${lead.commander.name}`,
+      detail: `${lead.commander.tactic}: ${level}. ${lead.towers.length} Posten, ${lead.units} Truppen. ${recentOrder}`,
+      progress: Math.min(1, ratio / 1.45),
+      color: lead.commander.color,
+      warning: performance.now() < enemyCommandState.warningUntil
+    };
+  }
+
+  function getWeakPlayerTarget(own, source) {
+    return own
+      .map((tower) => {
+        const distance = source ? Math.hypot(tower.x - source.x, tower.y - source.y) : 0;
+        const fortified = tower.fortifiedUntil && tower.fortifiedUntil > performance.now() ? 12 : 0;
+        const terrainHold = ['hill', 'forest', 'ford', 'keep'].includes(tower.terrain) ? 5 : 0;
+        return {
+          tower,
+          score: Math.max(0, tower.units || 0) + distance / 130 + fortified + terrainHold
+        };
+      })
+      .sort((a, b) => a.score - b.score)[0]?.tower || null;
+  }
+
+  function executeStormCommander(group, own) {
+    const source = group.towers
+      .filter((tower) => tower.units >= 7)
+      .sort((a, b) => (b.units + (b.level || 1) * 4) - (a.units + (a.level || 1) * 4))[0];
+    const target = source ? getWeakPlayerTarget(own, source) : null;
+    if (!source || !target) return '';
+
+    const waveBonus = Math.min(0.08, Math.max(0, safe(() => wave, 1) - 1) * 0.006);
+    const amount = Math.min(
+      Math.max(1, Math.floor(source.units - 1)),
+      Math.max(2, Math.floor(source.units * (0.24 + waveBonus)))
+    );
+    if (amount <= 0) return '';
+
+    safe(() => sendUnitsFromTower(source, target, amount));
+    spawnEffect(source.x, source.y, 'attack', { color: group.commander.color, text: group.commander.short, duration: 900, size: 1.05 });
+    spawnEffect(target.x, target.y, 'impact', { color: group.commander.color, text: 'Sturm', duration: 980, size: 0.95 });
+    return `${group.commander.name} greift ${getTowerTierName(target.level)} mit ${amount} Truppen an.`;
+  }
+
+  function executeReserveCommander(group) {
+    const boosted = group.towers
+      .filter((tower) => tower.units < tower.maxUnits)
+      .sort((a, b) => a.units - b.units)
+      .slice(0, 2);
+    let total = 0;
+    boosted.forEach((tower) => {
+      const amount = Math.min(
+        Math.max(0, tower.maxUnits - tower.units),
+        3 + Math.floor((tower.level || 1) / 2) + Math.floor(safe(() => wave, 1) / 6)
+      );
+      if (amount <= 0) return;
+      total += amount;
+      tower.units = Math.min(tower.maxUnits, tower.units + amount);
+      spawnEffect(tower.x, tower.y, 'achievement', { color: group.commander.color, text: `+${amount}`, duration: 920, size: 0.78 });
+    });
+    if (total <= 0) return '';
+    return `${group.commander.name} verstärkt die Reserve um ${total} Truppen.`;
+  }
+
+  function executeShadowCommander(group, own) {
+    const target = getWeakPlayerTarget(own, null);
+    if (!target || target.units <= 2) return '';
+
+    const loss = Math.min(
+      Math.max(1, Math.floor(target.units - 1)),
+      1 + Math.floor((target.level || 1) / 2) + Math.floor(safe(() => wave, 1) / 8)
+    );
+    if (loss <= 0) return '';
+
+    target.units = Math.max(1, target.units - loss);
+    const nearest = group.towers
+      .map((tower) => ({ tower, distance: Math.hypot(tower.x - target.x, tower.y - target.y) }))
+      .sort((a, b) => a.distance - b.distance)[0]?.tower || null;
+    if (nearest && nearest.units < nearest.maxUnits) {
+      nearest.units = Math.min(nearest.maxUnits, nearest.units + 1);
+    }
+    spawnEffect(target.x, target.y, 'impact', { color: group.commander.color, text: `-${loss}`, duration: 1050, size: 0.98 });
+    return `${group.commander.name} schwächt ${getTowerTierName(target.level)} um ${loss} Truppen.`;
+  }
+
+  function executeCommanderTactic(group, own) {
+    if (group.faction === safe(() => FACTIONS.ENEMY_1, 'enemy1')) return executeStormCommander(group, own);
+    if (group.faction === safe(() => FACTIONS.ENEMY_2, 'enemy2')) return executeReserveCommander(group, own);
+    if (group.faction === safe(() => FACTIONS.ENEMY_3, 'enemy3')) return executeShadowCommander(group, own);
+    return executeStormCommander(group, own);
+  }
+
+  function applyEnemyCommanderPressure() {
+    const now = performance.now();
+    const own = getPlayerTowers();
+    const enemy = getEnemyTowers();
+    if (!own.length || !enemy.length) return;
+
+    const groups = getCommanderGroups(enemy);
+    if (!groups.length) return;
+
+    const graceUntil = Number(window.mastilAiGraceUntil || 0);
+    if (now < graceUntil) {
+      enemyCommandState.globalReadyAt = Math.max(enemyCommandState.globalReadyAt || 0, graceUntil + 1600);
+      groups.forEach((group) => {
+        const readyAt = graceUntil + 1900 + group.commander.stagger;
+        enemyCommandState.readyAt.set(group.faction, Math.max(enemyCommandState.readyAt.get(group.faction) || 0, readyAt));
+      });
+      return;
+    }
+    if (now < (enemyCommandState.globalReadyAt || 0)) return;
+
+    groups.sort((a, b) => (enemyCommandState.readyAt.get(a.faction) || now + a.commander.stagger) - (enemyCommandState.readyAt.get(b.faction) || now + b.commander.stagger));
+    for (const group of groups) {
+      if (!enemyCommandState.readyAt.has(group.faction)) {
+        enemyCommandState.readyAt.set(group.faction, now + group.commander.stagger);
+      }
+      if (now < enemyCommandState.readyAt.get(group.faction)) continue;
+
+      const orderText = executeCommanderTactic(group, own);
+      enemyCommandState.readyAt.set(group.faction, now + group.commander.interval + Math.random() * 2400);
+      if (!orderText) continue;
+
+      matchStats.enemyOrders += 1;
+      enemyCommandState.lastOrderText = orderText;
+      enemyCommandState.lastCommanderId = group.faction;
+      enemyCommandState.globalReadyAt = now + 14000;
+      enemyCommandState.warningUntil = now + 8200;
+      pushEvent(`Feindbefehl: ${orderText}`, 'threat');
+      unlockAchievement('firstEnemyOrder');
+      showEnhancementNotice(`${group.commander.tactic}: ${orderText}`);
+      playSound(group.faction === safe(() => FACTIONS.ENEMY_2, 'enemy2') ? 'upgrade' : 'attack');
+      break;
+    }
+  }
+
   function applyBossWavePressure(waveNumber) {
     if (!isBossWave(waveNumber)) return;
     const region = getRegionForWave(waveNumber);
@@ -2183,6 +2467,7 @@
     tower.boss = false;
     tower.bossName = '';
     tower.lootClaimed = false;
+    assignEnemyCommander(tower);
     return tower;
   }
 
@@ -2253,6 +2538,11 @@
     window.MASTIL_ACTIVE_BOSS_WAVE = bossWave;
     const graceByDifficulty = { easy: 22000, normal: 17000, hard: 12500, brutal: 9000 };
     window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 15000) : 12000);
+    enemyCommandState.readyAt.clear();
+    enemyCommandState.lastOrderText = 'Feindliche Kommandanten sondieren die Front.';
+    enemyCommandState.lastCommanderId = '';
+    enemyCommandState.globalReadyAt = 0;
+    enemyCommandState.warningUntil = 0;
     applyFactionStartBonus(options);
     safe(() => saveGameState());
     pushEvent(config.mode === 'skirmish' ? `Gefecht: ${difficulty.label}` : 'Kampagne gestartet', 'wave');
@@ -2721,9 +3011,11 @@
       const originalUpdateTowers = updateTowers;
       updateTowers = function enhancedUpdateTowers(deltaTime) {
         const before = new Map();
-        safe(() => towers.forEach((tower) => before.set(tower, { faction: tower.faction, boss: Boolean(tower.boss), terrain: tower.terrain })));
+        safe(() => towers.forEach((tower) => before.set(tower, { faction: tower.faction, boss: Boolean(tower.boss), terrain: tower.terrain, commander: tower.commander || getEnemyCommander(tower.faction) })));
         const result = originalUpdateTowers.apply(this, arguments);
         safe(() => towers.forEach((tower) => applyTerrainEconomy(tower, deltaTime || 0)));
+        safe(() => towers.forEach((tower) => assignEnemyCommander(tower)));
+        safe(() => applyEnemyCommanderPressure());
         safe(() => towers.forEach((tower) => {
           const previous = before.get(tower);
           if (previous && previous.faction !== tower.faction) {
@@ -2732,6 +3024,10 @@
               pushEvent(`${getTowerRoleName(tower.type)} erobert`, 'capture');
               unlockAchievement('firstCapture', { tower });
               claimTerrainSpoils(tower);
+              if (previous.commander) {
+                pushEvent(`${previous.commander.name} zurückgedrängt`, 'threat');
+                unlockAchievement('breakCommander', { tower });
+              }
               if (previous.boss) {
                 tower.boss = false;
                 tower.bossName = '';
@@ -2910,6 +3206,10 @@
         <span id="mastil-strategy-front">-</span>
       </div>
       <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Feind</span>
+        <span id="mastil-strategy-threat">-</span>
+      </div>
+      <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Wunder</span>
         <span id="mastil-strategy-faction">-</span>
       </div>
@@ -2943,6 +3243,11 @@
         <span id="mastil-contract-detail">Sichere wichtige Orte.</span>
         <em><i id="mastil-contract-progress"></i></em>
       </div>
+      <div class="mastil-threat-panel" id="mastil-threat-panel">
+        <strong id="mastil-threat-title">Feindkommando</strong>
+        <span id="mastil-threat-detail">Keine feindliche Kommandantur aktiv.</span>
+        <em><i id="mastil-threat-progress"></i></em>
+      </div>
       <div class="mastil-objective-bar" aria-hidden="true">
         <span id="mastil-objective-progress"></span>
       </div>
@@ -2952,6 +3257,7 @@
         <span id="mastil-stat-commands">0 Befehle</span>
         <span id="mastil-stat-spoils">0 Beute</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
+        <span id="mastil-stat-threat">0 Feindbef.</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
       </div>
       <div class="mastil-event-list" id="mastil-event-list"></div>
@@ -2975,13 +3281,16 @@
 
     const domain = document.getElementById('mastil-strategy-domain');
     const front = document.getElementById('mastil-strategy-front');
+    const threatNode = document.getElementById('mastil-strategy-threat');
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !front || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !front || !threatNode || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
+    const threat = getEnemyThreatState(own, enemy);
+    threatNode.textContent = threat.active ? `${threat.title} | ${threat.detail.split('.')[0]}` : 'keine Kommandantur';
     const trait = getFactionTrait();
     factionNode.textContent = `${trait.short} | ${trait.ability}`;
     if (selected && selected.faction === playerFaction) {
@@ -3014,14 +3323,19 @@
     const contractBox = document.getElementById('mastil-war-contract');
     const contractDetail = document.getElementById('mastil-contract-detail');
     const contractProgress = document.getElementById('mastil-contract-progress');
+    const threatBox = document.getElementById('mastil-threat-panel');
+    const threatTitle = document.getElementById('mastil-threat-title');
+    const threatDetail = document.getElementById('mastil-threat-detail');
+    const threatProgress = document.getElementById('mastil-threat-progress');
     const progress = document.getElementById('mastil-objective-progress');
     const captured = document.getElementById('mastil-stat-captured');
     const upgrades = document.getElementById('mastil-stat-upgrades');
     const commands = document.getElementById('mastil-stat-commands');
     const spoils = document.getElementById('mastil-stat-spoils');
     const edicts = document.getElementById('mastil-stat-edicts');
+    const threatStat = document.getElementById('mastil-stat-threat');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !edicts || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !edicts || !threatStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -3039,12 +3353,22 @@
       contractDetail.textContent = contract.detail;
       contractProgress.style.width = `${Math.round(contract.progress * 100)}%`;
     }
+    if (threatBox && threatTitle && threatDetail && threatProgress) {
+      const threat = getEnemyThreatState(own, enemy);
+      threatBox.classList.toggle('active', threat.active);
+      threatBox.classList.toggle('warning', threat.warning);
+      threatBox.style.setProperty('--threat-color', threat.color);
+      threatTitle.textContent = threat.active ? `Feindkommando: ${threat.title}` : threat.title;
+      threatDetail.textContent = threat.detail;
+      threatProgress.style.width = `${Math.round(threat.progress * 100)}%`;
+    }
     progress.style.width = `${Math.round(objective.progress * 100)}%`;
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
     spoils.textContent = `${matchStats.spoils} Beute`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
+    threatStat.textContent = `${matchStats.enemyOrders} Feindbef.`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
 
     const weakTower = own.find((tower) => tower.units <= Math.max(2, tower.maxUnits * 0.22));

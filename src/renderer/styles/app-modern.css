@@ -1363,6 +1363,51 @@
   transition: width 220ms ease;
 }
 
+.mastil-threat-panel {
+  --threat-color: #ff8a6d;
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid color-mix(in srgb, var(--threat-color) 42%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--threat-color) 20%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(20, 10, 8, 0.2);
+}
+
+.mastil-threat-panel strong {
+  color: #fff2bf;
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-threat-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-threat-panel em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.36);
+}
+
+.mastil-threat-panel i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--threat-color), #ffe18a);
+  transition: width 220ms ease;
+}
+
+.mastil-threat-panel.warning {
+  border-color: color-mix(in srgb, var(--threat-color) 72%, #ffe18a);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--threat-color) 18%, transparent);
+}
+
 .mastil-objective-bar {
   height: 9px;
   margin: 10px 0 8px;
@@ -1427,6 +1472,10 @@
 
 .mastil-event-danger strong {
   color: #ffb0a6;
+}
+
+.mastil-event-threat strong {
+  color: #ffcf9c;
 }
 
 .mastil-event-upgrade strong,
