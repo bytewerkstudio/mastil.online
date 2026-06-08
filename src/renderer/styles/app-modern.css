@@ -566,9 +566,21 @@
   color: #fff2bf;
   border: 1px solid rgba(226, 189, 90, 0.34);
   border-radius: 8px;
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
   background:
     linear-gradient(180deg, rgba(8, 5, 4, 0.08), rgba(8, 5, 4, 0.78)),
     var(--world-image) center/cover no-repeat;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.mastil-world-card:hover,
+.mastil-world-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 226, 138, 0.76);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+  filter: brightness(1.05);
 }
 
 .mastil-world-card span,
@@ -602,7 +614,14 @@
   box-shadow: 0 0 0 1px rgba(255, 226, 138, 0.24), 0 18px 42px rgba(0, 0, 0, 0.28);
 }
 
+.mastil-world-card.selected {
+  border-color: rgba(142, 195, 240, 0.9);
+  box-shadow: 0 0 0 2px rgba(142, 195, 240, 0.28), 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
 .mastil-skirmish-panel {
+  display: grid;
+  gap: 12px;
   padding: 14px;
   border: 1px solid rgba(226, 189, 90, 0.3);
   border-radius: 8px;
@@ -615,7 +634,7 @@
 
 .mastil-skirmish-options {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -637,6 +656,49 @@
   border-radius: 6px;
   background: rgba(8, 5, 4, 0.72);
   padding: 0 10px;
+}
+
+.mastil-skirmish-brief {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.6fr) minmax(160px, 0.7fr);
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid rgba(142, 195, 240, 0.26);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(47, 111, 165, 0.2), rgba(226, 189, 90, 0.08)),
+    rgba(8, 5, 4, 0.38);
+}
+
+.mastil-skirmish-brief strong {
+  color: #d8e9ff;
+  font: 950 15px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-skirmish-brief span {
+  color: rgba(244, 230, 191, 0.86);
+  font: 750 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-skirmish-brief em {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: rgba(244, 230, 191, 0.78);
+  font: 800 11px/1.25 "Segoe UI", sans-serif;
+  font-style: normal;
+}
+
+.mastil-skirmish-brief em i {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 242, 191, 0.55);
+  border-radius: 50%;
+  background: var(--chosen-color, #2f6fa5);
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.18);
 }
 
 .mastil-backend-options {
@@ -1561,6 +1623,10 @@
   color: #ffb17e;
 }
 
+.mastil-event-assault strong {
+  color: #ffc66d;
+}
+
 .mastil-event-site strong {
   color: #9ed6a2;
 }
@@ -2260,6 +2326,10 @@ body:has(#game-container[style*="block"]) #info-panel {
 
   .mastil-world-grid,
   .mastil-skirmish-options {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-skirmish-brief {
     grid-template-columns: 1fr;
   }
 

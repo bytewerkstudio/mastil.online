@@ -105,6 +105,60 @@
     { x: 0.39, y: 0.90, role: 'neutral', type: 'gold', rank: 8, terrain: 'market' },
     { x: 0.93, y: 0.50, role: 'enemy', type: 'normal', rank: 9, terrain: 'keep' }
   ];
+  const MAP_LINKS = [
+    [0, 1], [0, 2], [1, 3], [1, 4], [2, 4], [2, 5],
+    [3, 6], [4, 6], [4, 7], [5, 7], [6, 8], [6, 9],
+    [7, 9], [7, 10], [8, 11], [9, 11], [9, 12], [10, 12],
+    [3, 13], [5, 14], [13, 17], [14, 18], [8, 15], [10, 16],
+    [15, 11], [16, 12], [11, 19], [12, 19], [4, 9]
+  ];
+  const MAP_VARIANTS = {
+    startgebiet: {
+      spreadX: 0.96,
+      spreadY: 0.94,
+      xShift: 0,
+      yShift: 0,
+      jitterX: 0.006,
+      jitterY: 0.004,
+      terrains: ['keep', 'hill', 'market', 'barracks', 'road', 'ford', 'market', 'forest', 'barracks', 'road', 'market', 'hill', 'forest', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep']
+    },
+    grenzlande: {
+      spreadX: 0.9,
+      spreadY: 1.06,
+      xShift: -0.01,
+      yShift: -0.006,
+      jitterX: 0.012,
+      jitterY: 0.01,
+      terrains: ['keep', 'hill', 'ford', 'hill', 'road', 'ford', 'barracks', 'forest', 'barracks', 'road', 'ford', 'hill', 'forest', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep']
+    },
+    wuestenreich: {
+      spreadX: 1.03,
+      spreadY: 0.88,
+      xShift: 0.008,
+      yShift: 0.03,
+      jitterX: 0.016,
+      jitterY: 0.014,
+      terrains: ['keep', 'road', 'market', 'quarry', 'market', 'road', 'market', 'barracks', 'quarry', 'road', 'market', 'hill', 'barracks', 'quarry', 'market', 'hill', 'keep', 'road', 'market', 'keep']
+    },
+    nachtfestung: {
+      spreadX: 0.98,
+      spreadY: 1.02,
+      xShift: 0.015,
+      yShift: 0,
+      jitterX: 0.02,
+      jitterY: 0.018,
+      terrains: ['keep', 'forest', 'ford', 'forest', 'road', 'forest', 'market', 'barracks', 'forest', 'road', 'ford', 'hill', 'forest', 'quarry', 'ford', 'forest', 'keep', 'forest', 'market', 'keep']
+    },
+    endboss: {
+      spreadX: 1.02,
+      spreadY: 0.98,
+      xShift: 0.01,
+      yShift: -0.005,
+      jitterX: 0.01,
+      jitterY: 0.006,
+      terrains: ['keep', 'hill', 'quarry', 'barracks', 'road', 'ford', 'market', 'barracks', 'keep', 'road', 'quarry', 'hill', 'barracks', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep']
+    }
+  };
   const TERRAIN = {
     keep: { label: 'Burggrund', short: 'B', color: '#e4c56b', detail: 'stabiler Startpunkt' },
     hill: { label: 'Höhenzug', short: 'H', color: '#b7d394', detail: 'bessere Verteidigung' },
@@ -192,6 +246,44 @@
     normal: { gold: 130, enemyUnits: 0.62, enemyLevel: 0, label: 'Normal' },
     hard: { gold: 115, enemyUnits: 0.76, enemyLevel: 1, label: 'Hart' },
     brutal: { gold: 100, enemyUnits: 0.9, enemyLevel: 1, label: 'Brutal' }
+  };
+  const WAR_PLANS = {
+    balanced: {
+      label: 'Ausgewogen',
+      enemyUnits: 1,
+      enemyLevel: 0,
+      goldBonus: 0,
+      graceFactor: 1,
+      commanderTempo: 1,
+      detail: 'gemischte Fronten'
+    },
+    raiders: {
+      label: 'Pluenderer',
+      enemyUnits: 0.94,
+      enemyLevel: 0,
+      goldBonus: 10,
+      graceFactor: 0.82,
+      commanderTempo: 0.82,
+      detail: 'schnelle Truppentuerme und Ueberfaelle'
+    },
+    fortress: {
+      label: 'Festungskrieg',
+      enemyUnits: 1.1,
+      enemyLevel: 1,
+      goldBonus: 22,
+      graceFactor: 1.08,
+      commanderTempo: 1.08,
+      detail: 'starke Burgen und Belagerungsziele'
+    },
+    economy: {
+      label: 'Handelskrieg',
+      enemyUnits: 0.92,
+      enemyLevel: 0,
+      goldBonus: 34,
+      graceFactor: 1.02,
+      commanderTempo: 1,
+      detail: 'mehr Maerkte und laengere Versorgungslinien'
+    }
   };
   const FACTION_TRAITS = {
     england: {
@@ -442,10 +534,13 @@
   let lastLowUnitWarningAt = 0;
   let lastSupplyWarningAt = 0;
   let lastFrontWarningAt = 0;
+  let lastFormationEventAt = 0;
+  let formationCounter = 0;
   let battlefieldParticleKey = '';
   let battlefieldParticles = [];
   const visualEffects = [];
   const impactThrottle = new Map();
+  const battleFormations = new Map();
   const commandCooldowns = new Map();
   const eventLog = [];
   const matchAchievements = new Set();
@@ -510,6 +605,7 @@
       size: 'standard',
       difficulty: 'normal',
       opponents: 2,
+      plan: 'balanced',
       color: '#2f6fa5',
       ...(window.MASTIL_MATCH_CONFIG || {})
     };
@@ -522,6 +618,12 @@
 
   function getRegionById(id) {
     return WORLD_REGIONS.find((region) => region.id === id) || WORLD_REGIONS[0];
+  }
+
+  function getBossRegionForWave(waveNumber) {
+    const config = getMatchConfig();
+    if (config.mode === 'skirmish') return getRegionById(config.mapId);
+    return getRegionForWave(waveNumber);
   }
 
   function getActiveRegion() {
@@ -540,6 +642,83 @@
     const region = getActiveRegion();
     setWorldImage(region.image);
     return region;
+  }
+
+  function clampMap(value, min = 0.08, max = 0.94) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function getMapProfileId(config, waveNumber) {
+    if (config.mode === 'skirmish') return config.mapId || 'startgebiet';
+    return getRegionForWave(waveNumber).id;
+  }
+
+  function getWarPlan(config) {
+    return WAR_PLANS[config.plan] || WAR_PLANS.balanced;
+  }
+
+  function getMapNodeForConfig(baseNode, index, config, waveNumber) {
+    const profileId = getMapProfileId(config, waveNumber);
+    const variant = MAP_VARIANTS[profileId] || MAP_VARIANTS.startgebiet;
+    const angle = (index * 1.618 + (profileId.length * 0.17)) * Math.PI;
+    const plan = getWarPlan(config);
+    const node = {
+      ...baseNode,
+      index,
+      mapProfileId: profileId,
+      terrain: variant.terrains[index] || baseNode.terrain
+    };
+
+    node.x = clampMap(
+      0.5 + (baseNode.x - 0.5) * (variant.spreadX || 1) +
+      (variant.xShift || 0) +
+      Math.sin(angle) * (variant.jitterX || 0)
+    );
+    node.y = clampMap(
+      0.5 + (baseNode.y - 0.5) * (variant.spreadY || 1) +
+      (variant.yShift || 0) +
+      Math.cos(angle * 0.78) * (variant.jitterY || 0)
+    );
+
+    if (config.mode === 'skirmish') {
+      if (plan === WAR_PLANS.raiders && node.role === 'enemy') {
+        node.type = 'troop';
+        node.terrain = index % 2 ? 'forest' : 'road';
+      }
+      if (plan === WAR_PLANS.fortress && node.role === 'enemy') {
+        node.type = index % 3 === 0 ? 'watch' : 'normal';
+        node.terrain = index % 2 ? 'hill' : 'keep';
+      }
+      if (plan === WAR_PLANS.economy && node.role !== 'player') {
+        node.type = index % 3 === 0 ? 'gold' : node.type;
+        node.terrain = index % 3 === 0 ? 'market' : index % 4 === 0 ? 'quarry' : node.terrain;
+      }
+    }
+
+    if (profileId === 'wuestenreich' && node.role !== 'player' && index % 4 === 0) {
+      node.type = 'gold';
+      node.terrain = 'market';
+    }
+    if (profileId === 'nachtfestung' && node.role === 'enemy' && index % 2 === 0) {
+      node.type = 'troop';
+      node.terrain = 'forest';
+    }
+    if (profileId === 'endboss' && node.role === 'enemy') {
+      node.type = index % 2 ? 'watch' : 'normal';
+      node.terrain = 'keep';
+    }
+
+    return node;
+  }
+
+  function getActiveRoutePairs(towerList) {
+    const byIndex = new Map();
+    towerList.forEach((tower) => {
+      if (typeof tower.mastilNodeIndex === 'number') byIndex.set(tower.mastilNodeIndex, tower);
+    });
+    return MAP_LINKS
+      .map(([a, b]) => [byIndex.get(a), byIndex.get(b)])
+      .filter(([a, b]) => a && b);
   }
 
   function isBossWave(waveNumber) {
@@ -1079,6 +1258,47 @@
     ctx.restore();
   }
 
+  function drawPlannedRouteNetwork(currentTowers, playerFaction, neutralFaction) {
+    const routes = getActiveRoutePairs(currentTowers);
+    if (!routes.length) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    routes.forEach(([a, b], index) => {
+      const sameFaction = a.faction === b.faction && a.faction !== neutralFaction;
+      const playerRoad = sameFaction && a.faction === playerFaction;
+      const contested =
+        (a.faction === playerFaction && isEnemyFaction(b.faction)) ||
+        (b.faction === playerFaction && isEnemyFaction(a.faction));
+      const mx = (a.x + b.x) / 2 + Math.sin(index * 1.9) * 10;
+      const my = (a.y + b.y) / 2 + Math.cos(index * 1.37) * 7;
+
+      ctx.globalAlpha = contested ? 0.44 : playerRoad ? 0.5 : sameFaction ? 0.36 : 0.26;
+      ctx.strokeStyle = contested
+        ? 'rgba(255, 138, 109, 0.52)'
+        : playerRoad
+          ? 'rgba(244, 215, 122, 0.48)'
+          : 'rgba(171, 132, 82, 0.35)';
+      ctx.lineWidth = contested ? 6.2 : playerRoad ? 5.4 : 4.4;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(mx, my, b.x, b.y);
+      ctx.stroke();
+
+      ctx.globalAlpha = contested ? 0.58 : playerRoad ? 0.54 : 0.36;
+      ctx.strokeStyle = contested ? 'rgba(255, 224, 186, 0.36)' : 'rgba(255, 242, 191, 0.24)';
+      ctx.lineWidth = 1.25;
+      ctx.setLineDash(contested ? [9, 6] : []);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(mx, my, b.x, b.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+    ctx.restore();
+  }
+
   function drawEnhancedConnections() {
     const currentTowers = safe(() => towers, []);
     if (!currentTowers || currentTowers.length < 2) return;
@@ -1089,6 +1309,7 @@
     const enemyTowers = currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction);
     computeSupplyState(ownTowers);
     computeFrontPressure(ownTowers, enemyTowers);
+    drawPlannedRouteNetwork(currentTowers, playerFaction, neutralFaction);
     const threshold = getConnectionThreshold();
     let drawn = 0;
     const limit = safe(() => getQualitySetting('connectionLimit'), 240) || 240;
@@ -1175,7 +1396,8 @@
     const y = tower.y;
     const faction = tower.faction || 'neutral';
     const base = colorForFaction(faction);
-    const size = Math.min(74, 34 + level * 7);
+    const visualTier = getTowerVisualTier(level);
+    const size = Math.min(86, 34 + level * 7 + visualTier * 2);
     const height = size * 1.05;
     const width = size * 0.88;
     const isSelected = safe(() => selectedTower === tower, false);
@@ -1246,8 +1468,12 @@
     wallGradient.addColorStop(0.38, shade(base, 28));
     wallGradient.addColorStop(1, shade(base, -50));
 
-    const mainW = width * 0.7;
-    const mainH = height * 0.8;
+    if (visualTier >= 3) {
+      drawCastleCurtainWall(width, height, base, faction, visualTier);
+    }
+
+    const mainW = width * (0.62 + visualTier * 0.035);
+    const mainH = height * (0.72 + visualTier * 0.035);
     ctx.fillStyle = wallGradient;
     roundRect(ctx, -mainW / 2, -mainH * 0.58, mainW, mainH, 8);
     ctx.fill();
@@ -1349,6 +1575,10 @@
       }
     }
 
+    if (visualTier >= 5) {
+      drawCitadelCrown(width, height, base, faction);
+    }
+
     drawTowerRoleDetails(tower, width, height, base);
     drawTowerBadges(tower, width, height, level);
     ctx.restore();
@@ -1393,6 +1623,74 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(site.mark, width * 0.48 - 10, height * 0.48 + 8.8);
+    ctx.restore();
+  }
+
+  function drawCastleCurtainWall(width, height, base, faction, visualTier) {
+    const wallY = height * 0.08;
+    const wallW = width * (1.05 + visualTier * 0.08);
+    const wallH = height * (0.24 + visualTier * 0.018);
+    const towerRoof = faction === 'player' ? '#254a6f' : faction === 'neutral' ? '#79694f' : '#763129';
+
+    ctx.save();
+    ctx.fillStyle = shade(base, 32);
+    roundRect(ctx, -wallW / 2, wallY - wallH / 2, wallW, wallH, 7);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(42, 25, 14, 0.78)';
+    ctx.lineWidth = 1.7;
+    ctx.stroke();
+
+    ctx.fillStyle = shade(base, 74);
+    const crenels = visualTier >= 5 ? 9 : 7;
+    for (let i = 0; i < crenels; i += 1) {
+      const x = -wallW / 2 + 7 + i * ((wallW - 14) / Math.max(1, crenels - 1));
+      ctx.fillRect(x - 4, wallY - wallH / 2 - 7, 8, 9);
+    }
+
+    [-0.5, 0.5].forEach((side) => {
+      const tx = side * wallW * 0.46;
+      const tw = width * 0.18;
+      const th = height * (0.46 + visualTier * 0.035);
+      const gradient = ctx.createLinearGradient(tx - tw, wallY - th, tx + tw, wallY + th);
+      gradient.addColorStop(0, shade(base, 80));
+      gradient.addColorStop(1, shade(base, -46));
+      ctx.fillStyle = gradient;
+      roundRect(ctx, tx - tw / 2, wallY - th * 0.72, tw, th, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = towerRoof;
+      ctx.beginPath();
+      ctx.moveTo(tx - tw * 0.62, wallY - th * 0.72);
+      ctx.lineTo(tx + tw * 0.62, wallY - th * 0.72);
+      ctx.lineTo(tx, wallY - th * 1.02);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function drawCitadelCrown(width, height, base, faction) {
+    const accent = faction === 'player' ? '#ffe18a' : faction === 'neutral' ? '#f4e6bf' : '#ffb17e';
+    ctx.save();
+    ctx.strokeStyle = rgba(accent, 0.68);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -height * 0.7, width * 0.42, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.stroke();
+    ctx.fillStyle = rgba(accent, 0.92);
+    for (let i = -2; i <= 2; i += 1) {
+      const x = i * width * 0.12;
+      const y = -height * 0.82 - (i === 0 ? 8 : Math.abs(i) === 1 ? 3 : 0);
+      ctx.beginPath();
+      ctx.moveTo(x, y - 7);
+      ctx.lineTo(x + 5, y + 5);
+      ctx.lineTo(x - 5, y + 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = rgba(shade(base, 92), 0.94);
+    roundRect(ctx, -width * 0.2, -height * 0.86, width * 0.4, height * 0.08, 5);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -1806,6 +2104,120 @@
     ctx.restore();
   }
 
+  function drawFormationBanner(x, y, color, count, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = 'rgba(18, 11, 7, 0.76)';
+    roundRect(ctx, -15, -24, 30, 17, 6);
+    ctx.fill();
+    ctx.strokeStyle = rgba(color, 0.88);
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.strokeStyle = '#2a1a0d';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-5, -7);
+    ctx.lineTo(-5, -27);
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(-4, -26);
+    ctx.lineTo(14, -21);
+    ctx.lineTo(-4, -16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.rotate(-angle);
+    ctx.fillStyle = '#fff2bf';
+    ctx.font = '900 10px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(count), 0, -15);
+    ctx.restore();
+  }
+
+  function drawBattleFormationRoutes(unitsToDraw, animationDetail) {
+    if (animationDetail === 'low') return;
+    const groups = new Map();
+    const aliveIds = new Set();
+    const now = performance.now();
+
+    for (const unit of unitsToDraw) {
+      if (!unit.mastilFormationId) continue;
+      const id = unit.mastilFormationId;
+      aliveIds.add(id);
+      if (!groups.has(id)) {
+        const meta = battleFormations.get(id) || {
+          sourceX: unit.sourceX || unit.x,
+          sourceY: unit.sourceY || unit.y,
+          targetX: unit.targetX,
+          targetY: unit.targetY,
+          faction: unit.faction,
+          count: unit.mastilFormationSize || 1,
+          createdAt: unit.mastilLaunchAt || now
+        };
+        groups.set(id, { ...meta, live: 0, x: 0, y: 0 });
+      }
+      const group = groups.get(id);
+      group.live += 1;
+      group.x += unit.x;
+      group.y += unit.y;
+    }
+
+    battleFormations.forEach((formation, id) => {
+      if (!aliveIds.has(id) && now - formation.createdAt > 4200) {
+        battleFormations.delete(id);
+      }
+    });
+
+    if (!groups.size) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    groups.forEach((group) => {
+      if (!group.live) return;
+      const color = colorForFaction(group.faction);
+      const cx = group.x / group.live;
+      const cy = group.y / group.live;
+      const dx = group.targetX - group.sourceX;
+      const dy = group.targetY - group.sourceY;
+      const angle = Math.atan2(dy, dx);
+      const age = Math.min(1, (now - group.createdAt) / 3200);
+      const heavy = (group.count || group.live) >= 10;
+
+      const routeGradient = ctx.createLinearGradient(group.sourceX, group.sourceY, group.targetX, group.targetY);
+      routeGradient.addColorStop(0, rgba(color, 0.04));
+      routeGradient.addColorStop(0.48, rgba(color, heavy ? 0.34 : 0.22));
+      routeGradient.addColorStop(1, rgba('#fff2bf', heavy ? 0.28 : 0.16));
+      ctx.globalAlpha = 0.38 + age * 0.18;
+      ctx.strokeStyle = routeGradient;
+      ctx.lineWidth = heavy ? 5.6 : 3.6;
+      ctx.setLineDash(heavy ? [14, 9] : [8, 10]);
+      ctx.beginPath();
+      ctx.moveTo(group.sourceX, group.sourceY);
+      const mx = (group.sourceX + group.targetX) / 2 + Math.sin(group.createdAt * 0.004) * 18;
+      const my = (group.sourceY + group.targetY) / 2 + Math.cos(group.createdAt * 0.003) * 14;
+      ctx.quadraticCurveTo(mx, my, group.targetX, group.targetY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.globalAlpha = heavy ? 0.78 : 0.58;
+      ctx.strokeStyle = rgba('#fff2bf', heavy ? 0.48 : 0.32);
+      ctx.lineWidth = heavy ? 1.8 : 1.2;
+      ctx.beginPath();
+      ctx.moveTo(group.sourceX, group.sourceY);
+      ctx.quadraticCurveTo(mx, my, cx, cy);
+      ctx.stroke();
+
+      if (heavy || group.live >= 5) {
+        ctx.globalAlpha = 0.92;
+        drawFormationBanner(cx, cy, color, group.live, angle);
+      }
+    });
+    ctx.restore();
+  }
+
   function drawEnhancedUnits() {
     const currentUnits = safe(() => units, []);
     if (!currentUnits || !currentUnits.length) return;
@@ -1816,19 +2228,22 @@
     const unitsToDraw = currentUnits.length > limit ? currentUnits.slice(0, limit) : currentUnits;
 
     ctx.save();
+    drawBattleFormationRoutes(unitsToDraw, animationDetail);
     for (const unit of unitsToDraw) {
       const base = colorForFaction(unit.faction);
       const dx = unit.targetX - unit.x;
       const dy = unit.targetY - unit.y;
       const angle = Math.atan2(dy, dx);
-      const pulse = 1;
+      const lane = Number(unit.mastilLane || 0);
+      const pulse = unit.mastilFormationId ? 1.08 : 1;
       const size = 5.8 * pulse;
 
       if (animationDetail !== 'low') {
-        ctx.strokeStyle = rgba(base, 0.35);
-        ctx.lineWidth = 2;
+        const heavy = (unit.mastilFormationSize || 0) >= 10;
+        ctx.strokeStyle = rgba(base, heavy ? 0.48 : 0.35);
+        ctx.lineWidth = heavy ? 2.8 : 2;
         ctx.beginPath();
-        ctx.moveTo(unit.x - Math.cos(angle) * 16, unit.y - Math.sin(angle) * 16);
+        ctx.moveTo(unit.x - Math.cos(angle) * (heavy ? 22 : 16) + Math.cos(angle + Math.PI / 2) * lane, unit.y - Math.sin(angle) * (heavy ? 22 : 16) + Math.sin(angle + Math.PI / 2) * lane);
         ctx.lineTo(unit.x - Math.cos(angle) * 5, unit.y - Math.sin(angle) * 5);
         ctx.stroke();
       }
@@ -2166,6 +2581,9 @@
     lastLowUnitWarningAt = 0;
     lastSupplyWarningAt = 0;
     lastFrontWarningAt = 0;
+    lastFormationEventAt = 0;
+    formationCounter = 0;
+    battleFormations.clear();
     strategicState.pulseTimer = 0;
     strategicState.lastHeldCount = 0;
     strategicState.lastSignature = '';
@@ -2220,6 +2638,81 @@
     if (current >= 3) return 'Burg';
     if (current >= 2) return 'Wehrturm';
     return 'Vorposten';
+  }
+
+  function getTowerVisualTier(level) {
+    const current = Number(level) || 1;
+    if (current >= 8) return 5;
+    if (current >= 6) return 4;
+    if (current >= 4) return 3;
+    if (current >= 2) return 2;
+    return 1;
+  }
+
+  function getUpgradeCostModifier(tower) {
+    if (!tower) return 1;
+    let modifier = 1;
+    if (tower.terrain === 'quarry') modifier *= 0.9;
+    if (tower.terrain === 'keep') modifier *= 0.94;
+    if (tower.supplyLinked) modifier *= 0.96;
+    if (hasStrategicSite('stoneworks')) modifier *= 0.94;
+    if (getPlayerFactionId() === 'hre') modifier *= 0.92;
+    return Math.max(0.72, modifier);
+  }
+
+  function applyUpgradeMilestone(tower, beforeLevel) {
+    if (!tower || tower.faction !== safe(() => FACTIONS.PLAYER, 'player')) return '';
+    tower.mastilUpgradeMilestones = tower.mastilUpgradeMilestones || {};
+    const level = Number(tower.level) || 1;
+    const crossed = (target) => beforeLevel < target && level >= target && !tower.mastilUpgradeMilestones[`l${target}`];
+    let message = '';
+
+    if (crossed(3)) {
+      tower.mastilUpgradeMilestones.l3 = true;
+      tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + 15000);
+      tower.units = Math.min(tower.maxUnits, tower.units + 3);
+      message = 'Burgmauern: Schutz und Reserven aktiviert';
+    }
+
+    if (crossed(5)) {
+      tower.mastilUpgradeMilestones.l5 = true;
+      if (tower.type === typeFromKey('gold')) {
+        safe(() => {
+          gold += 35;
+          updateUI();
+        });
+        message = 'Zitadellenmarkt: +35 Gold';
+      } else if (tower.type === typeFromKey('troop')) {
+        getPlayerTowers().forEach((own) => {
+          own.units = Math.min(own.maxUnits, own.units + 2);
+        });
+        message = 'Heerhof: +2 Truppen je eigenem Turm';
+      } else if (tower.type === typeFromKey('watch')) {
+        reduceCommandCooldowns(5000);
+        message = 'Signalspitze: Befehle schneller bereit';
+      } else {
+        tower.maxUnits += 3;
+        tower.units = Math.min(tower.maxUnits, tower.units + 3);
+        message = 'Zitadellenkern: mehr Garnison';
+      }
+    }
+
+    if (crossed(7)) {
+      tower.mastilUpgradeMilestones.l7 = true;
+      addTowerRenown(tower, 5, 'Hochfeste');
+      tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + 24000);
+      message = 'Hochfeste: Ruhm und starker Schutz';
+    }
+
+    if (message) {
+      spawnEffect(tower.x, tower.y, 'achievement', {
+        color: '#ffe18a',
+        text: 'Meilenstein',
+        duration: 1350,
+        size: 1.02
+      });
+    }
+    return message;
   }
 
   function getNextTowerType(type) {
@@ -2594,7 +3087,7 @@
   }
 
   function promoteBossTower(waveNumber) {
-    const region = getRegionForWave(waveNumber);
+    const region = getBossRegionForWave(waveNumber);
     const enemies = getEnemyTowers();
     if (!enemies.length) return null;
     enemies.forEach((tower) => {
@@ -2967,7 +3460,7 @@
   function getObjectiveState(own, enemy, neutral) {
     const currentWave = safe(() => wave, 1);
     if (isBossWave(currentWave) && enemy.length > 0) {
-      const region = getRegionForWave(currentWave);
+      const region = getBossRegionForWave(currentWave);
       const bossCount = getBossTowers().length;
       return {
         title: `Boss: ${region.boss}`,
@@ -3013,9 +3506,37 @@
   function getWarContractState(own, enemy, neutral) {
     const currentTowers = safe(() => towers, []);
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const config = getMatchConfig();
+    const plan = getWarPlan(config);
     const strategic = computeStrategicSiteState(currentTowers);
+    const supply = computeSupplyState(own);
     const hasMarket = own.some((tower) => tower.terrain === 'market');
     const capturableMarket = currentTowers.some((tower) => tower.terrain === 'market' && tower.faction !== playerFaction);
+
+    if (config.mode === 'skirmish' && plan === WAR_PLANS.raiders && supply.ratio < 0.82 && own.length >= 3) {
+      return {
+        title: 'Gefecht: Linien halten',
+        detail: `${Math.round(supply.ratio * 100)}% Versorgung. Schließe Lücken gegen Plünderer.`,
+        progress: supply.ratio
+      };
+    }
+
+    if (config.mode === 'skirmish' && plan === WAR_PLANS.fortress && enemy.length > 0 && matchStats.sieges < 2) {
+      return {
+        title: 'Gefecht: Festung brechen',
+        detail: `${matchStats.sieges}/2 Belagerungen geführt. Starke Burgen erst schwächen.`,
+        progress: Math.min(1, matchStats.sieges / 2)
+      };
+    }
+
+    if (config.mode === 'skirmish' && plan === WAR_PLANS.economy && !hasMarket && capturableMarket) {
+      return {
+        title: 'Gefecht: Handelsroute',
+        detail: 'Sichere zuerst einen Markt, damit große Karten bezahlbar bleiben.',
+        progress: 0
+      };
+    }
+
     if (!hasMarket && capturableMarket) {
       return {
         title: 'Kriegsauftrag: Markt sichern',
@@ -3235,7 +3756,8 @@
       if (now < enemyCommandState.readyAt.get(group.faction)) continue;
 
       const orderText = executeCommanderTactic(group, own);
-      enemyCommandState.readyAt.set(group.faction, now + group.commander.interval + Math.random() * 2400);
+      const planTempo = getWarPlan(getMatchConfig()).commanderTempo || 1;
+      enemyCommandState.readyAt.set(group.faction, now + group.commander.interval * planTempo + Math.random() * 2400);
       if (!orderText) continue;
 
       matchStats.enemyOrders += 1;
@@ -3253,7 +3775,7 @@
 
   function applyBossWavePressure(waveNumber) {
     if (!isBossWave(waveNumber)) return;
-    const region = getRegionForWave(waveNumber);
+    const region = getBossRegionForWave(waveNumber);
     const enemy = getEnemyTowers();
     const boss = promoteBossTower(waveNumber);
     enemy.forEach((tower) => {
@@ -3308,6 +3830,9 @@
     }
     tower.routeRank = node.rank;
     tower.terrain = node.terrain || 'road';
+    tower.mastilNodeIndex = node.index;
+    tower.mastilMapProfileId = node.mapProfileId || 'startgebiet';
+    tower.mastilUpgradeMilestones = {};
     tower.boss = false;
     tower.bossName = '';
     tower.lootClaimed = false;
@@ -3321,6 +3846,7 @@
   function buildBattleMap(options = {}) {
     const config = getMatchConfig();
     const difficulty = DIFFICULTY[config.difficulty] || DIFFICULTY.normal;
+    const warPlan = getWarPlan(config);
     const currentWave = Math.max(1, safe(() => wave, 1));
     const bossWave = isBossWave(currentWave);
     const limit = SIZE_LIMITS[config.size] || SIZE_LIMITS.standard;
@@ -3338,9 +3864,10 @@
     const previousGold = safe(() => gold, 0);
     towers = [];
     units = [];
-    gold = options.preserveHome ? previousGold : (config.mode === 'skirmish' ? difficulty.gold : 120);
+    gold = options.preserveHome ? previousGold : (config.mode === 'skirmish' ? difficulty.gold + warPlan.goldBonus : 120);
 
-    const activeNodes = MAP_NODES
+    const mappedNodes = MAP_NODES.map((node, index) => getMapNodeForConfig(node, index, config, currentWave));
+    const activeNodes = mappedNodes
       .slice(0, limit)
       .filter((node) => node.role !== 'enemy' || node.rank <= 3 + opponentCount + Math.floor(currentWave / 4) || config.mode === 'skirmish');
 
@@ -3365,19 +3892,24 @@
 
       if (node.role === 'enemy') {
         const faction = getEnemyFaction(enemyIndex, opponentCount);
-        const level = 1 + difficulty.enemyLevel + Math.floor(currentWave / 6) + (bossWave ? 1 : 0);
-        const factor = Math.min(0.96, difficulty.enemyUnits + currentWave * 0.018 + (bossWave ? 0.16 : 0));
-        towers.push(createBattleTower(node, faction, level, factor));
+        const level = 1 + difficulty.enemyLevel + warPlan.enemyLevel + Math.floor(currentWave / 6) + (bossWave ? 1 : 0);
+        const factor = Math.min(0.98, (difficulty.enemyUnits + currentWave * 0.018 + (bossWave ? 0.16 : 0)) * warPlan.enemyUnits);
+        const tower = createBattleTower(node, faction, level, factor);
+        if (config.mode === 'skirmish' && warPlan === WAR_PLANS.fortress) {
+          tower.fortifiedUntil = performance.now() + 14000;
+        }
+        towers.push(tower);
         enemyIndex += 1;
         continue;
       }
 
       const neutralLevel = currentWave >= 10 && node.rank >= 4 ? 2 : 1;
-      towers.push(createBattleTower(node, neutralFaction, neutralLevel, 0.36 + Math.min(0.16, currentWave * 0.01)));
+      const neutralFactor = 0.36 + Math.min(0.16, currentWave * 0.01) + (config.mode === 'skirmish' && warPlan === WAR_PLANS.economy ? 0.06 : 0);
+      towers.push(createBattleTower(node, neutralFaction, neutralLevel, neutralFactor));
     }
 
     if (enemyIndex === 0) {
-      const front = MAP_NODES.find((node) => node.role === 'enemy') || { x: 0.82, y: 0.5, type: 'normal', rank: 4 };
+      const front = mappedNodes.find((node) => node.role === 'enemy') || { x: 0.82, y: 0.5, type: 'normal', rank: 4, index: 99, terrain: 'keep' };
       towers.push(createBattleTower(front, getEnemyFaction(0, opponentCount), 1 + difficulty.enemyLevel, difficulty.enemyUnits));
     }
 
@@ -3387,8 +3919,9 @@
 
     window.MASTIL_ACTIVE_REGION = getActiveRegion();
     window.MASTIL_ACTIVE_BOSS_WAVE = bossWave;
+    window.MASTIL_WAR_PLAN = warPlan.label;
     const graceByDifficulty = { easy: 22000, normal: 17000, hard: 12500, brutal: 9000 };
-    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 15000) : 12000);
+    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 15000) * warPlan.graceFactor : 12000);
     enemyCommandState.readyAt.clear();
     enemyCommandState.lastOrderText = 'Feindliche Kommandanten sondieren die Front.';
     enemyCommandState.lastCommanderId = '';
@@ -3396,7 +3929,7 @@
     enemyCommandState.warningUntil = 0;
     applyFactionStartBonus(options);
     safe(() => saveGameState());
-    pushEvent(config.mode === 'skirmish' ? `Gefecht: ${difficulty.label}` : 'Kampagne gestartet', 'wave');
+    pushEvent(config.mode === 'skirmish' ? `Gefecht: ${difficulty.label} | ${warPlan.label}` : 'Kampagne gestartet', 'wave');
     pushEvent(`Schlachtfeld: ${getBattlefieldCondition().title}`, 'condition');
   }
 
@@ -3844,6 +4377,15 @@
     if (effectsReady) return;
     effectsReady = true;
 
+    if (typeof getUpgradeCost === 'function' && !getUpgradeCost.__mastilCostWrapped) {
+      const originalGetUpgradeCost = getUpgradeCost;
+      getUpgradeCost = function enhancedUpgradeCost(tower) {
+        const base = originalGetUpgradeCost.apply(this, arguments);
+        return Math.max(24, Math.floor(base * getUpgradeCostModifier(tower)));
+      };
+      getUpgradeCost.__mastilCostWrapped = true;
+    }
+
     if (typeof sendUnitsFromTower === 'function' && !sendUnitsFromTower.__mastilFxWrapped) {
       const originalSendUnits = sendUnitsFromTower;
       sendUnitsFromTower = function enhancedSendUnits(sourceTower, targetTower, unitCount) {
@@ -3852,8 +4394,30 @@
         if (sourceTower && sourceTower.terrain === 'road') requested = Math.ceil(requested * 1.08);
         if (sourceTower && sourceTower.terrain === 'barracks') requested += requested >= 6 ? 1 : 0;
         const sent = Math.max(0, Math.min(requested, available));
+        const beforeUnitCount = safe(() => units.length, 0);
         const result = originalSendUnits.call(this, sourceTower, targetTower, sent);
         if (sourceTower && targetTower && sent > 0) {
+          const formationId = `f${Date.now().toString(36)}-${formationCounter += 1}`;
+          const now = performance.now();
+          const createdUnits = safe(() => units.slice(beforeUnitCount), []);
+          const formationSize = Math.max(sent, createdUnits.length);
+          battleFormations.set(formationId, {
+            sourceX: sourceTower.x,
+            sourceY: sourceTower.y,
+            targetX: targetTower.x,
+            targetY: targetTower.y,
+            faction: sourceTower.faction,
+            count: formationSize,
+            createdAt: now
+          });
+          createdUnits.forEach((unit, index) => {
+            unit.mastilFormationId = formationId;
+            unit.sourceX = sourceTower.x;
+            unit.sourceY = sourceTower.y;
+            unit.mastilFormationSize = formationSize;
+            unit.mastilLaunchAt = now;
+            unit.mastilLane = ((index % 5) - 2) * (formationSize >= 10 ? 2.2 : 1.4);
+          });
           spawnEffect(sourceTower.x, sourceTower.y, 'attack', {
             color: colorForFaction(sourceTower.faction),
             text: `-${sent}`,
@@ -3863,6 +4427,10 @@
           if (sourceTower.faction === safe(() => FACTIONS.PLAYER, 'player')) {
             unlockAchievement('firstCommand', { tower: sourceTower });
             addTowerRenown(sourceTower, sent >= 8 ? 2 : 1, 'Befehl');
+            if (sent >= 12 && now - lastFormationEventAt > 6500) {
+              lastFormationEventAt = now;
+              pushEvent(`Heerzug: ${sent} Einheiten marschieren`, 'assault');
+            }
           }
           playSound('attack');
         }
@@ -3882,6 +4450,7 @@
           tower.mastilVeteranCapacityApplied = 0;
           applyTowerVeteranBonus(tower);
           addTowerRenown(tower, 2, 'Ausbau');
+          const milestone = applyUpgradeMilestone(tower, beforeLevel);
           spawnEffect(tower.x, tower.y, 'upgrade', {
             color: '#e2bd5a',
             text: `L${tower.level}`,
@@ -3889,6 +4458,7 @@
             size: 1.05
           });
           pushEvent(`${getTowerTierName(tower.level)} ausgebaut`, 'upgrade');
+          if (milestone) pushEvent(milestone, 'upgrade');
           playSound('upgrade');
           unlockAchievement('firstUpgrade', { tower });
           if (matchStats.upgrades >= 3) {
@@ -4172,6 +4742,10 @@
         <span id="mastil-strategy-domain">-</span>
       </div>
       <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Karte</span>
+        <span id="mastil-strategy-map">-</span>
+      </div>
+      <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Front</span>
         <span id="mastil-strategy-front">-</span>
       </div>
@@ -4279,6 +4853,7 @@
     const selected = safe(() => selectedTower, null);
 
     const domain = document.getElementById('mastil-strategy-domain');
+    const mapNode = document.getElementById('mastil-strategy-map');
     const front = document.getElementById('mastil-strategy-front');
     const pressureNode = document.getElementById('mastil-strategy-pressure');
     const siteNode = document.getElementById('mastil-strategy-sites');
@@ -4288,9 +4863,12 @@
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !front || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !mapNode || !front || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
+    const activeRegion = getActiveRegion();
+    const plan = getWarPlan(getMatchConfig());
+    mapNode.textContent = `${activeRegion.title} | ${plan.label}`;
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
     const threat = getEnemyThreatState(own, enemy);
     threatNode.textContent = threat.active ? `${threat.title} | ${threat.detail.split('.')[0]}` : 'keine Kommandantur';
@@ -4370,10 +4948,13 @@
     detail.textContent = objective.detail;
     if (bossStatus) {
       const currentWave = safe(() => wave, 1);
-      const region = getRegionForWave(currentWave);
+      const region = getBossRegionForWave(currentWave);
+      const nextBossWave = getMatchConfig().mode === 'skirmish'
+        ? Math.max(5, Math.ceil(currentWave / 5) * 5)
+        : region.waves[1];
       bossStatus.textContent = isBossWave(currentWave)
         ? `Boss aktiv: ${region.boss}`
-        : `Naechster Boss: ${region.boss} in Welle ${region.waves[1]}`;
+        : `Naechster Boss: ${region.boss} in Welle ${nextBossWave}`;
       bossStatus.classList.toggle('active', isBossWave(currentWave));
     }
     if (conditionBox && conditionTitle && conditionDetail) {
@@ -4498,6 +5079,16 @@
     createEdictModal();
   }
 
+  function getBattleDebug() {
+    const currentUnits = safe(() => units, []);
+    return {
+      formations: battleFormations.size,
+      taggedUnits: currentUnits.filter((unit) => unit.mastilFormationId).length,
+      units: currentUnits.length,
+      effects: visualEffects.length
+    };
+  }
+
   window.MastilGameEnhancements = {
     init,
     selectStrongestTower,
@@ -4511,6 +5102,7 @@
     fortifySelectedTower,
     unlockAchievement,
     getAchievementProgress,
+    getBattleDebug,
     spawnEffect
   };
 

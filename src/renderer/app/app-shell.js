@@ -5,18 +5,37 @@
   };
   const SKIRMISH_KEY = 'mastil-skirmish-config';
   const WORLD_REGIONS = [
-    { id: 'startgebiet', title: 'Startgebiet', waves: '1-5', boss: 'Grenzwacht Roderich', difficulty: 'Einsteiger', image: '../../assets/backgrounds/worlds/world-01-startgebiet.png' },
-    { id: 'grenzlande', title: 'Grenzlande', waves: '6-10', boss: 'Der Eisenvogt', difficulty: 'Normal', image: '../../assets/backgrounds/worlds/world-02-grenzlande.png' },
-    { id: 'wuestenreich', title: 'Wuestenreich', waves: '11-15', boss: 'Sultan der Sandkrone', difficulty: 'Hart', image: '../../assets/backgrounds/worlds/world-03-wuestenreich.png' },
-    { id: 'nachtfestung', title: 'Nachtfestung', waves: '16-20', boss: 'Nachtgraf Malrec', difficulty: 'Sehr hart', image: '../../assets/backgrounds/worlds/world-04-nachtfestung.png' },
-    { id: 'endboss', title: 'Endboss-Zitadelle', waves: '21-25', boss: 'Kaiser Veyron', difficulty: 'Endboss', image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png' }
+    { id: 'startgebiet', title: 'Startgebiet', waves: '1-5', boss: 'Grenzwacht Roderich', difficulty: 'Einsteiger', terrain: 'Wiesen, Wege, erste Burgen', style: 'Ausgewogen', image: '../../assets/backgrounds/worlds/world-01-startgebiet.png' },
+    { id: 'grenzlande', title: 'Grenzlande', waves: '6-10', boss: 'Der Eisenvogt', difficulty: 'Normal', terrain: 'Engpaesse, Signalhoehen, Frontdruck', style: 'Verteidigung', image: '../../assets/backgrounds/worlds/world-02-grenzlande.png' },
+    { id: 'wuestenreich', title: 'Wuestenreich', waves: '11-15', boss: 'Sultan der Sandkrone', difficulty: 'Hart', terrain: 'Maerkte, Steinbrueche, weite Wege', style: 'Wirtschaft', image: '../../assets/backgrounds/worlds/world-03-wuestenreich.png' },
+    { id: 'nachtfestung', title: 'Nachtfestung', waves: '16-20', boss: 'Nachtgraf Malrec', difficulty: 'Sehr hart', terrain: 'Waldsaum, Hinterhalte, Nachtwege', style: 'Taktik', image: '../../assets/backgrounds/worlds/world-04-nachtfestung.png' },
+    { id: 'endboss', title: 'Endboss-Zitadelle', waves: '21-25', boss: 'Kaiser Veyron', difficulty: 'Endboss', terrain: 'Zitadellen, Aschefelder, Bossfront', style: 'Belagerung', image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png' }
   ];
+  const SKIRMISH_SIZES = {
+    compact: { label: 'Kompakt', towers: '10 Orte', detail: 'schnelle Trainingsrunde mit kurzer Front' },
+    standard: { label: 'Standard', towers: '13 Orte', detail: 'klassische Karte mit klarer Mitte' },
+    large: { label: 'Gross', towers: '16 Orte', detail: 'mehr Burgen, laengere Versorgungslinien' },
+    war: { label: 'Kriegskarte', towers: '20 Orte', detail: 'volle Weltkarte mit mehreren Fronten' }
+  };
+  const SKIRMISH_DIFFICULTIES = {
+    easy: { label: 'Training', detail: 'ruhiger KI-Start zum Ueben' },
+    normal: { label: 'Normal', detail: 'ausgewogene Kriegsfuehrung' },
+    hard: { label: 'Hart', detail: 'starker Gegnerdruck' },
+    brutal: { label: 'Brutal', detail: 'kaum Schonzeit, harte Front' }
+  };
+  const SKIRMISH_PLANS = {
+    balanced: { label: 'Ausgewogen', detail: 'KI baut, sammelt und greift gemischt an.' },
+    raiders: { label: 'Pluenderer', detail: 'mehr Truppentuerme, schnellere Angriffe.' },
+    fortress: { label: 'Festungskrieg', detail: 'staerkere Burgen, mehr Belagerungsziele.' },
+    economy: { label: 'Handelskrieg', detail: 'mehr Maerkte, Gold und lange Wege.' }
+  };
   const DEFAULT_SKIRMISH = {
     mode: 'campaign',
     mapId: 'startgebiet',
     size: 'standard',
     difficulty: 'normal',
     opponents: 2,
+    plan: 'balanced',
     color: '#2f6fa5'
   };
 
@@ -201,6 +220,42 @@
     return 'Verschlossen';
   }
 
+  function getRegionById(id) {
+    return WORLD_REGIONS.find((region) => region.id === id) || WORLD_REGIONS[0];
+  }
+
+  function getSkirmishFieldValues() {
+    const saved = readSkirmishConfig();
+    return {
+      mapId: (byId('mastil-skirmish-map') && byId('mastil-skirmish-map').value) || saved.mapId,
+      size: (byId('mastil-skirmish-size') && byId('mastil-skirmish-size').value) || saved.size,
+      difficulty: (byId('mastil-skirmish-difficulty') && byId('mastil-skirmish-difficulty').value) || saved.difficulty,
+      opponents: Number((byId('mastil-skirmish-opponents') && byId('mastil-skirmish-opponents').value) || saved.opponents),
+      plan: (byId('mastil-skirmish-plan') && byId('mastil-skirmish-plan').value) || saved.plan,
+      color: (byId('mastil-skirmish-color') && byId('mastil-skirmish-color').value) || saved.color
+    };
+  }
+
+  function renderSkirmishBrief() {
+    const brief = byId('mastil-skirmish-brief');
+    const values = getSkirmishFieldValues();
+    const region = getRegionById(values.mapId);
+    const size = SKIRMISH_SIZES[values.size] || SKIRMISH_SIZES.standard;
+    const difficulty = SKIRMISH_DIFFICULTIES[values.difficulty] || SKIRMISH_DIFFICULTIES.normal;
+    const plan = SKIRMISH_PLANS[values.plan] || SKIRMISH_PLANS.balanced;
+    const opponentText = `${Math.max(1, Math.min(3, values.opponents || 1))} KI-Reich${Number(values.opponents) === 1 ? '' : 'e'}`;
+
+    document.querySelectorAll('.mastil-world-card[data-region-id]').forEach((card) => {
+      card.classList.toggle('selected', card.dataset.regionId === region.id);
+    });
+    if (!brief) return;
+    brief.innerHTML = `
+      <strong>${region.title}: ${region.style}</strong>
+      <span>${region.terrain}. ${size.towers}, ${size.detail}. ${opponentText}, ${difficulty.label.toLowerCase()}: ${difficulty.detail}. ${plan.label}: ${plan.detail}</span>
+      <em style="--chosen-color:${values.color || '#2f6fa5'}"><i></i> Eure Reichsfarbe wird auf alle eigenen Tuerme uebertragen.</em>
+    `;
+  }
+
   function createWorldMapModal() {
     if (byId('mastil-world-modal')) return;
     const modal = document.createElement('div');
@@ -212,7 +267,7 @@
         <div class="mastil-world-head">
           <span>Weltkarte</span>
           <h2 id="mastil-world-title">Die Reiche von MASTIL</h2>
-          <p>Waehle die Kampagne oder erstelle ein freies Gefecht gegen die KI.</p>
+          <p>Waehle Kampagne oder Gefecht. Im Gefechtsmodus bestimmst du Karte, Gegner, Groesse, Farbe und Kriegsart.</p>
         </div>
         <div class="mastil-world-grid" id="mastil-world-grid"></div>
         <div class="mastil-skirmish-panel">
@@ -236,8 +291,15 @@
               <option value="2">2 KI-Reiche</option>
               <option value="3">3 KI-Reiche</option>
             </select></label>
+            <label>KI-Plan<select id="mastil-skirmish-plan">
+              <option value="balanced">Ausgewogen</option>
+              <option value="raiders">Pluenderer</option>
+              <option value="fortress">Festungskrieg</option>
+              <option value="economy">Handelskrieg</option>
+            </select></label>
             <label>Farbe<input id="mastil-skirmish-color" type="color" value="#2f6fa5"></label>
           </div>
+          <div class="mastil-skirmish-brief" id="mastil-skirmish-brief"></div>
         </div>
         <div class="mastil-actions">
           <button class="mastil-action" id="mastil-start-campaign-btn" type="button">Kampagne starten</button>
@@ -257,6 +319,21 @@
     byId('mastil-world-x-btn').addEventListener('click', hideWorldMap);
     byId('mastil-start-campaign-btn').addEventListener('click', () => startConfiguredMatch('campaign'));
     byId('mastil-start-skirmish-btn').addEventListener('click', () => startConfiguredMatch('skirmish'));
+    byId('mastil-world-grid').addEventListener('click', (event) => {
+      const card = event.target && event.target.closest ? event.target.closest('[data-region-id]') : null;
+      if (!card) return;
+      const mapSelect = byId('mastil-skirmish-map');
+      if (mapSelect) mapSelect.value = card.dataset.regionId;
+      renderSkirmishBrief();
+    });
+    ['mastil-skirmish-map', 'mastil-skirmish-size', 'mastil-skirmish-difficulty', 'mastil-skirmish-opponents', 'mastil-skirmish-plan', 'mastil-skirmish-color']
+      .forEach((id) => {
+        const field = byId(id);
+        if (field) {
+          field.addEventListener('input', renderSkirmishBrief);
+          field.addEventListener('change', renderSkirmishBrief);
+        }
+      });
   }
 
   function renderWorldMap(mode = 'campaign') {
@@ -268,13 +345,14 @@
       grid.innerHTML = WORLD_REGIONS.map((region, index) => {
         const progress = getRegionProgress(region, bestWave);
         return `
-          <article class="mastil-world-card ${progress.toLowerCase()}" style="--world-image: url('${region.image}')">
+          <button class="mastil-world-card ${progress.toLowerCase()}" type="button" data-region-id="${region.id}" style="--world-image: url('${region.image}')">
             <span>Kapitel ${index + 1}</span>
             <strong>${region.title}</strong>
             <small>Wellen ${region.waves} | ${region.difficulty}</small>
+            <small>${region.terrain}</small>
             <em>Boss: ${region.boss}</em>
             <b>${progress}</b>
-          </article>
+          </button>
         `;
       }).join('');
     }
@@ -284,16 +362,19 @@
       size: byId('mastil-skirmish-size'),
       difficulty: byId('mastil-skirmish-difficulty'),
       opponents: byId('mastil-skirmish-opponents'),
+      plan: byId('mastil-skirmish-plan'),
       color: byId('mastil-skirmish-color')
     };
     if (fields.mapId) fields.mapId.value = config.mapId;
     if (fields.size) fields.size.value = config.size;
     if (fields.difficulty) fields.difficulty.value = config.difficulty;
     if (fields.opponents) fields.opponents.value = String(config.opponents);
+    if (fields.plan) fields.plan.value = config.plan || DEFAULT_SKIRMISH.plan;
     if (fields.color) fields.color.value = config.color;
 
     const campaign = byId('mastil-start-campaign-btn');
     if (campaign) campaign.style.display = mode === 'skirmish' ? 'none' : '';
+    renderSkirmishBrief();
   }
 
   function showWorldMap(mode = 'campaign') {
@@ -308,14 +389,17 @@
   }
 
   function readBattleOptions(mode) {
-    const saved = readSkirmishConfig();
-    const mapId = (byId('mastil-skirmish-map') && byId('mastil-skirmish-map').value) || saved.mapId;
-    const size = (byId('mastil-skirmish-size') && byId('mastil-skirmish-size').value) || saved.size;
-    const difficulty = (byId('mastil-skirmish-difficulty') && byId('mastil-skirmish-difficulty').value) || saved.difficulty;
-    const opponents = Number((byId('mastil-skirmish-opponents') && byId('mastil-skirmish-opponents').value) || saved.opponents);
-    const color = (byId('mastil-skirmish-color') && byId('mastil-skirmish-color').value) || saved.color;
-    if (mode === 'campaign') return { ...DEFAULT_SKIRMISH, mode: 'campaign', color };
-    return { mode: 'skirmish', mapId, size, difficulty, opponents: Math.max(1, Math.min(3, opponents)), color };
+    const values = getSkirmishFieldValues();
+    if (mode === 'campaign') return { ...DEFAULT_SKIRMISH, mode: 'campaign', color: values.color };
+    return {
+      mode: 'skirmish',
+      mapId: values.mapId,
+      size: values.size,
+      difficulty: values.difficulty,
+      opponents: Math.max(1, Math.min(3, values.opponents)),
+      plan: values.plan,
+      color: values.color
+    };
   }
 
   function startConfiguredMatch(mode) {
