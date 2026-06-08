@@ -55,6 +55,48 @@
     hard: { gold: 115, enemyUnits: 0.76, enemyLevel: 1, label: 'Hart' },
     brutal: { gold: 100, enemyUnits: 0.9, enemyLevel: 1, label: 'Brutal' }
   };
+  const FACTION_TRAITS = {
+    england: {
+      name: 'Ritter von Albion',
+      short: 'Albion',
+      passive: 'Stärkere Starttruppen und längere Befestigung.',
+      ability: 'Greifenbanner',
+      cooldown: 36000,
+      color: '#e8c65d'
+    },
+    spain: {
+      name: 'Solterraner',
+      short: 'Solterra',
+      passive: 'Märkte und Königswege bringen mehr Einkommen.',
+      ability: 'Sonnenkonvoi',
+      cooldown: 33000,
+      color: '#f0b45a'
+    },
+    maya: {
+      name: 'Sternenleser',
+      short: 'Yaxtun',
+      passive: 'Wachtürme und Waldstellungen sind stärker.',
+      ability: 'Sternenritual',
+      cooldown: 39000,
+      color: '#9e7bd8'
+    },
+    abbasid: {
+      name: 'Al-Kimiya',
+      short: 'Al-Kimiya',
+      passive: 'Spezialisierungen sind günstiger.',
+      ability: 'Alchemiefeuer',
+      cooldown: 34000,
+      color: '#63c7a2'
+    },
+    hre: {
+      name: 'Aethelgard',
+      short: 'Aethelgard',
+      passive: 'Ausbau und Burgen sind robuster.',
+      ability: 'Kaiserlicher Erlass',
+      cooldown: 41000,
+      color: '#d8c49a'
+    }
+  };
   worldImage.onload = () => {
     worldImageReady = true;
     worldBackgroundRevision += 1;
@@ -132,6 +174,14 @@
     terrainLord: {
       title: 'Landesherr',
       detail: 'Drei unterschiedliche Gelände gehalten.'
+    },
+    firstFactionPower: {
+      title: 'Wunder des Reiches',
+      detail: 'Erste Reichsfähigkeit eingesetzt.'
+    },
+    factionMaster: {
+      title: 'Herrscherkunst',
+      detail: 'Drei Reichsfähigkeiten in einer Partie genutzt.'
     }
   };
   const TOTAL_ACHIEVEMENTS = Object.keys(ACHIEVEMENTS).length;
@@ -202,7 +252,8 @@
     commands: 0,
     specialized: 0,
     assaults: 0,
-    rallies: 0
+    rallies: 0,
+    abilities: 0
   };
 
   function safe(fn, fallback) {
@@ -295,6 +346,45 @@
   function getPlayerName() {
     const name = String(window.PLAYER_NAME || '').trim();
     return name || 'Herrscher';
+  }
+
+  function getPlayerFactionId() {
+    return String(window.PLAYER_FACTION || window.selectedFaction || 'england');
+  }
+
+  function getFactionTrait() {
+    return FACTION_TRAITS[getPlayerFactionId()] || FACTION_TRAITS.england;
+  }
+
+  function getCommandCooldownMs(key) {
+    if (key === 'assault') return 14000;
+    if (key === 'rally') return 11000;
+    if (key === 'ability') return getFactionTrait().cooldown;
+    return 1;
+  }
+
+  function getSpecializationCost(tower) {
+    const base = 42 + (tower.level || 1) * 16 + matchStats.specialized * 6;
+    return getPlayerFactionId() === 'abbasid' ? Math.max(28, Math.floor(base * 0.82)) : base;
+  }
+
+  function getFortifyCost(tower) {
+    const base = 28 + ((tower.level || 1) * 7);
+    const terrainDiscount = tower.terrain === 'quarry' ? 0.82 : 1;
+    const factionDiscount = getPlayerFactionId() === 'england' || getPlayerFactionId() === 'hre' ? 0.9 : 1;
+    return Math.max(18, Math.floor(base * terrainDiscount * factionDiscount));
+  }
+
+  function enrichFactionSelection() {
+    document.querySelectorAll('.faction-button[data-faction]').forEach((button) => {
+      if (button.querySelector('.mastil-faction-perk')) return;
+      const trait = FACTION_TRAITS[button.dataset.faction] || FACTION_TRAITS.england;
+      const perk = document.createElement('small');
+      perk.className = 'mastil-faction-perk';
+      perk.textContent = trait.passive;
+      button.appendChild(perk);
+      button.title = `${trait.name}: ${trait.passive} Fähigkeit: ${trait.ability}`;
+    });
   }
 
   function getAchievementProgress() {
@@ -1502,6 +1592,7 @@
     matchStats.specialized = 0;
     matchStats.assaults = 0;
     matchStats.rallies = 0;
+    matchStats.abilities = 0;
     commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
@@ -1560,7 +1651,8 @@
     tower.mastilTerrainTimer = (tower.mastilTerrainTimer || 0) + deltaTime;
 
     if (tower.terrain === 'market') {
-      tower.mastilMarketTimer = (tower.mastilMarketTimer || 0) + deltaTime * (0.36 + tower.level * 0.05);
+      const solterra = getPlayerFactionId() === 'spain' ? 1.28 : 1;
+      tower.mastilMarketTimer = (tower.mastilMarketTimer || 0) + deltaTime * (0.36 + tower.level * 0.05) * solterra;
       if (tower.mastilMarketTimer >= 1) {
         const bonus = Math.floor(tower.mastilMarketTimer);
         safe(() => {
@@ -1571,7 +1663,8 @@
     }
 
     if (tower.terrain === 'barracks' && tower.mastilTerrainTimer >= 5.6 && tower.units < tower.maxUnits) {
-      tower.units = Math.min(tower.maxUnits, tower.units + 1);
+      const bonus = getPlayerFactionId() === 'england' ? 2 : 1;
+      tower.units = Math.min(tower.maxUnits, tower.units + bonus);
       tower.mastilTerrainTimer = 0;
     }
   }
@@ -1603,6 +1696,58 @@
     boss.units = Math.min(boss.maxUnits, Math.max(boss.units, Math.floor(boss.maxUnits * 0.88)));
     boss.fortifiedUntil = performance.now() + 18000;
     return boss;
+  }
+
+  function applyFactionStartBonus(options = {}) {
+    if (options.preserveHome) return;
+    const factionId = getPlayerFactionId();
+    const trait = getFactionTrait();
+    const own = getPlayerTowers();
+    if (!own.length) return;
+
+    if (factionId === 'england') {
+      own.forEach((tower) => {
+        tower.units = Math.min(tower.maxUnits, tower.units + 3);
+        tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + 9000);
+      });
+    }
+
+    if (factionId === 'spain') {
+      safe(() => {
+        gold += 24 + own.filter((tower) => tower.terrain === 'market' || tower.terrain === 'road').length * 8;
+      });
+    }
+
+    if (factionId === 'maya') {
+      own.forEach((tower) => {
+        if (tower.type === typeFromKey('watch') || tower.terrain === 'forest') {
+          tower.units = Math.min(tower.maxUnits, tower.units + 2);
+        }
+      });
+      window.mastilAiGraceUntil = Math.max(window.mastilAiGraceUntil || 0, performance.now() + 18000);
+    }
+
+    if (factionId === 'abbasid') {
+      safe(() => {
+        gold += 14;
+      });
+      const home = own[0];
+      if (home) home.type = typeFromKey('gold');
+    }
+
+    if (factionId === 'hre') {
+      const home = own[0];
+      if (home) {
+        home.level = Math.max(2, home.level || 1);
+        if (typeof getTowerMaxUnits === 'function') {
+          home.maxUnits = getTowerMaxUnits(home.faction, home.type, home.level);
+        }
+        home.units = Math.min(home.maxUnits, home.units + 4);
+        home.fortifiedUntil = Math.max(home.fortifiedUntil || 0, performance.now() + 12000);
+      }
+    }
+
+    pushEvent(`${trait.short}: ${trait.passive}`, 'edict');
   }
 
   function createEdictModal() {
@@ -1982,6 +2127,7 @@
     window.MASTIL_ACTIVE_BOSS_WAVE = bossWave;
     const graceByDifficulty = { easy: 22000, normal: 17000, hard: 12500, brutal: 9000 };
     window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 15000) : 12000);
+    applyFactionStartBonus(options);
     safe(() => saveGameState());
     pushEvent(config.mode === 'skirmish' ? `Gefecht: ${difficulty.label}` : 'Kampagne gestartet', 'wave');
   }
@@ -2161,6 +2307,98 @@
     playSound('select');
   }
 
+  function activateFactionAbility() {
+    const factionId = getPlayerFactionId();
+    const trait = getFactionTrait();
+    if (!isCommandReady('ability', trait.cooldown, trait.ability)) return;
+
+    const own = getPlayerTowers();
+    const enemies = getEnemyTowers();
+    const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
+    if (!own.length) {
+      commandCooldowns.delete('ability');
+      showEnhancementNotice('Keine eigenen Türme für die Reichsfähigkeit.');
+      playSound('error');
+      return;
+    }
+
+    if (factionId === 'england') {
+      const amount = 4 + Math.floor(safe(() => wave, 1) / 2);
+      own.forEach((tower) => {
+        tower.units = Math.min(tower.maxUnits, tower.units + amount);
+        tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + 17000);
+        spawnEffect(tower.x, tower.y, 'fortify', { color: trait.color, text: `+${amount}`, duration: 1000, size: 0.9 });
+      });
+    }
+
+    if (factionId === 'spain') {
+      const markets = own.filter((tower) => tower.terrain === 'market' || tower.terrain === 'road').length;
+      const bonus = 55 + safe(() => wave, 1) * 6 + markets * 14;
+      safe(() => {
+        gold += bonus;
+        updateUI();
+      });
+      own.forEach((tower) => spawnEffect(tower.x, tower.y, 'achievement', { color: trait.color, text: '+Gold', duration: 1000, size: 0.85 }));
+      showEnhancementNotice(`${trait.ability}: +${bonus} Gold.`);
+    }
+
+    if (factionId === 'maya') {
+      enemies.forEach((tower) => {
+        const loss = Math.max(2, Math.floor(tower.units * 0.18));
+        tower.units = Math.max(1, tower.units - loss);
+        spawnEffect(tower.x, tower.y, 'impact', { color: trait.color, text: `-${loss}`, duration: 1050, size: 0.85 });
+      });
+      if (!enemies.length) {
+        own.forEach((tower) => {
+          tower.units = Math.min(tower.maxUnits, tower.units + 2);
+          spawnEffect(tower.x, tower.y, 'achievement', { color: trait.color, text: '+2', duration: 900, size: 0.8 });
+        });
+      }
+    }
+
+    if (factionId === 'abbasid') {
+      const target = enemies
+        .map((tower) => ({ tower, score: tower.units + (tower.boss ? 30 : 0) + (tower.level || 1) * 7 }))
+        .sort((a, b) => b.score - a.score)[0]?.tower;
+      if (target) {
+        const damage = Math.max(5, Math.floor(target.units * 0.32));
+        target.units = Math.max(0, target.units - damage);
+        if (target.units <= 0) {
+          target.underAttack = true;
+          target.attackingFaction = safe(() => FACTIONS.PLAYER, 'player');
+        }
+        safe(() => {
+          gold += 18 + Math.floor(damage / 2);
+        });
+        spawnEffect(target.x, target.y, 'impact', { color: trait.color, text: `-${damage}`, duration: 1250, size: 1.15 });
+      } else {
+        own.forEach((tower) => {
+          tower.units = Math.min(tower.maxUnits, tower.units + 2);
+          spawnEffect(tower.x, tower.y, 'achievement', { color: trait.color, text: 'Alchemie', duration: 950, size: 0.8 });
+        });
+      }
+    }
+
+    if (factionId === 'hre') {
+      const target = selected || own.sort((a, b) => (b.level || 1) - (a.level || 1) || b.units - a.units)[0];
+      target.level = Math.min(8, (target.level || 1) + 1);
+      if (typeof getTowerMaxUnits === 'function') {
+        target.maxUnits = getTowerMaxUnits(target.faction, target.type, target.level);
+      }
+      target.units = Math.min(target.maxUnits, target.units + 8);
+      target.fortifiedUntil = Math.max(target.fortifiedUntil || 0, performance.now() + 26000);
+      selectedTower = target;
+      spawnEffect(target.x, target.y, 'upgrade', { color: trait.color, text: `L${target.level}`, duration: 1300, size: 1.1 });
+    }
+
+    matchStats.abilities += 1;
+    recordTacticalCommand(`${trait.ability} eingesetzt`, 'edict');
+    unlockAchievement('firstFactionPower');
+    if (matchStats.abilities >= 3) unlockAchievement('factionMaster');
+    if (factionId !== 'spain') showEnhancementNotice(`${trait.ability} wirkt.`);
+    playSound('achievement');
+  }
+
   function upgradeSelectedTower() {
     const selected = safe(() => selectedTower, null);
     if (!selected || selected.faction !== safe(() => FACTIONS.PLAYER, 'player')) {
@@ -2180,7 +2418,7 @@
     }
 
     const currentGold = safe(() => gold, 0);
-    const cost = 42 + selected.level * 16 + matchStats.specialized * 6;
+    const cost = getSpecializationCost(selected);
     if (currentGold < cost) {
       showEnhancementNotice(`Spezialisierung benötigt ${cost} Gold.`);
       playSound('error');
@@ -2218,7 +2456,7 @@
       return;
     }
 
-    const cost = 28 + (selected.level * 7);
+    const cost = getFortifyCost(selected);
     const currentGold = safe(() => gold, 0);
     if (currentGold < cost) {
       showEnhancementNotice(`Befestigen benötigt ${cost} Gold.`);
@@ -2311,7 +2549,12 @@
             keep: 0.06,
             quarry: 0.04
           }[targetTower.terrain] || 0;
-          if (terrainBlock > 0 && Math.random() < terrainBlock) {
+          const mayaBonus = targetTower.faction === safe(() => FACTIONS.PLAYER, 'player') &&
+            getPlayerFactionId() === 'maya' &&
+            (targetTower.terrain === 'forest' || targetTower.type === typeFromKey('watch'))
+            ? 0.07
+            : 0;
+          if ((terrainBlock + mayaBonus) > 0 && Math.random() < (terrainBlock + mayaBonus)) {
             spawnEffect(targetTower.x, targetTower.y, 'shield', {
               color: getTerrainInfo(targetTower.terrain).color,
               text: getTerrainInfo(targetTower.terrain).short,
@@ -2478,6 +2721,7 @@
       <button type="button" data-action="rally" data-cooldown-key="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span><small></small></button>
       <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span></button>
       <button type="button" data-action="specialize" title="Wechselt die Rolle des gewählten Turms"><span class="mastil-command-icon mastil-icon-specialize" aria-hidden="true"></span><span>Gilde</span></button>
+      <button type="button" data-action="ability" data-cooldown-key="ability" title="Aktiviert die besondere Fähigkeit Eures Reiches"><span class="mastil-command-icon mastil-icon-ability" aria-hidden="true"></span><span>Wunder</span><small></small></button>
       <button type="button" data-action="fortify" title="Befestigt den gewählten Turm kurzzeitig"><span class="mastil-command-icon mastil-icon-fortify" aria-hidden="true"></span><span>Schild</span></button>
       <button type="button" data-action="map" title="Mini-Karte ein- oder ausblenden"><span class="mastil-command-icon mastil-icon-map" aria-hidden="true"></span><span>Karte</span></button>
     `;
@@ -2492,6 +2736,7 @@
       if (action === 'rally') rallyToSelectedTower();
       if (action === 'upgrade') upgradeSelectedTower();
       if (action === 'specialize') specializeSelectedTower();
+      if (action === 'ability') activateFactionAbility();
       if (action === 'fortify') fortifySelectedTower();
       if (action === 'map') {
         minimapEnabled = !minimapEnabled;
@@ -2505,13 +2750,19 @@
     const controls = document.getElementById('mastil-game-controls');
     if (!controls) return;
     const now = performance.now();
+    const trait = getFactionTrait();
+    const abilityButton = controls.querySelector('button[data-action="ability"]');
+    if (abilityButton) {
+      abilityButton.title = `${trait.ability}: ${trait.passive}`;
+      abilityButton.style.setProperty('--faction-accent', trait.color);
+    }
     controls.querySelectorAll('button[data-cooldown-key]').forEach((button) => {
       const key = button.dataset.cooldownKey;
       const readyAt = commandCooldowns.get(key) || 0;
       const remaining = Math.max(0, readyAt - now);
       const small = button.querySelector('small');
       button.classList.toggle('cooling', remaining > 0);
-      button.style.setProperty('--cooldown-progress', remaining > 0 ? String(Math.min(1, remaining / (key === 'assault' ? 14000 : 11000))) : '0');
+      button.style.setProperty('--cooldown-progress', remaining > 0 ? String(Math.min(1, remaining / getCommandCooldownMs(key))) : '0');
       if (small) small.textContent = remaining > 0 ? `${Math.ceil(remaining / 1000)}s` : '';
     });
   }
@@ -2530,6 +2781,10 @@
       <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Front</span>
         <span id="mastil-strategy-front">-</span>
+      </div>
+      <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Wunder</span>
+        <span id="mastil-strategy-faction">-</span>
       </div>
       <div class="mastil-strategy-row mastil-strategy-selected">
         <span class="mastil-strategy-label">Turm</span>
@@ -2587,12 +2842,15 @@
 
     const domain = document.getElementById('mastil-strategy-domain');
     const front = document.getElementById('mastil-strategy-front');
+    const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !front || !selectedNode || !adviceNode) return;
+    if (!domain || !front || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
+    const trait = getFactionTrait();
+    factionNode.textContent = `${trait.short} | ${trait.ability}`;
     if (selected && selected.faction === playerFaction) {
       const fortified = selected.fortifiedUntil && selected.fortifiedUntil > now ? ' | befestigt' : '';
       const terrain = getTerrainInfo(selected.terrain);
@@ -2688,6 +2946,7 @@
     installRenderOverrides();
     installMapOverrides();
     installMechanicFeedback();
+    enrichFactionSelection();
     createGameControls();
     createStrategyPanel();
     createObjectivePanel();
@@ -2701,6 +2960,7 @@
     quickAttackWeakest,
     coordinatedAssault,
     rallyToSelectedTower,
+    activateFactionAbility,
     upgradeSelectedTower,
     specializeSelectedTower,
     fortifySelectedTower,

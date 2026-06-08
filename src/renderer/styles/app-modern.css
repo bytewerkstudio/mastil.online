@@ -1219,6 +1219,16 @@
   overflow-wrap: anywhere;
 }
 
+#playername-modal .mastil-faction-perk {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  color: rgba(38, 24, 14, 0.72);
+  font: 800 10px/1.15 "Segoe UI", sans-serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
 #playername-modal .faction-button:hover,
 #playername-modal .faction-button.nation-selected {
   background: linear-gradient(180deg, #fff1bd, #d7ad48) !important;
@@ -1233,9 +1243,9 @@
   transform: translateX(-50%);
   z-index: 1550;
   display: none;
-  grid-template-columns: repeat(8, minmax(72px, 1fr));
+  grid-template-columns: repeat(9, minmax(68px, 1fr));
   gap: 7px;
-  width: min(860px, calc(100vw - 28px));
+  width: min(940px, calc(100vw - 28px));
   padding: 8px;
   border: 1px solid rgba(226, 189, 90, 0.38);
   border-radius: 8px;
@@ -1694,6 +1704,13 @@ body:has(#game-container[style*="block"]) #info-panel {
   background: linear-gradient(180deg, rgba(114, 86, 38, 0.9), rgba(47, 32, 15, 0.92));
 }
 
+#mastil-game-controls button[data-action="ability"] {
+  border-color: color-mix(in srgb, var(--faction-accent, #e2bd5a) 68%, rgba(28, 16, 7, 0.7));
+  background:
+    radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--faction-accent, #e2bd5a) 36%, transparent), transparent 48%),
+    linear-gradient(180deg, #e8ca72, #8d5f1c);
+}
+
 #mastil-game-controls button.off {
   color: rgba(244, 230, 191, 0.82);
   background: rgba(255, 255, 255, 0.08);
@@ -1784,6 +1801,20 @@ body:has(#game-container[style*="block"]) #info-panel {
   width: 14px;
   height: 14px;
   clip-path: polygon(50% 0, 62% 34%, 98% 34%, 69% 55%, 80% 90%, 50% 68%, 20% 90%, 31% 55%, 2% 34%, 38% 34%);
+}
+
+.mastil-icon-ability::before {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid #1c1007;
+}
+
+.mastil-icon-ability::after {
+  width: 14px;
+  height: 14px;
+  clip-path: polygon(50% 0, 58% 36%, 94% 22%, 69% 50%, 94% 78%, 58% 64%, 50% 100%, 42% 64%, 6% 78%, 31% 50%, 6% 22%, 42% 36%);
 }
 
 .mastil-icon-fortify::before {
