@@ -1243,9 +1243,9 @@
   transform: translateX(-50%);
   z-index: 1550;
   display: none;
-  grid-template-columns: repeat(9, minmax(68px, 1fr));
+  grid-template-columns: repeat(10, minmax(64px, 1fr));
   gap: 7px;
-  width: min(940px, calc(100vw - 28px));
+  width: min(1040px, calc(100vw - 28px));
   padding: 8px;
   border: 1px solid rgba(226, 189, 90, 0.38);
   border-radius: 8px;
@@ -1476,6 +1476,10 @@
 
 .mastil-event-threat strong {
   color: #ffcf9c;
+}
+
+.mastil-event-siege strong {
+  color: #ffc66d;
 }
 
 .mastil-event-upgrade strong,
@@ -1871,6 +1875,21 @@ body:has(#game-container[style*="block"]) #info-panel {
   border: 2px solid #1c1007;
   border-radius: 50%;
   background: transparent;
+}
+
+.mastil-icon-siege::before {
+  width: 15px;
+  height: 5px;
+  border-radius: 4px;
+  transform: translate(-50%, 10%) rotate(-16deg);
+}
+
+.mastil-icon-siege::after {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translate(18%, -92%);
+  box-shadow: -8px 11px 0 -2px #1c1007, 7px 9px 0 -2px #1c1007;
 }
 
 .mastil-icon-upgrade::before {

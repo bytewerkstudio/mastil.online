@@ -199,6 +199,14 @@
       title: 'Großer Heerzug',
       detail: 'Ersten koordinierten Frontalangriff befohlen.'
     },
+    firstSiege: {
+      title: 'Belagerer',
+      detail: 'Erste feindliche Stellung mit Belagerungsgerät gebrochen.'
+    },
+    siegeMaster: {
+      title: 'Mauerbrecher',
+      detail: 'Drei Belagerungen in einer Partie geführt.'
+    },
     bossBreaker: {
       title: 'Bossbrecher',
       detail: 'Ersten Boss-Turm gebrochen.'
@@ -303,6 +311,7 @@
     rallies: 0,
     abilities: 0,
     spoils: 0,
+    sieges: 0,
     enemyOrders: 0
   };
   const enemyCommandState = {
@@ -435,6 +444,7 @@
   function getCommandCooldownMs(key) {
     if (key === 'assault') return 14000;
     if (key === 'rally') return 11000;
+    if (key === 'siege') return 22000;
     if (key === 'ability') return getFactionTrait().cooldown;
     return 1;
   }
@@ -449,6 +459,14 @@
     const terrainDiscount = tower.terrain === 'quarry' ? 0.82 : 1;
     const factionDiscount = getPlayerFactionId() === 'england' || getPlayerFactionId() === 'hre' ? 0.9 : 1;
     return Math.max(18, Math.floor(base * terrainDiscount * factionDiscount));
+  }
+
+  function getSiegeCost(tower) {
+    const currentWave = Math.max(1, safe(() => wave, 1));
+    const level = tower ? tower.level || 1 : 1;
+    const quarryDiscount = tower && tower.terrain === 'quarry' ? 0.86 : 1;
+    const abbasidDiscount = getPlayerFactionId() === 'abbasid' ? 0.9 : 1;
+    return Math.max(38, Math.floor((46 + level * 6 + currentWave * 3) * quarryDiscount * abbasidDiscount));
   }
 
   function enrichFactionSelection() {
@@ -539,7 +557,9 @@
       text: options.text || '',
       duration: options.duration || 900,
       createdAt: performance.now(),
-      size: options.size || 1
+      size: options.size || 1,
+      sourceX: options.sourceX,
+      sourceY: options.sourceY
     });
     if (visualEffects.length > 80) visualEffects.splice(0, visualEffects.length - 80);
   }
@@ -1115,6 +1135,20 @@
   function drawTowerRoleDetails(tower, width, height, base) {
     const type = tower.type || 'normal';
 
+    if (tower.siegedUntil && tower.siegedUntil > performance.now()) {
+      ctx.strokeStyle = 'rgba(255, 190, 103, 0.82)';
+      ctx.lineWidth = 3.2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.ellipse(0, height * 0.04, width * 1.08, height * 0.86, -0.08, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255, 190, 103, 0.16)';
+      ctx.beginPath();
+      ctx.arc(width * 0.3, -height * 0.22, 11, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     if (tower.fortifiedUntil && tower.fortifiedUntil > performance.now()) {
       ctx.strokeStyle = 'rgba(244, 230, 191, 0.76)';
       ctx.lineWidth = 3;
@@ -1457,6 +1491,34 @@
         }
       }
 
+      if (effect.type === 'siege') {
+        const sx = typeof effect.sourceX === 'number' ? effect.sourceX - effect.x : -48;
+        const sy = typeof effect.sourceY === 'number' ? effect.sourceY - effect.y : -34;
+        const arcY = Math.min(sy, -72) - 42 * effect.size;
+        ctx.strokeStyle = rgba(effect.color, 0.78);
+        ctx.lineWidth = 3.2;
+        ctx.setLineDash([9, 6]);
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.quadraticCurveTo(sx * 0.42, arcY, 0, 0);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = rgba(effect.color, 0.18);
+        ctx.beginPath();
+        ctx.arc(0, 0, 18 + ease * 28 * effect.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = rgba('#fff2bf', 0.8);
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i += 1) {
+          const angle = (Math.PI * 2 * i) / 8;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * 8, Math.sin(angle) * 8);
+          ctx.lineTo(Math.cos(angle) * (26 + ease * 28), Math.sin(angle) * (26 + ease * 28));
+          ctx.stroke();
+        }
+      }
+
       if (effect.type === 'shield') {
         ctx.strokeStyle = 'rgba(244, 230, 191, 0.92)';
         ctx.lineWidth = 3;
@@ -1613,6 +1675,7 @@
       matchStats.upgrades * 140 +
       matchStats.fortified * 95 +
       matchStats.spoils * 180 +
+      matchStats.sieges * 150 +
       matchAchievements.size * 420 +
       currentGold * 2 -
       matchStats.lost * 220;
@@ -1666,6 +1729,7 @@
         <span><strong>${matchStats.upgrades}</strong> ausgebaut</span>
         <span><strong>${matchStats.fortified}</strong> befestigt</span>
         <span><strong>${matchStats.spoils}</strong> Beute</span>
+        <span><strong>${matchStats.sieges}</strong> Belagerungen</span>
         <span><strong>${matchStats.edicts}</strong> Edikte</span>
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
@@ -1701,6 +1765,7 @@
     matchStats.rallies = 0;
     matchStats.abilities = 0;
     matchStats.spoils = 0;
+    matchStats.sieges = 0;
     matchStats.enemyOrders = 0;
     commandCooldowns.clear();
     edictState.pending = false;
@@ -2092,6 +2157,9 @@
 
     if (pressure >= 2 && !fortified && currentGold >= 28 + selected.level * 7) {
       return 'Frontdruck hoch: wichtigen Turm befestigen.';
+    }
+    if (enemy.length && currentGold >= getSiegeCost(selected) && selected.units >= Math.max(4, selected.maxUnits * 0.28)) {
+      return 'Belagerung bereit: starken Feindposten erst schwächen, dann stürmen.';
     }
     if (currentGold >= upgradeCost && selected.units >= Math.ceil(selected.maxUnits * 0.45)) {
       return 'Ausbau bereit: dieser Turm kann stärker werden.';
@@ -2638,6 +2706,27 @@
       .sort((a, b) => a.score - b.score)[0]?.tower || null;
   }
 
+  function getSiegeTargetFor(source) {
+    const enemies = getEnemyTowers();
+    const neutral = safe(() => towers.filter((tower) => tower.faction === FACTIONS.NEUTRAL), []);
+    const candidates = enemies.length ? enemies : neutral;
+    return candidates
+      .map((tower) => {
+        const distance = Math.hypot(tower.x - source.x, tower.y - source.y);
+        return {
+          tower,
+          score:
+            distance / 78 +
+            tower.units * 0.52 -
+            (tower.boss ? 36 : 0) -
+            (tower.commander ? 18 : 0) -
+            (tower.level || 1) * 3 -
+            (tower.terrain === 'keep' ? 10 : 0)
+        };
+      })
+      .sort((a, b) => a.score - b.score)[0]?.tower || null;
+  }
+
   function coordinatedAssault() {
     if (!isCommandReady('assault', 14000, 'Frontalangriff')) return;
 
@@ -2677,6 +2766,74 @@
     unlockAchievement('grandOffensive');
     showEnhancementNotice(`Frontalangriff: ${sentTotal} Einheiten marschieren.`);
     playSound('attack');
+  }
+
+  function launchSiegeStrike() {
+    if (!isCommandReady('siege', getCommandCooldownMs('siege'), 'Belagerung')) return;
+
+    const source = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null) || selectStrongestTower();
+    if (!source) {
+      commandCooldowns.delete('siege');
+      return;
+    }
+
+    const target = getSiegeTargetFor(source);
+    if (!target) {
+      commandCooldowns.delete('siege');
+      showEnhancementNotice('Kein Ziel für die Belagerung gefunden.');
+      playSound('error');
+      return;
+    }
+
+    const cost = getSiegeCost(source);
+    const currentGold = safe(() => gold, 0);
+    if (currentGold < cost) {
+      commandCooldowns.delete('siege');
+      showEnhancementNotice(`Belagerung benötigt ${cost} Gold.`);
+      playSound('error');
+      return;
+    }
+
+    const now = performance.now();
+    const bossPenalty = target.boss ? 0.74 : 1;
+    const terrainBonus = source.terrain === 'quarry' ? 1.18 : source.terrain === 'barracks' ? 1.08 : 1;
+    const typeBonus = source.type === typeFromKey('watch') ? 1.12 : source.type === typeFromKey('troop') ? 1.08 : 1;
+    const rawDamage = Math.floor((5 + (source.level || 1) * 2 + Math.max(0, safe(() => wave, 1) - 1) * 0.5) * bossPenalty * terrainBonus * typeBonus);
+    const damage = Math.min(Math.max(0, Math.floor(target.units - 1)), Math.max(1, rawDamage));
+    if (damage <= 0) {
+      commandCooldowns.delete('siege');
+      showEnhancementNotice('Das Ziel ist bereits gebrochen. Schickt Truppen zur Eroberung.');
+      playSound('error');
+      return;
+    }
+
+    safe(() => {
+      gold -= cost;
+      updateUI();
+      hideTowerMenu();
+    });
+    target.units = Math.max(1, target.units - damage);
+    if (target.fortifiedUntil && target.fortifiedUntil > now) {
+      target.fortifiedUntil = Math.min(target.fortifiedUntil, now + 2600);
+    }
+    target.siegedUntil = now + 14500;
+    target.siegeWeakness = Math.min(3, (target.siegeWeakness || 0) + 1);
+
+    matchStats.sieges += 1;
+    recordTacticalCommand(`Belagerung: ${getTowerTierName(target.level)} -${damage}`, 'siege');
+    unlockAchievement('firstSiege', { tower: target });
+    if (matchStats.sieges >= 3) unlockAchievement('siegeMaster', { tower: target });
+    spawnEffect(source.x, source.y, 'attack', { color: '#f1cf6b', text: 'Belag.', duration: 950, size: 0.92 });
+    spawnEffect(target.x, target.y, 'siege', {
+      color: '#ffbe67',
+      text: `-${damage}`,
+      duration: 1350,
+      size: target.boss ? 1.25 : 1.05,
+      sourceX: source.x,
+      sourceY: source.y
+    });
+    showEnhancementNotice(`Belagerung trifft ${getTowerTierName(target.level)}. -${damage} Truppen, -${cost} Gold.`);
+    playSound('impact');
   }
 
   function rallyToSelectedTower() {
@@ -2958,13 +3115,16 @@
         const beforeFaction = targetTower ? targetTower.faction : null;
         const wasFortified = targetTower && targetTower.fortifiedUntil && targetTower.fortifiedUntil > performance.now();
         if (unit && targetTower && unit.faction !== targetTower.faction) {
-          const terrainBlock = {
+          let terrainBlock = {
             hill: 0.13,
             ford: 0.11,
             forest: 0.08,
             keep: 0.06,
             quarry: 0.04
           }[targetTower.terrain] || 0;
+          if (targetTower.siegedUntil && targetTower.siegedUntil > performance.now()) {
+            terrainBlock = Math.max(0, terrainBlock - 0.08 - (targetTower.siegeWeakness || 0) * 0.025);
+          }
           const mayaBonus = targetTower.faction === safe(() => FACTIONS.PLAYER, 'player') &&
             getPlayerFactionId() === 'maya' &&
             (targetTower.terrain === 'forest' || targetTower.type === typeFromKey('watch'))
@@ -3142,6 +3302,7 @@
       <button type="button" data-action="attack" title="Sendet 50% zum schwächsten nahen Ziel"><span class="mastil-command-icon mastil-icon-attack" aria-hidden="true"></span><span>Schnell</span></button>
       <button type="button" data-action="assault" data-cooldown-key="assault" title="Mehrere eigene Türme greifen koordinierte Ziele an"><span class="mastil-command-icon mastil-icon-assault" aria-hidden="true"></span><span>Front</span><small></small></button>
       <button type="button" data-action="rally" data-cooldown-key="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span><small></small></button>
+      <button type="button" data-action="siege" data-cooldown-key="siege" title="Belagert einen starken nahen Feindposten und schwächt seine Verteidigung"><span class="mastil-command-icon mastil-icon-siege" aria-hidden="true"></span><span>Belagern</span><small></small></button>
       <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span></button>
       <button type="button" data-action="specialize" title="Wechselt die Rolle des gewählten Turms"><span class="mastil-command-icon mastil-icon-specialize" aria-hidden="true"></span><span>Gilde</span></button>
       <button type="button" data-action="ability" data-cooldown-key="ability" title="Aktiviert die besondere Fähigkeit Eures Reiches"><span class="mastil-command-icon mastil-icon-ability" aria-hidden="true"></span><span>Wunder</span><small></small></button>
@@ -3157,6 +3318,7 @@
       if (action === 'attack') quickAttackWeakest();
       if (action === 'assault') coordinatedAssault();
       if (action === 'rally') rallyToSelectedTower();
+      if (action === 'siege') launchSiegeStrike();
       if (action === 'upgrade') upgradeSelectedTower();
       if (action === 'specialize') specializeSelectedTower();
       if (action === 'ability') activateFactionAbility();
@@ -3178,6 +3340,12 @@
     if (abilityButton) {
       abilityButton.title = `${trait.ability}: ${trait.passive}`;
       abilityButton.style.setProperty('--faction-accent', trait.color);
+    }
+    const siegeButton = controls.querySelector('button[data-action="siege"]');
+    if (siegeButton) {
+      const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
+      const cost = getSiegeCost(selected || getPlayerTowers()[0]);
+      siegeButton.title = `Belagerung: schwächt einen starken Feindposten. Kosten: ${cost} Gold.`;
     }
     controls.querySelectorAll('button[data-cooldown-key]').forEach((button) => {
       const key = button.dataset.cooldownKey;
@@ -3256,6 +3424,7 @@
         <span id="mastil-stat-upgrades">0 Ausbau</span>
         <span id="mastil-stat-commands">0 Befehle</span>
         <span id="mastil-stat-spoils">0 Beute</span>
+        <span id="mastil-stat-sieges">0 Belag.</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
         <span id="mastil-stat-threat">0 Feindbef.</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
@@ -3332,10 +3501,11 @@
     const upgrades = document.getElementById('mastil-stat-upgrades');
     const commands = document.getElementById('mastil-stat-commands');
     const spoils = document.getElementById('mastil-stat-spoils');
+    const sieges = document.getElementById('mastil-stat-sieges');
     const edicts = document.getElementById('mastil-stat-edicts');
     const threatStat = document.getElementById('mastil-stat-threat');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !edicts || !threatStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !sieges || !edicts || !threatStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -3367,6 +3537,7 @@
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
     spoils.textContent = `${matchStats.spoils} Beute`;
+    sieges.textContent = `${matchStats.sieges} Belag.`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
     threatStat.textContent = `${matchStats.enemyOrders} Feindbef.`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
@@ -3428,6 +3599,7 @@
     selectStrongestTower,
     quickAttackWeakest,
     coordinatedAssault,
+    launchSiegeStrike,
     rallyToSelectedTower,
     activateFactionAbility,
     upgradeSelectedTower,
