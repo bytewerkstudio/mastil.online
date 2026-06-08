@@ -181,6 +181,11 @@
       bonus: 'Befestigungen werden günstiger.'
     }
   };
+  const VETERAN_RANKS = [
+    { threshold: 8, title: 'Bewährt', mark: 'I', color: '#d8e9ff' },
+    { threshold: 18, title: 'Veteran', mark: 'II', color: '#f4d77a' },
+    { threshold: 34, title: 'Legendär', mark: 'III', color: '#ffb17e' }
+  ];
   const SIZE_LIMITS = { compact: 10, standard: 13, large: 16, war: 20 };
   const DIFFICULTY = {
     easy: { gold: 155, enemyUnits: 0.48, enemyLevel: 0, label: 'Training' },
@@ -372,6 +377,14 @@
       title: 'Kartenherr',
       detail: 'Vier strategische Orte in einer Partie gehalten.'
     },
+    firstVeteran: {
+      title: 'Bewährter Turm',
+      detail: 'Ein Turm steigt durch Ruhm zum Veteranen auf.'
+    },
+    legendKeep: {
+      title: 'Legendenfeste',
+      detail: 'Ein Turm erreicht den höchsten Veteranenrang.'
+    },
     firstEnemyOrder: {
       title: 'Feindkontakt',
       detail: 'Ersten KI-Kommandantenbefehl überstanden.'
@@ -462,7 +475,8 @@
     abilities: 0,
     spoils: 0,
     sieges: 0,
-    enemyOrders: 0
+    enemyOrders: 0,
+    veterans: 0
   };
   const enemyCommandState = {
     readyAt: new Map(),
@@ -1693,6 +1707,20 @@
     ctx.fillStyle = '#f2cf69';
     ctx.fillText(levelText, 0, height * 0.58);
 
+    const veteran = getTowerVeteranInfo(tower);
+    if (veteran) {
+      const y = height * 0.58 + 18;
+      ctx.fillStyle = rgba(veteran.color, 0.94);
+      ctx.strokeStyle = 'rgba(18, 11, 7, 0.82)';
+      ctx.lineWidth = 1.4;
+      roundRect(ctx, -18, y - 8, 36, 16, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#171009';
+      ctx.font = '950 9px Segoe UI';
+      ctx.fillText(veteran.mark, 0, y);
+    }
+
     const roleLabels = {
       gold: 'G',
       troop: 'T',
@@ -2114,6 +2142,7 @@
         <span><strong>${matchStats.sieges}</strong> Belagerungen</span>
         <span><strong>${matchStats.edicts}</strong> Edikte</span>
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
+        <span><strong>${matchStats.veterans}</strong> Veteranenrang</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
         <span><strong>${unlockedAchievements.size}/${TOTAL_ACHIEVEMENTS}</strong> Auszeichnungen</span>
       </div>
@@ -2154,6 +2183,7 @@
     matchStats.spoils = 0;
     matchStats.sieges = 0;
     matchStats.enemyOrders = 0;
+    matchStats.veterans = 0;
     commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
@@ -2197,6 +2227,65 @@
     const order = [types.NORMAL, types.TROOP, types.GOLD, types.WATCH];
     const index = Math.max(0, order.indexOf(type));
     return order[(index + 1) % order.length];
+  }
+
+  function getTowerVeteranRank(tower) {
+    return Math.max(0, Math.min(VETERAN_RANKS.length, Number(tower && tower.mastilVeteranRank) || 0));
+  }
+
+  function getTowerVeteranInfo(tower) {
+    const rank = getTowerVeteranRank(tower);
+    return rank > 0 ? VETERAN_RANKS[rank - 1] : null;
+  }
+
+  function getTowerRenownNeeded(tower) {
+    const rank = getTowerVeteranRank(tower);
+    return rank >= VETERAN_RANKS.length ? null : VETERAN_RANKS[rank].threshold;
+  }
+
+  function applyTowerVeteranBonus(tower) {
+    if (!tower || tower.faction !== safe(() => FACTIONS.PLAYER, 'player')) return;
+    const targetBonus = getTowerVeteranRank(tower) * 2;
+    const applied = Number(tower.mastilVeteranCapacityApplied || 0);
+    const delta = targetBonus - applied;
+    if (!delta) return;
+    tower.maxUnits = Math.max(1, (tower.maxUnits || 1) + delta);
+    if (delta > 0) tower.units = Math.min(tower.maxUnits, (tower.units || 0) + delta);
+    tower.mastilVeteranCapacityApplied = targetBonus;
+  }
+
+  function addTowerRenown(tower, amount, reason = 'Ruhm') {
+    if (!tower || tower.faction !== safe(() => FACTIONS.PLAYER, 'player') || amount <= 0) return;
+    tower.mastilRenown = Math.max(0, Number(tower.mastilRenown || 0) + amount);
+    let rank = getTowerVeteranRank(tower);
+    let promoted = false;
+    while (rank < VETERAN_RANKS.length && tower.mastilRenown >= VETERAN_RANKS[rank].threshold) {
+      rank += 1;
+      tower.mastilVeteranRank = rank;
+      tower.mastilVeteranCapacityApplied = 0;
+      applyTowerVeteranBonus(tower);
+      const info = getTowerVeteranInfo(tower);
+      matchStats.veterans = Math.max(matchStats.veterans, rank);
+      pushEvent(`${info.title}: ${getTowerTierName(tower.level)}`, 'veteran');
+      spawnEffect(tower.x, tower.y, 'achievement', {
+        color: info.color,
+        text: info.title,
+        duration: 1300,
+        size: 1
+      });
+      unlockAchievement('firstVeteran', { tower });
+      if (rank >= VETERAN_RANKS.length) unlockAchievement('legendKeep', { tower });
+      promoted = true;
+    }
+
+    if (!promoted && amount >= 3) {
+      spawnEffect(tower.x, tower.y, 'achievement', {
+        color: '#d8e9ff',
+        text: `+${amount} Ruhm`,
+        duration: 850,
+        size: 0.74
+      });
+    }
   }
 
   function getTerrainInfo(terrain) {
@@ -2826,6 +2915,9 @@
     if (!selected.supplyLinked && own.length >= 3) {
       return 'Turm isoliert: benachbarte Wege sichern oder die Linie schließen.';
     }
+    if (getTowerVeteranRank(selected) >= 2 && selectedPressure >= 0.32) {
+      return `${getTowerVeteranInfo(selected).title} halten: Dieser Turm ist ein Schlüsselposten.`;
+    }
     if (pressure >= 2 && !fortified && currentGold >= 28 + selected.level * 7) {
       return 'Frontdruck hoch: wichtigen Turm befestigen.';
     }
@@ -3219,6 +3311,9 @@
     tower.boss = false;
     tower.bossName = '';
     tower.lootClaimed = false;
+    tower.mastilRenown = 0;
+    tower.mastilVeteranRank = 0;
+    tower.mastilVeteranCapacityApplied = 0;
     assignEnemyCommander(tower);
     return tower;
   }
@@ -3257,6 +3352,10 @@
         if (previousHome && options.preserveHome) {
           home.units = Math.min(home.maxUnits, Math.max(10, Math.floor(previousHome.units * 0.65)));
           home.type = previousHome.type || home.type;
+          home.mastilRenown = Number(previousHome.mastilRenown || 0);
+          home.mastilVeteranRank = getTowerVeteranRank(previousHome);
+          home.mastilVeteranCapacityApplied = 0;
+          applyTowerVeteranBonus(home);
         } else if (config.mode === 'skirmish' && node.role !== 'player') {
           home.units = Math.min(home.maxUnits, Math.max(home.units, Math.floor(home.maxUnits * 0.54)));
         }
@@ -3644,9 +3743,12 @@
       if (typeof getTowerMaxUnits === 'function') {
         target.maxUnits = getTowerMaxUnits(target.faction, target.type, target.level);
       }
+      target.mastilVeteranCapacityApplied = 0;
+      applyTowerVeteranBonus(target);
       target.units = Math.min(target.maxUnits, target.units + 8);
       target.fortifiedUntil = Math.max(target.fortifiedUntil || 0, performance.now() + 26000);
       selectedTower = target;
+      addTowerRenown(target, 3, trait.ability);
       spawnEffect(target.x, target.y, 'upgrade', { color: trait.color, text: `L${target.level}`, duration: 1300, size: 1.1 });
     }
 
@@ -3695,6 +3797,7 @@
       hideTowerMenu();
     });
     matchStats.specialized += 1;
+    addTowerRenown(selected, 2, 'Gilde');
     recordTacticalCommand(`Spezialisierung: ${getTowerRoleName(nextType)}`, 'upgrade');
     unlockAchievement('firstSpecialist', { tower: selected });
     spawnEffect(selected.x, selected.y, 'upgrade', {
@@ -3731,6 +3834,7 @@
     spawnEffect(selected.x, selected.y, 'fortify', { color: '#f4e6bf', text: 'Befestigt', duration: 1050, size: 1.08 });
     playSound('fortify');
     matchStats.fortified += 1;
+    addTowerRenown(selected, 1, 'Schild');
     pushEvent('Turm befestigt', 'defense');
     unlockAchievement('firstFortify', { tower: selected });
     showEnhancementNotice(`Turm befestigt. -${cost} Gold`);
@@ -3758,6 +3862,7 @@
           });
           if (sourceTower.faction === safe(() => FACTIONS.PLAYER, 'player')) {
             unlockAchievement('firstCommand', { tower: sourceTower });
+            addTowerRenown(sourceTower, sent >= 8 ? 2 : 1, 'Befehl');
           }
           playSound('attack');
         }
@@ -3774,13 +3879,16 @@
         const result = originalUpgrade.apply(this, arguments);
         if (tower && tower.level > beforeLevel) {
           matchStats.upgrades += 1;
+          tower.mastilVeteranCapacityApplied = 0;
+          applyTowerVeteranBonus(tower);
+          addTowerRenown(tower, 2, 'Ausbau');
           spawnEffect(tower.x, tower.y, 'upgrade', {
             color: '#e2bd5a',
-            text: `Level ${tower.level}`,
+            text: `L${tower.level}`,
             duration: 1150,
             size: 1.05
           });
-          pushEvent(`Turm auf Level ${tower.level}`, 'upgrade');
+          pushEvent(`${getTowerTierName(tower.level)} ausgebaut`, 'upgrade');
           playSound('upgrade');
           unlockAchievement('firstUpgrade', { tower });
           if (matchStats.upgrades >= 3) {
@@ -3834,6 +3942,7 @@
             impactThrottle.set(key, now);
             if (targetTower.units === beforeUnits && wasFortified) {
               spawnEffect(targetTower.x, targetTower.y, 'shield', { color: '#f4e6bf', duration: 620 });
+              addTowerRenown(targetTower, 1, 'Abwehr');
               playSound('blocked');
             } else {
               spawnEffect(targetTower.x, targetTower.y, 'impact', {
@@ -3871,6 +3980,7 @@
               pushEvent(`${getTowerRoleName(tower.type)} erobert`, 'capture');
               unlockAchievement('firstCapture', { tower });
               claimTerrainSpoils(tower);
+              addTowerRenown(tower, previous.boss ? 8 : previous.commander ? 6 : 4, 'Eroberung');
               if (previous.commander) {
                 pushEvent(`${previous.commander.name} zurückgedrängt`, 'threat');
                 unlockAchievement('breakCommander', { tower });
@@ -4146,6 +4256,7 @@
         <span id="mastil-stat-front">0% Druck</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
         <span id="mastil-stat-threat">0 Feindbef.</span>
+        <span id="mastil-stat-veterans">0 Vet.</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
       </div>
       <div class="mastil-event-list" id="mastil-event-list"></div>
@@ -4198,7 +4309,12 @@
     if (selected && selected.faction === playerFaction) {
       const fortified = selected.fortifiedUntil && selected.fortifiedUntil > now ? ' | befestigt' : '';
       const terrain = getTerrainInfo(selected.terrain);
-      selectedNode.textContent = `${getTowerTierName(selected.level)} | ${getTowerRoleName(selected.type)} | ${terrain.label} | ${Math.floor(selected.units)}/${selected.maxUnits}${fortified}`;
+      const veteran = getTowerVeteranInfo(selected);
+      const nextRenown = getTowerRenownNeeded(selected);
+      const renownText = veteran
+        ? ` | ${veteran.title}${nextRenown ? ` ${Math.floor(selected.mastilRenown || 0)}/${nextRenown}` : ''}`
+        : ` | Ruhm ${Math.floor(selected.mastilRenown || 0)}/${nextRenown || VETERAN_RANKS[0].threshold}`;
+      selectedNode.textContent = `${getTowerTierName(selected.level)} | ${getTowerRoleName(selected.type)} | ${terrain.label} | ${Math.floor(selected.units)}/${selected.maxUnits}${renownText}${fortified}`;
     } else {
       selectedNode.textContent = 'keiner gewählt';
     }
@@ -4246,8 +4362,9 @@
     const frontStat = document.getElementById('mastil-stat-front');
     const edicts = document.getElementById('mastil-stat-edicts');
     const threatStat = document.getElementById('mastil-stat-threat');
+    const veteranStat = document.getElementById('mastil-stat-veterans');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -4302,6 +4419,7 @@
     frontStat.textContent = `${Math.round(frontState.ratio * 100)}% Druck`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
     threatStat.textContent = `${matchStats.enemyOrders} Feindbef.`;
+    veteranStat.textContent = `${matchStats.veterans} Vet.`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
 
     if (supply.linked >= 4) {

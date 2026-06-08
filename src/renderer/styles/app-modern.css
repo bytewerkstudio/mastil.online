@@ -1565,6 +1565,10 @@
   color: #9ed6a2;
 }
 
+.mastil-event-veteran strong {
+  color: #d8e9ff;
+}
+
 .mastil-event-upgrade strong,
 .mastil-event-wave strong {
   color: #f4d77a;
