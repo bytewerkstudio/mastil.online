@@ -1326,6 +1326,43 @@
   background: rgba(143, 37, 36, 0.32);
 }
 
+.mastil-war-contract {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid rgba(142, 195, 240, 0.26);
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(47, 111, 165, 0.18), rgba(255, 255, 255, 0.045));
+}
+
+.mastil-war-contract strong {
+  color: #d8e9ff;
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-war-contract span {
+  font: 760 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-war-contract em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.mastil-war-contract i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8fc3f0, #f4d77a);
+  transition: width 220ms ease;
+}
+
 .mastil-objective-bar {
   height: 9px;
   margin: 10px 0 8px;
@@ -1402,7 +1439,8 @@
 }
 
 .mastil-event-achievement strong,
-.mastil-event-edict strong {
+.mastil-event-edict strong,
+.mastil-event-spoils strong {
   color: #ffe18a;
 }
 

@@ -182,6 +182,14 @@
     factionMaster: {
       title: 'Herrscherkunst',
       detail: 'Drei Reichsfähigkeiten in einer Partie genutzt.'
+    },
+    firstSpoils: {
+      title: 'Kriegsbeute',
+      detail: 'Erste Geländebeute gesichert.'
+    },
+    quartermaster: {
+      title: 'Quartiermeister',
+      detail: 'Drei Geländebeuten in einer Partie gesammelt.'
     }
   };
   const TOTAL_ACHIEVEMENTS = Object.keys(ACHIEVEMENTS).length;
@@ -253,7 +261,8 @@
     specialized: 0,
     assaults: 0,
     rallies: 0,
-    abilities: 0
+    abilities: 0,
+    spoils: 0
   };
 
   function safe(fn, fallback) {
@@ -1513,6 +1522,7 @@
       matchStats.captured * 260 +
       matchStats.upgrades * 140 +
       matchStats.fortified * 95 +
+      matchStats.spoils * 180 +
       matchAchievements.size * 420 +
       currentGold * 2 -
       matchStats.lost * 220;
@@ -1565,6 +1575,7 @@
         <span><strong>${matchStats.captured}</strong> erobert</span>
         <span><strong>${matchStats.upgrades}</strong> ausgebaut</span>
         <span><strong>${matchStats.fortified}</strong> befestigt</span>
+        <span><strong>${matchStats.spoils}</strong> Beute</span>
         <span><strong>${matchStats.edicts}</strong> Edikte</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
         <span><strong>${unlockedAchievements.size}/${TOTAL_ACHIEVEMENTS}</strong> Auszeichnungen</span>
@@ -1593,6 +1604,7 @@
     matchStats.assaults = 0;
     matchStats.rallies = 0;
     matchStats.abilities = 0;
+    matchStats.spoils = 0;
     commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
@@ -1748,6 +1760,74 @@
     }
 
     pushEvent(`${trait.short}: ${trait.passive}`, 'edict');
+  }
+
+  function reduceCommandCooldowns(ms) {
+    const now = performance.now();
+    commandCooldowns.forEach((readyAt, key) => {
+      if (readyAt > now) {
+        commandCooldowns.set(key, Math.max(now + 900, readyAt - ms));
+      }
+    });
+  }
+
+  function claimTerrainSpoils(tower) {
+    if (!tower || tower.lootClaimed || tower.faction !== safe(() => FACTIONS.PLAYER, 'player')) return;
+    tower.lootClaimed = true;
+    const terrain = getTerrainInfo(tower.terrain);
+    const currentWave = safe(() => wave, 1);
+    let message = '';
+
+    if (tower.terrain === 'market') {
+      const bonus = 48 + currentWave * 4 + (getPlayerFactionId() === 'spain' ? 18 : 0);
+      safe(() => {
+        gold += bonus;
+        updateUI();
+      });
+      message = `Marktbeute: +${bonus} Gold`;
+    } else if (tower.terrain === 'barracks') {
+      const amount = getPlayerFactionId() === 'england' ? 4 : 3;
+      getPlayerTowers().forEach((own) => {
+        own.units = Math.min(own.maxUnits, own.units + amount);
+        spawnEffect(own.x, own.y, 'achievement', { color: '#8fc3f0', text: `+${amount}`, duration: 900, size: 0.72 });
+      });
+      message = `Kasernenbeute: +${amount} Truppen je Turm`;
+    } else if (tower.terrain === 'hill' || tower.terrain === 'ford' || tower.terrain === 'forest') {
+      const duration = tower.terrain === 'hill' ? 24000 : 19000;
+      tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + duration);
+      tower.units = Math.min(tower.maxUnits, tower.units + 4);
+      message = `${terrain.label}: Verteidigung gesichert`;
+    } else if (tower.terrain === 'quarry') {
+      const bonus = 34 + currentWave * 3;
+      safe(() => {
+        gold += bonus;
+        updateUI();
+      });
+      tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + 22000);
+      message = `Steinbruch: +${bonus} Gold und Schutz`;
+    } else if (tower.terrain === 'keep') {
+      tower.level = Math.min(8, (tower.level || 1) + 1);
+      if (typeof getTowerMaxUnits === 'function') {
+        tower.maxUnits = getTowerMaxUnits(tower.faction, tower.type, tower.level);
+      }
+      tower.units = Math.min(tower.maxUnits, tower.units + 8);
+      message = `Burggrund: ${getTowerTierName(tower.level)} gesichert`;
+    } else {
+      reduceCommandCooldowns(5200);
+      message = 'Königsweg: Befehle schneller bereit';
+    }
+
+    matchStats.spoils += 1;
+    pushEvent(message, 'spoils');
+    spawnEffect(tower.x, tower.y, 'achievement', {
+      color: terrain.color,
+      text: 'Beute',
+      duration: 1350,
+      size: 1.05
+    });
+    unlockAchievement('firstSpoils', { tower });
+    if (matchStats.spoils >= 3) unlockAchievement('quartermaster', { tower });
+    showEnhancementNotice(message);
   }
 
   function createEdictModal() {
@@ -1998,6 +2078,51 @@
     };
   }
 
+  function getWarContractState(own, enemy, neutral) {
+    const currentTowers = safe(() => towers, []);
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const hasMarket = own.some((tower) => tower.terrain === 'market');
+    const capturableMarket = currentTowers.some((tower) => tower.terrain === 'market' && tower.faction !== playerFaction);
+    if (!hasMarket && capturableMarket) {
+      return {
+        title: 'Kriegsauftrag: Markt sichern',
+        detail: 'Erobere einen Markt für Kriegsbeute und Einkommen.',
+        progress: 0
+      };
+    }
+
+    const terrainCount = getHeldTerrainTypes(own).size;
+    if (terrainCount < 3) {
+      return {
+        title: 'Kriegsauftrag: Land beherrschen',
+        detail: `${terrainCount}/3 Geländearten gehalten.`,
+        progress: terrainCount / 3
+      };
+    }
+
+    if (matchStats.spoils < 3 && neutral.length + enemy.length > 0) {
+      return {
+        title: 'Kriegsauftrag: Beutezug',
+        detail: `${matchStats.spoils}/3 Geländebeuten gesichert.`,
+        progress: Math.min(1, matchStats.spoils / 3)
+      };
+    }
+
+    if (enemy.length > 0) {
+      return {
+        title: 'Kriegsauftrag: Front brechen',
+        detail: `${enemy.length} feindliche Posten verbleiben.`,
+        progress: own.length / Math.max(1, own.length + enemy.length)
+      };
+    }
+
+    return {
+      title: 'Kriegsauftrag: Welle vorbereiten',
+      detail: 'Ausbauen, sammeln und Edikt wählen.',
+      progress: 1
+    };
+  }
+
   function applyBossWavePressure(waveNumber) {
     if (!isBossWave(waveNumber)) return;
     const region = getRegionForWave(waveNumber);
@@ -2057,6 +2182,7 @@
     tower.terrain = node.terrain || 'road';
     tower.boss = false;
     tower.bossName = '';
+    tower.lootClaimed = false;
     return tower;
   }
 
@@ -2605,6 +2731,7 @@
               matchStats.captured += 1;
               pushEvent(`${getTowerRoleName(tower.type)} erobert`, 'capture');
               unlockAchievement('firstCapture', { tower });
+              claimTerrainSpoils(tower);
               if (previous.boss) {
                 tower.boss = false;
                 tower.bossName = '';
@@ -2811,6 +2938,11 @@
       </div>
       <div class="mastil-objective-detail" id="mastil-objective-detail">Erobere neutrale Türme.</div>
       <div class="mastil-boss-status" id="mastil-boss-status">Keine Bosswelle</div>
+      <div class="mastil-war-contract" id="mastil-war-contract">
+        <strong>Kriegsauftrag</strong>
+        <span id="mastil-contract-detail">Sichere wichtige Orte.</span>
+        <em><i id="mastil-contract-progress"></i></em>
+      </div>
       <div class="mastil-objective-bar" aria-hidden="true">
         <span id="mastil-objective-progress"></span>
       </div>
@@ -2818,6 +2950,7 @@
         <span id="mastil-stat-captured">0 erobert</span>
         <span id="mastil-stat-upgrades">0 Ausbau</span>
         <span id="mastil-stat-commands">0 Befehle</span>
+        <span id="mastil-stat-spoils">0 Beute</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
       </div>
@@ -2873,17 +3006,22 @@
     const enemy = currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction);
     const neutral = currentTowers.filter((tower) => tower.faction === neutralFaction);
     const objective = getObjectiveState(own, enemy, neutral);
+    const contract = getWarContractState(own, enemy, neutral);
 
     const title = document.getElementById('mastil-objective-title');
     const detail = document.getElementById('mastil-objective-detail');
     const bossStatus = document.getElementById('mastil-boss-status');
+    const contractBox = document.getElementById('mastil-war-contract');
+    const contractDetail = document.getElementById('mastil-contract-detail');
+    const contractProgress = document.getElementById('mastil-contract-progress');
     const progress = document.getElementById('mastil-objective-progress');
     const captured = document.getElementById('mastil-stat-captured');
     const upgrades = document.getElementById('mastil-stat-upgrades');
     const commands = document.getElementById('mastil-stat-commands');
+    const spoils = document.getElementById('mastil-stat-spoils');
     const edicts = document.getElementById('mastil-stat-edicts');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !edicts || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !edicts || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -2895,10 +3033,17 @@
         : `Naechster Boss: ${region.boss} in Welle ${region.waves[1]}`;
       bossStatus.classList.toggle('active', isBossWave(currentWave));
     }
+    if (contractBox && contractDetail && contractProgress) {
+      const label = contractBox.querySelector('strong');
+      if (label) label.textContent = contract.title;
+      contractDetail.textContent = contract.detail;
+      contractProgress.style.width = `${Math.round(contract.progress * 100)}%`;
+    }
     progress.style.width = `${Math.round(objective.progress * 100)}%`;
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
+    spoils.textContent = `${matchStats.spoils} Beute`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
 
