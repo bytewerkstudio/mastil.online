@@ -358,6 +358,7 @@
   let lastObjectiveUpdate = 0;
   let lastLowUnitWarningAt = 0;
   let lastSupplyWarningAt = 0;
+  let lastFrontWarningAt = 0;
   let battlefieldParticleKey = '';
   let battlefieldParticles = [];
   const visualEffects = [];
@@ -991,7 +992,11 @@
     if (!currentTowers || currentTowers.length < 2) return;
 
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
-    computeSupplyState(currentTowers.filter((tower) => tower.faction === playerFaction));
+    const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
+    const ownTowers = currentTowers.filter((tower) => tower.faction === playerFaction);
+    const enemyTowers = currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction);
+    computeSupplyState(ownTowers);
+    computeFrontPressure(ownTowers, enemyTowers);
     const threshold = getConnectionThreshold();
     let drawn = 0;
     const limit = safe(() => getQualitySetting('connectionLimit'), 240) || 240;
@@ -1006,11 +1011,23 @@
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const distance = Math.hypot(dx, dy);
-        if (distance > threshold) continue;
+        const aPlayer = a.faction === playerFaction;
+        const bPlayer = b.faction === playerFaction;
+        const aEnemy = isEnemyFaction(a.faction);
+        const bEnemy = isEnemyFaction(b.faction);
+        const pressureTower = (aPlayer && bEnemy) ? a : (bPlayer && aEnemy) ? b : null;
+        const enemyTower = pressureTower === a ? b : pressureTower === b ? a : null;
+        const pressureValue = pressureTower ? pressureTower.frontPressure || 0 : 0;
+        const pressurePath = Boolean(pressureTower && enemyTower && pressureValue >= 0.34 && distance <= threshold * 1.15);
+        if (distance > threshold && !pressurePath) continue;
 
         drawn += 1;
+        const mx = (a.x + b.x) / 2 + Math.sin((a.x + b.y) * 0.01) * 12;
+        const my = (a.y + b.y) / 2 + Math.cos((a.y + b.x) * 0.01) * 9;
+
+        if (distance <= threshold) {
         const sameFaction = a.faction === b.faction;
-        const activePath = sameFaction && a.faction !== safe(() => FACTIONS.NEUTRAL, 'neutral');
+        const activePath = sameFaction && a.faction !== neutralFaction;
         const supplyPath = sameFaction && a.faction === playerFaction && a.supplyLinked && b.supplyLinked && distance <= getSupplyReach(a, b);
         const color = activePath ? colorForFaction(a.faction) : '#8b7355';
 
@@ -1019,8 +1036,6 @@
         ctx.lineWidth = supplyPath ? 6 : activePath ? 5 : 2;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
-        const mx = (a.x + b.x) / 2 + Math.sin((a.x + b.y) * 0.01) * 12;
-        const my = (a.y + b.y) / 2 + Math.cos((a.y + b.x) * 0.01) * 9;
         ctx.quadraticCurveTo(mx, my, b.x, b.y);
         ctx.stroke();
 
@@ -1031,6 +1046,28 @@
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.quadraticCurveTo(mx, my, b.x, b.y);
+          ctx.stroke();
+        }
+        }
+
+        if (pressurePath) {
+          const intensity = Math.min(1, 0.35 + pressureValue * 0.42);
+          ctx.globalAlpha = intensity;
+          ctx.strokeStyle = pressureValue >= 0.76 ? 'rgba(255, 91, 91, 0.82)' : 'rgba(255, 177, 126, 0.62)';
+          ctx.lineWidth = pressureValue >= 0.76 ? 4.4 : 2.8;
+          ctx.setLineDash(pressureValue >= 0.76 ? [10, 6] : [6, 7]);
+          ctx.beginPath();
+          ctx.moveTo(pressureTower.x, pressureTower.y);
+          ctx.quadraticCurveTo(mx, my, enemyTower.x, enemyTower.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.globalAlpha = Math.min(0.72, intensity * 0.75);
+          ctx.strokeStyle = 'rgba(255, 238, 199, 0.46)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(pressureTower.x, pressureTower.y);
+          ctx.quadraticCurveTo(mx, my, enemyTower.x, enemyTower.y);
           ctx.stroke();
         }
       }
@@ -1328,6 +1365,40 @@
 
   function drawTowerRoleDetails(tower, width, height, base) {
     const type = tower.type || 'normal';
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+
+    if (tower.faction === playerFaction && tower.frontPressure > 0.24) {
+      const pressure = Math.min(1, tower.frontPressure / 1.3);
+      const dangerColor = pressure >= 0.74 ? '#ff5b5b' : '#ffb17e';
+      const pulse = 0.72 + Math.sin(performance.now() * 0.006) * 0.12;
+      const ringW = width * (1.02 + pressure * 0.24);
+      const ringH = height * (0.7 + pressure * 0.18);
+
+      ctx.save();
+      ctx.globalAlpha = 0.12 + pressure * 0.2;
+      ctx.fillStyle = rgba(dangerColor, 0.82);
+      ctx.beginPath();
+      ctx.ellipse(0, height * 0.16, ringW, ringH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = Math.min(0.84, pulse * (0.46 + pressure * 0.38));
+      ctx.strokeStyle = rgba(dangerColor, 0.92);
+      ctx.lineWidth = pressure >= 0.74 ? 3.4 : 2.2;
+      ctx.setLineDash(pressure >= 0.74 ? [7, 5] : [4, 6]);
+      ctx.beginPath();
+      ctx.ellipse(0, height * 0.16, ringW, ringH, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.72;
+      ctx.fillStyle = 'rgba(23, 16, 9, 0.78)';
+      roundRect(ctx, -width * 0.38, height * 0.46, width * 0.76, 13, 5);
+      ctx.fill();
+      ctx.fillStyle = rgba(dangerColor, 0.96);
+      ctx.font = '800 9px "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pressure >= 0.74 ? 'HEISS' : 'FRONT', 0, height * 0.46 + 6.5);
+      ctx.restore();
+    }
 
     if (tower.siegedUntil && tower.siegedUntil > performance.now()) {
       ctx.strokeStyle = 'rgba(255, 190, 103, 0.82)';
@@ -1969,6 +2040,7 @@
     matchSummarySaved = false;
     lastLowUnitWarningAt = 0;
     lastSupplyWarningAt = 0;
+    lastFrontWarningAt = 0;
     matchStats.captured = 0;
     matchStats.lost = 0;
     matchStats.upgrades = 0;
@@ -2104,6 +2176,75 @@
       detail: isolatedTowers.length
         ? `${linked}/${playerTowers.length} versorgt, ${isolatedTowers.length} isoliert.`
         : `${linked}/${playerTowers.length} Türme versorgt.`
+    };
+  }
+
+  function computeFrontPressure(own = getPlayerTowers(), enemy = getEnemyTowers()) {
+    const playerTowers = own.filter((tower) => tower && tower.faction === safe(() => FACTIONS.PLAYER, 'player'));
+    const enemyTowers = enemy.filter(Boolean);
+    playerTowers.forEach((tower) => {
+      tower.frontPressure = 0;
+      tower.frontThreatCount = 0;
+      tower.frontNearest = null;
+    });
+
+    if (!playerTowers.length || !enemyTowers.length) {
+      return {
+        level: 'ruhig',
+        ratio: 0,
+        hotspots: 0,
+        max: 0,
+        detail: 'Keine aktive Feindfront.',
+        hottest: null
+      };
+    }
+
+    const reach = getConnectionThreshold() * 1.18;
+    let hottest = null;
+    let max = 0;
+    let hotspots = 0;
+
+    playerTowers.forEach((ownTower) => {
+      let score = 0;
+      let nearest = null;
+      let nearestDistance = Infinity;
+      enemyTowers.forEach((enemyTower) => {
+        const distance = Math.hypot(enemyTower.x - ownTower.x, enemyTower.y - ownTower.y);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = enemyTower;
+        }
+        if (distance > reach) return;
+        const proximity = 1 - (distance / reach);
+        const enemyWeight = (enemyTower.units || 0) / Math.max(8, ownTower.maxUnits || 12);
+        const bossWeight = enemyTower.boss ? 0.55 : 0;
+        const commanderWeight = enemyTower.commander ? 0.22 : 0;
+        score += Math.max(0, proximity) * (enemyWeight + bossWeight + commanderWeight + 0.28);
+      });
+
+      const supplyPenalty = ownTower.supplyLinked ? 0 : 0.22;
+      const fortifyRelief = ownTower.fortifiedUntil && ownTower.fortifiedUntil > performance.now() ? 0.18 : 0;
+      ownTower.frontPressure = Math.max(0, Math.min(1.8, score + supplyPenalty - fortifyRelief));
+      ownTower.frontThreatCount = enemyTowers.filter((enemyTower) => Math.hypot(enemyTower.x - ownTower.x, enemyTower.y - ownTower.y) <= reach).length;
+      ownTower.frontNearest = nearest;
+      if (ownTower.frontPressure >= 0.72) hotspots += 1;
+      if (ownTower.frontPressure > max) {
+        max = ownTower.frontPressure;
+        hottest = ownTower;
+      }
+    });
+
+    const ratio = Math.min(1, max / 1.3);
+    const level = ratio >= 0.76 ? 'kritisch' : ratio >= 0.48 ? 'angespannt' : ratio >= 0.24 ? 'wachsam' : 'ruhig';
+    return {
+      level,
+      ratio,
+      hotspots,
+      max,
+      detail: hottest
+        ? `${level}: ${hotspots} Brennpunkt${hotspots === 1 ? '' : 'e'}, stärkster Druck bei ${getTowerTierName(hottest.level)}.`
+        : 'Keine aktive Feindfront.',
+      hottest
     };
   }
 
@@ -2453,7 +2594,20 @@
     const upgradeCost = typeof getUpgradeCost === 'function' ? getUpgradeCost(selected) : 65;
     const pressure = enemy.length - own.length;
     const fortified = selected.fortifiedUntil && selected.fortifiedUntil > performance.now();
+    const selectedPressure = selected.frontPressure || 0;
 
+    if (selectedPressure >= 0.78 && !fortified && currentGold >= getFortifyCost(selected)) {
+      return 'Front heiß: diesen Turm befestigen und Reserven heranziehen.';
+    }
+    if (selectedPressure >= 0.58 && enemy.length && currentGold >= getSiegeCost(selected)) {
+      return 'Feinddruck sichtbar: Belagerung schwächt den nächsten Gegner.';
+    }
+    if (selectedPressure >= 0.44 && selected.units < selected.maxUnits * 0.42) {
+      return 'Frontposten dünn besetzt: erst Sammeln, dann angreifen.';
+    }
+    if (!selected.supplyLinked && own.length >= 3) {
+      return 'Turm isoliert: benachbarte Wege sichern oder die Linie schließen.';
+    }
     if (pressure >= 2 && !fortified && currentGold >= 28 + selected.level * 7) {
       return 'Frontdruck hoch: wichtigen Turm befestigen.';
     }
@@ -3680,6 +3834,10 @@
         <span id="mastil-strategy-front">-</span>
       </div>
       <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Druck</span>
+        <span id="mastil-strategy-pressure">-</span>
+      </div>
+      <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Feind</span>
         <span id="mastil-strategy-threat">-</span>
       </div>
@@ -3744,6 +3902,7 @@
         <span id="mastil-stat-spoils">0 Beute</span>
         <span id="mastil-stat-sieges">0 Belag.</span>
         <span id="mastil-stat-supply">0% Vers.</span>
+        <span id="mastil-stat-front">0% Druck</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
         <span id="mastil-stat-threat">0 Feindbef.</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
@@ -3769,13 +3928,14 @@
 
     const domain = document.getElementById('mastil-strategy-domain');
     const front = document.getElementById('mastil-strategy-front');
+    const pressureNode = document.getElementById('mastil-strategy-pressure');
     const threatNode = document.getElementById('mastil-strategy-threat');
     const conditionNode = document.getElementById('mastil-strategy-condition');
     const supplyNode = document.getElementById('mastil-strategy-supply');
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !front || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !front || !pressureNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
@@ -3784,7 +3944,9 @@
     const condition = getBattlefieldCondition();
     conditionNode.textContent = `${condition.title} | ${condition.short}`;
     const supply = computeSupplyState(own);
+    const frontState = computeFrontPressure(own, enemy);
     supplyNode.textContent = supply.detail;
+    pressureNode.textContent = frontState.detail;
     const trait = getFactionTrait();
     factionNode.textContent = `${trait.short} | ${trait.ability}`;
     if (selected && selected.faction === playerFaction) {
@@ -3831,10 +3993,11 @@
     const spoils = document.getElementById('mastil-stat-spoils');
     const sieges = document.getElementById('mastil-stat-sieges');
     const supplyStat = document.getElementById('mastil-stat-supply');
+    const frontStat = document.getElementById('mastil-stat-front');
     const edicts = document.getElementById('mastil-stat-edicts');
     const threatStat = document.getElementById('mastil-stat-threat');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !sieges || !supplyStat || !edicts || !threatStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -3869,12 +4032,14 @@
     }
     progress.style.width = `${Math.round(objective.progress * 100)}%`;
     const supply = computeSupplyState(own);
+    const frontState = computeFrontPressure(own, enemy);
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
     spoils.textContent = `${matchStats.spoils} Beute`;
     sieges.textContent = `${matchStats.sieges} Belag.`;
     supplyStat.textContent = `${Math.round(supply.ratio * 100)}% Vers.`;
+    frontStat.textContent = `${Math.round(frontState.ratio * 100)}% Druck`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
     threatStat.textContent = `${matchStats.enemyOrders} Feindbef.`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
@@ -3896,6 +4061,17 @@
       if (supply.weakest) {
         spawnEffect(supply.weakest.x, supply.weakest.y, 'shield', { color: '#ff8a6d', text: 'isoliert', duration: 1050, size: 0.86 });
       }
+      playSound('blocked');
+    }
+    if (frontState.ratio >= 0.78 && frontState.hottest && now - lastFrontWarningAt > 16000) {
+      lastFrontWarningAt = now;
+      pushEvent('Frontdruck kritisch', 'front');
+      spawnEffect(frontState.hottest.x, frontState.hottest.y, 'impact', {
+        color: '#ff8a6d',
+        text: 'Front',
+        duration: 1150,
+        size: 1
+      });
       playSound('blocked');
     }
   }

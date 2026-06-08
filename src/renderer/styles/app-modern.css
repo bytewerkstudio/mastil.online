@@ -1513,6 +1513,10 @@
   color: #8fc3f0;
 }
 
+.mastil-event-front strong {
+  color: #ffb17e;
+}
+
 .mastil-event-upgrade strong,
 .mastil-event-wave strong {
   color: #f4d77a;
