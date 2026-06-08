@@ -16,6 +16,73 @@
     { id: 'nachtfestung', title: 'Nachtfestung', waves: [16, 20], boss: 'Nachtgraf Malrec', image: '../../assets/backgrounds/worlds/world-04-nachtfestung.png' },
     { id: 'endboss', title: 'Endboss-Zitadelle', waves: [21, 25], boss: 'Kaiser Veyron', image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png' }
   ];
+  const BATTLEFIELD_CONDITIONS = {
+    startgebiet: {
+      id: 'morning-mist',
+      title: 'Morgennebel',
+      short: 'Nebel',
+      detail: 'Ruhiger Anfang: Maerkte arbeiten normal, Befestigungen halten etwas laenger.',
+      color: '#d8e9ff',
+      particle: 'mist',
+      marketRate: 1,
+      barracksInterval: 1,
+      siegePower: 1,
+      fortifyDuration: 1.12,
+      washAlpha: 0.08
+    },
+    grenzlande: {
+      id: 'iron-frost',
+      title: 'Eiswind',
+      short: 'Frost',
+      detail: 'Zaehe Grenzluft: Kasernen sammeln langsamer, Schilde halten staerker.',
+      color: '#bde3ff',
+      particle: 'snow',
+      marketRate: 0.96,
+      barracksInterval: 1.12,
+      siegePower: 0.96,
+      fortifyDuration: 1.2,
+      washAlpha: 0.11
+    },
+    wuestenreich: {
+      id: 'sandstorm',
+      title: 'Sandsturm',
+      short: 'Sand',
+      detail: 'Sicht schwer, Mauern trocken: Maerkte schwanken, Belagerungen schlagen haerter ein.',
+      color: '#f0c875',
+      particle: 'sand',
+      marketRate: 0.88,
+      barracksInterval: 1.04,
+      siegePower: 1.14,
+      fortifyDuration: 0.94,
+      washAlpha: 0.13
+    },
+    nachtfestung: {
+      id: 'night-rain',
+      title: 'Nachtregen',
+      short: 'Regen',
+      detail: 'Dunkle Wege: Maerkte liefern weniger, Kasernen fuehren schneller Reserven heran.',
+      color: '#8fc3f0',
+      particle: 'rain',
+      marketRate: 0.9,
+      barracksInterval: 0.84,
+      siegePower: 1.04,
+      fortifyDuration: 1.06,
+      washAlpha: 0.16
+    },
+    endboss: {
+      id: 'ashfall',
+      title: 'Aschefall',
+      short: 'Asche',
+      detail: 'Endkampf-Luft: Einkommen sinkt, Belagerungen und Kasernen werden entscheidend.',
+      color: '#ffb17e',
+      particle: 'ash',
+      marketRate: 0.82,
+      barracksInterval: 0.9,
+      siegePower: 1.2,
+      fortifyDuration: 0.98,
+      washAlpha: 0.18
+    }
+  };
   const MAP_NODES = [
     { x: 0.16, y: 0.52, role: 'player', type: 'normal', rank: 0, terrain: 'keep' },
     { x: 0.29, y: 0.39, role: 'neutral', type: 'watch', rank: 1, terrain: 'hill' },
@@ -286,6 +353,8 @@
   let lastStrategyUpdate = 0;
   let lastObjectiveUpdate = 0;
   let lastLowUnitWarningAt = 0;
+  let battlefieldParticleKey = '';
+  let battlefieldParticles = [];
   const visualEffects = [];
   const impactThrottle = new Map();
   const commandCooldowns = new Map();
@@ -365,6 +434,11 @@
     const currentWave = safe(() => wave, 1);
     if (config.mode === 'skirmish' && currentWave <= 5) return getRegionById(config.mapId);
     return getRegionForWave(currentWave);
+  }
+
+  function getBattlefieldCondition() {
+    const region = getActiveRegion();
+    return BATTLEFIELD_CONDITIONS[region.id] || BATTLEFIELD_CONDITIONS.startgebiet;
   }
 
   function updateWorldImageForCurrentWave() {
@@ -562,6 +636,117 @@
       sourceY: options.sourceY
     });
     if (visualEffects.length > 80) visualEffects.splice(0, visualEffects.length - 80);
+  }
+
+  function seededFraction(seed) {
+    const value = Math.sin(seed * 12.9898) * 43758.5453;
+    return value - Math.floor(value);
+  }
+
+  function ensureBattlefieldParticles(condition) {
+    const width = Math.max(1, Math.floor(safe(() => gameWidth, window.innerWidth || 1280)));
+    const height = Math.max(1, Math.floor(safe(() => gameHeight, window.innerHeight || 720)));
+    const detail = safe(() => getQualitySetting('animationDetail'), 'medium');
+    const count = detail === 'low' ? 24 : detail === 'high' ? 72 : 48;
+    const key = `${condition.id}:${width}:${height}:${count}`;
+    if (battlefieldParticleKey === key && battlefieldParticles.length) return;
+
+    battlefieldParticleKey = key;
+    battlefieldParticles = Array.from({ length: count }, (_, index) => {
+      const seed = index + condition.id.length * 17;
+      return {
+        x: seededFraction(seed + 1) * width,
+        y: seededFraction(seed + 2) * height,
+        size: 0.45 + seededFraction(seed + 3) * 1.35,
+        speed: 0.45 + seededFraction(seed + 4) * 0.9,
+        drift: -0.55 + seededFraction(seed + 5) * 1.1,
+        alpha: 0.34 + seededFraction(seed + 6) * 0.42,
+        phase: seededFraction(seed + 7) * Math.PI * 2
+      };
+    });
+  }
+
+  function drawWorldConditionWash() {
+    const condition = getBattlefieldCondition();
+    if (!condition || !condition.washAlpha) return;
+    ctx.save();
+    ctx.fillStyle = rgba(condition.color, condition.washAlpha);
+    ctx.fillRect(0, 0, gameWidth, gameHeight);
+    ctx.globalAlpha = Math.min(0.22, condition.washAlpha * 1.15);
+    const gradient = ctx.createLinearGradient(0, 0, gameWidth, gameHeight);
+    gradient.addColorStop(0, rgba(condition.color, 0.18));
+    gradient.addColorStop(0.52, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, gameWidth, gameHeight);
+    ctx.restore();
+  }
+
+  function drawBattlefieldAmbience() {
+    const condition = getBattlefieldCondition();
+    if (!condition) return;
+    ensureBattlefieldParticles(condition);
+    if (!battlefieldParticles.length) return;
+
+    const time = performance.now() * 0.001;
+    const width = Math.max(1, gameWidth);
+    const height = Math.max(1, gameHeight);
+    ctx.save();
+    ctx.lineCap = 'round';
+
+    for (const particle of battlefieldParticles) {
+      const t = time * particle.speed + particle.phase;
+      let x = particle.x;
+      let y = particle.y;
+      ctx.globalAlpha = particle.alpha;
+      ctx.strokeStyle = rgba(condition.color, 0.72);
+      ctx.fillStyle = rgba(condition.color, 0.62);
+
+      if (condition.particle === 'mist') {
+        x = (particle.x + Math.sin(t * 0.35) * 42 + width) % width;
+        y = (particle.y + Math.cos(t * 0.24) * 18 + height) % height;
+        ctx.globalAlpha = particle.alpha * 0.23;
+        ctx.fillStyle = rgba(condition.color, 0.22);
+        ctx.beginPath();
+        ctx.ellipse(x, y, 52 * particle.size, 9 * particle.size, Math.sin(t) * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (condition.particle === 'snow') {
+        x = (particle.x + Math.sin(t) * 16 + width) % width;
+        y = (particle.y + t * 24) % height;
+        ctx.globalAlpha = particle.alpha * 0.72;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.2 + particle.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (condition.particle === 'sand') {
+        x = (particle.x + t * 64 + width) % width;
+        y = (particle.y + Math.sin(t * 0.7) * 24 + height) % height;
+        ctx.globalAlpha = particle.alpha * 0.44;
+        ctx.lineWidth = 1.2 + particle.size * 0.9;
+        ctx.beginPath();
+        ctx.moveTo(x - 34 * particle.size, y + 7 * particle.size);
+        ctx.lineTo(x + 18 * particle.size, y - 3 * particle.size);
+        ctx.stroke();
+      } else if (condition.particle === 'rain') {
+        x = (particle.x + t * 38 + width) % width;
+        y = (particle.y + t * 96) % height;
+        ctx.globalAlpha = particle.alpha * 0.5;
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 12 * particle.size, y + 28 * particle.size);
+        ctx.stroke();
+      } else {
+        x = (particle.x + Math.sin(t * 0.7) * 18 + width) % width;
+        y = (particle.y + t * 31) % height;
+        ctx.globalAlpha = particle.alpha * 0.6;
+        ctx.fillStyle = rgba(condition.color, 0.72);
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5 + particle.size * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
   }
 
   function drawWorldLandmarks() {
@@ -791,6 +976,7 @@
       drawFallbackWorld();
       drawWorldOverlayBase();
     }
+    drawWorldConditionWash();
     drawWorldMist();
     ctx.restore();
   }
@@ -1823,10 +2009,11 @@
   function applyTerrainEconomy(tower, deltaTime) {
     if (!tower || tower.faction !== safe(() => FACTIONS.PLAYER, 'player')) return;
     tower.mastilTerrainTimer = (tower.mastilTerrainTimer || 0) + deltaTime;
+    const condition = getBattlefieldCondition();
 
     if (tower.terrain === 'market') {
       const solterra = getPlayerFactionId() === 'spain' ? 1.28 : 1;
-      tower.mastilMarketTimer = (tower.mastilMarketTimer || 0) + deltaTime * (0.36 + tower.level * 0.05) * solterra;
+      tower.mastilMarketTimer = (tower.mastilMarketTimer || 0) + deltaTime * (0.36 + tower.level * 0.05) * solterra * condition.marketRate;
       if (tower.mastilMarketTimer >= 1) {
         const bonus = Math.floor(tower.mastilMarketTimer);
         safe(() => {
@@ -1836,7 +2023,7 @@
       }
     }
 
-    if (tower.terrain === 'barracks' && tower.mastilTerrainTimer >= 5.6 && tower.units < tower.maxUnits) {
+    if (tower.terrain === 'barracks' && tower.mastilTerrainTimer >= 5.6 * condition.barracksInterval && tower.units < tower.maxUnits) {
       const bonus = getPlayerFactionId() === 'england' ? 2 : 1;
       tower.units = Math.min(tower.maxUnits, tower.units + bonus);
       tower.mastilTerrainTimer = 0;
@@ -2614,6 +2801,7 @@
     applyFactionStartBonus(options);
     safe(() => saveGameState());
     pushEvent(config.mode === 'skirmish' ? `Gefecht: ${difficulty.label}` : 'Kampagne gestartet', 'wave');
+    pushEvent(`Schlachtfeld: ${getBattlefieldCondition().title}`, 'condition');
   }
 
   function installMapOverrides() {
@@ -2795,10 +2983,11 @@
     }
 
     const now = performance.now();
+    const condition = getBattlefieldCondition();
     const bossPenalty = target.boss ? 0.74 : 1;
     const terrainBonus = source.terrain === 'quarry' ? 1.18 : source.terrain === 'barracks' ? 1.08 : 1;
     const typeBonus = source.type === typeFromKey('watch') ? 1.12 : source.type === typeFromKey('troop') ? 1.08 : 1;
-    const rawDamage = Math.floor((5 + (source.level || 1) * 2 + Math.max(0, safe(() => wave, 1) - 1) * 0.5) * bossPenalty * terrainBonus * typeBonus);
+    const rawDamage = Math.floor((5 + (source.level || 1) * 2 + Math.max(0, safe(() => wave, 1) - 1) * 0.5) * bossPenalty * terrainBonus * typeBonus * condition.siegePower);
     const damage = Math.min(Math.max(0, Math.floor(target.units - 1)), Math.max(1, rawDamage));
     if (damage <= 0) {
       commandCooldowns.delete('siege');
@@ -2832,7 +3021,7 @@
       sourceX: source.x,
       sourceY: source.y
     });
-    showEnhancementNotice(`Belagerung trifft ${getTowerTierName(target.level)}. -${damage} Truppen, -${cost} Gold.`);
+    showEnhancementNotice(`Belagerung trifft ${getTowerTierName(target.level)}. ${condition.short}: -${damage} Truppen, -${cost} Gold.`);
     playSound('impact');
   }
 
@@ -3039,7 +3228,7 @@
 
     safe(() => {
       gold -= cost;
-      selected.fortifiedUntil = performance.now() + 18000 + (selected.level * 2000);
+      selected.fortifiedUntil = performance.now() + (18000 + (selected.level * 2000)) * getBattlefieldCondition().fortifyDuration;
       hideTowerMenu();
     });
     spawnEffect(selected.x, selected.y, 'fortify', { color: '#f4e6bf', text: 'Befestigt', duration: 1050, size: 1.08 });
@@ -3253,6 +3442,11 @@
           matchStats.waves = Math.max(matchStats.waves, afterWave);
           if (afterWave > beforeWave) {
             pushEvent(`Welle ${afterWave} beginnt`, 'wave');
+            const beforeCondition = BATTLEFIELD_CONDITIONS[getRegionForWave(beforeWave).id] || BATTLEFIELD_CONDITIONS.startgebiet;
+            const afterCondition = getBattlefieldCondition();
+            if (beforeCondition.id !== afterCondition.id) {
+              pushEvent(`Schlachtfeld: ${afterCondition.title}`, 'condition');
+            }
             playSound('wave');
             if (afterWave >= 3) {
               unlockAchievement('waveThree');
@@ -3378,6 +3572,10 @@
         <span id="mastil-strategy-threat">-</span>
       </div>
       <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Feld</span>
+        <span id="mastil-strategy-condition">-</span>
+      </div>
+      <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Wunder</span>
         <span id="mastil-strategy-faction">-</span>
       </div>
@@ -3406,6 +3604,10 @@
       </div>
       <div class="mastil-objective-detail" id="mastil-objective-detail">Erobere neutrale Türme.</div>
       <div class="mastil-boss-status" id="mastil-boss-status">Keine Bosswelle</div>
+      <div class="mastil-condition-panel" id="mastil-condition-panel">
+        <strong id="mastil-condition-title">Schlachtfeld</strong>
+        <span id="mastil-condition-detail">Die Karte ist ruhig.</span>
+      </div>
       <div class="mastil-war-contract" id="mastil-war-contract">
         <strong>Kriegsauftrag</strong>
         <span id="mastil-contract-detail">Sichere wichtige Orte.</span>
@@ -3451,15 +3653,18 @@
     const domain = document.getElementById('mastil-strategy-domain');
     const front = document.getElementById('mastil-strategy-front');
     const threatNode = document.getElementById('mastil-strategy-threat');
+    const conditionNode = document.getElementById('mastil-strategy-condition');
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !front || !threatNode || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !front || !threatNode || !conditionNode || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
     const threat = getEnemyThreatState(own, enemy);
     threatNode.textContent = threat.active ? `${threat.title} | ${threat.detail.split('.')[0]}` : 'keine Kommandantur';
+    const condition = getBattlefieldCondition();
+    conditionNode.textContent = `${condition.title} | ${condition.short}`;
     const trait = getFactionTrait();
     factionNode.textContent = `${trait.short} | ${trait.ability}`;
     if (selected && selected.faction === playerFaction) {
@@ -3489,6 +3694,9 @@
     const title = document.getElementById('mastil-objective-title');
     const detail = document.getElementById('mastil-objective-detail');
     const bossStatus = document.getElementById('mastil-boss-status');
+    const conditionBox = document.getElementById('mastil-condition-panel');
+    const conditionTitle = document.getElementById('mastil-condition-title');
+    const conditionDetail = document.getElementById('mastil-condition-detail');
     const contractBox = document.getElementById('mastil-war-contract');
     const contractDetail = document.getElementById('mastil-contract-detail');
     const contractProgress = document.getElementById('mastil-contract-progress');
@@ -3516,6 +3724,12 @@
         ? `Boss aktiv: ${region.boss}`
         : `Naechster Boss: ${region.boss} in Welle ${region.waves[1]}`;
       bossStatus.classList.toggle('active', isBossWave(currentWave));
+    }
+    if (conditionBox && conditionTitle && conditionDetail) {
+      const condition = getBattlefieldCondition();
+      conditionBox.style.setProperty('--condition-color', condition.color);
+      conditionTitle.textContent = `Schlachtfeld: ${condition.title}`;
+      conditionDetail.textContent = condition.detail;
     }
     if (contractBox && contractDetail && contractProgress) {
       const label = contractBox.querySelector('strong');
@@ -3575,6 +3789,7 @@
         updateStrategyPanel();
         updateObjectivePanel();
         updateCommandButtons();
+        drawBattlefieldAmbience();
         drawEffects();
         drawEnhancedMinimap();
       };

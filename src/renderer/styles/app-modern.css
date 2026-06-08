@@ -1326,6 +1326,29 @@
   background: rgba(143, 37, 36, 0.32);
 }
 
+.mastil-condition-panel {
+  --condition-color: #d8e9ff;
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid color-mix(in srgb, var(--condition-color) 40%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--condition-color) 15%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(13, 9, 7, 0.18);
+}
+
+.mastil-condition-panel strong {
+  color: color-mix(in srgb, var(--condition-color) 82%, #fff2bf);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-condition-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
 .mastil-war-contract {
   display: grid;
   gap: 5px;
@@ -1480,6 +1503,10 @@
 
 .mastil-event-siege strong {
   color: #ffc66d;
+}
+
+.mastil-event-condition strong {
+  color: #d8e9ff;
 }
 
 .mastil-event-upgrade strong,
