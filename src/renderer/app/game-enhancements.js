@@ -274,6 +274,10 @@
       title: 'Mauerbrecher',
       detail: 'Drei Belagerungen in einer Partie geführt.'
     },
+    supplyNetwork: {
+      title: 'Versorgungsnetz',
+      detail: 'Vier eigene Türme gleichzeitig über sichere Wege versorgt.'
+    },
     bossBreaker: {
       title: 'Bossbrecher',
       detail: 'Ersten Boss-Turm gebrochen.'
@@ -353,6 +357,7 @@
   let lastStrategyUpdate = 0;
   let lastObjectiveUpdate = 0;
   let lastLowUnitWarningAt = 0;
+  let lastSupplyWarningAt = 0;
   let battlefieldParticleKey = '';
   let battlefieldParticles = [];
   const visualEffects = [];
@@ -985,7 +990,9 @@
     const currentTowers = safe(() => towers, []);
     if (!currentTowers || currentTowers.length < 2) return;
 
-    const threshold = (gameWidth + gameHeight) / 6.2;
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    computeSupplyState(currentTowers.filter((tower) => tower.faction === playerFaction));
+    const threshold = getConnectionThreshold();
     let drawn = 0;
     const limit = safe(() => getQualitySetting('connectionLimit'), 240) || 240;
 
@@ -1004,11 +1011,12 @@
         drawn += 1;
         const sameFaction = a.faction === b.faction;
         const activePath = sameFaction && a.faction !== safe(() => FACTIONS.NEUTRAL, 'neutral');
+        const supplyPath = sameFaction && a.faction === playerFaction && a.supplyLinked && b.supplyLinked && distance <= getSupplyReach(a, b);
         const color = activePath ? colorForFaction(a.faction) : '#8b7355';
 
-        ctx.globalAlpha = activePath ? 0.46 : 0.22;
-        ctx.strokeStyle = rgba(color, activePath ? 0.58 : 0.28);
-        ctx.lineWidth = activePath ? 5 : 2;
+        ctx.globalAlpha = supplyPath ? 0.68 : activePath ? 0.46 : 0.22;
+        ctx.strokeStyle = supplyPath ? 'rgba(142, 195, 240, 0.7)' : rgba(color, activePath ? 0.58 : 0.28);
+        ctx.lineWidth = supplyPath ? 6 : activePath ? 5 : 2;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         const mx = (a.x + b.x) / 2 + Math.sin((a.x + b.y) * 0.01) * 12;
@@ -1017,9 +1025,9 @@
         ctx.stroke();
 
         if (activePath) {
-          ctx.globalAlpha = 0.46;
-          ctx.strokeStyle = rgba('#fff0a8', 0.32);
-          ctx.lineWidth = 1.2;
+          ctx.globalAlpha = supplyPath ? 0.7 : 0.46;
+          ctx.strokeStyle = supplyPath ? 'rgba(255, 242, 190, 0.52)' : rgba('#fff0a8', 0.32);
+          ctx.lineWidth = supplyPath ? 1.8 : 1.2;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.quadraticCurveTo(mx, my, b.x, b.y);
@@ -1333,6 +1341,26 @@
       ctx.beginPath();
       ctx.arc(width * 0.3, -height * 0.22, 11, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    if (tower.faction === safe(() => FACTIONS.PLAYER, 'player')) {
+      if (tower.supplyLinked) {
+        ctx.strokeStyle = tower.supplyRoot ? 'rgba(244, 215, 122, 0.66)' : 'rgba(142, 195, 240, 0.58)';
+        ctx.lineWidth = tower.supplyRoot ? 2.6 : 2;
+        ctx.setLineDash(tower.supplyRoot ? [] : [4, 4]);
+        ctx.beginPath();
+        ctx.ellipse(0, height * 0.18, width * 0.94, height * 0.56, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        ctx.strokeStyle = 'rgba(255, 138, 109, 0.72)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([7, 5]);
+        ctx.beginPath();
+        ctx.ellipse(0, height * 0.12, width * 1.1, height * 0.68, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
     }
 
     if (tower.fortifiedUntil && tower.fortifiedUntil > performance.now()) {
@@ -1862,6 +1890,7 @@
       matchStats.fortified * 95 +
       matchStats.spoils * 180 +
       matchStats.sieges * 150 +
+      Math.round(computeSupplyState().ratio * 220) +
       matchAchievements.size * 420 +
       currentGold * 2 -
       matchStats.lost * 220;
@@ -1939,6 +1968,7 @@
     matchAchievements.clear();
     matchSummarySaved = false;
     lastLowUnitWarningAt = 0;
+    lastSupplyWarningAt = 0;
     matchStats.captured = 0;
     matchStats.lost = 0;
     matchStats.upgrades = 0;
@@ -2006,6 +2036,77 @@
     return new Set(towerList.map((tower) => tower.terrain).filter(Boolean));
   }
 
+  function getConnectionThreshold() {
+    return (gameWidth + gameHeight) / 6.2;
+  }
+
+  function getSupplyReach(a, b) {
+    const base = getConnectionThreshold() * 0.98;
+    const roadBonus = (a.terrain === 'road' || b.terrain === 'road') ? 28 : 0;
+    const keepBonus = (a.terrain === 'keep' || b.terrain === 'keep') ? 18 : 0;
+    const watchBonus = (a.type === typeFromKey('watch') || b.type === typeFromKey('watch')) ? 10 : 0;
+    return base + roadBonus + keepBonus + watchBonus;
+  }
+
+  function computeSupplyState(own = getPlayerTowers()) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const playerTowers = own.filter((tower) => tower && tower.faction === playerFaction);
+    playerTowers.forEach((tower) => {
+      tower.supplyLinked = false;
+      tower.supplyRoot = false;
+      tower.supplyDepth = 0;
+    });
+
+    if (!playerTowers.length) {
+      return { total: 0, linked: 0, isolated: 0, ratio: 0, roots: 0, weakest: null, detail: 'Keine Versorgung.' };
+    }
+
+    const lowestRank = Math.min(...playerTowers.map((tower) => Number(tower.routeRank || 0)));
+    let roots = playerTowers.filter((tower) => tower.terrain === 'keep' || Number(tower.routeRank || 0) <= lowestRank + 1);
+    if (!roots.length) {
+      roots = [playerTowers.slice().sort((a, b) => a.x - b.x || (a.routeRank || 0) - (b.routeRank || 0))[0]];
+    }
+
+    const queue = [];
+    roots.forEach((tower) => {
+      tower.supplyLinked = true;
+      tower.supplyRoot = true;
+      tower.supplyDepth = 0;
+      queue.push(tower);
+    });
+
+    while (queue.length) {
+      const source = queue.shift();
+      for (const target of playerTowers) {
+        if (target.supplyLinked) continue;
+        const distance = Math.hypot(target.x - source.x, target.y - source.y);
+        if (distance <= getSupplyReach(source, target)) {
+          target.supplyLinked = true;
+          target.supplyDepth = (source.supplyDepth || 0) + 1;
+          queue.push(target);
+        }
+      }
+    }
+
+    const linked = playerTowers.filter((tower) => tower.supplyLinked).length;
+    const isolatedTowers = playerTowers.filter((tower) => !tower.supplyLinked);
+    const weakest = isolatedTowers
+      .map((tower) => ({ tower, score: tower.units + (tower.level || 1) * 3 }))
+      .sort((a, b) => a.score - b.score)[0]?.tower || null;
+
+    return {
+      total: playerTowers.length,
+      linked,
+      isolated: isolatedTowers.length,
+      ratio: linked / Math.max(1, playerTowers.length),
+      roots: roots.length,
+      weakest,
+      detail: isolatedTowers.length
+        ? `${linked}/${playerTowers.length} versorgt, ${isolatedTowers.length} isoliert.`
+        : `${linked}/${playerTowers.length} Türme versorgt.`
+    };
+  }
+
   function applyTerrainEconomy(tower, deltaTime) {
     if (!tower || tower.faction !== safe(() => FACTIONS.PLAYER, 'player')) return;
     tower.mastilTerrainTimer = (tower.mastilTerrainTimer || 0) + deltaTime;
@@ -2027,6 +2128,17 @@
       const bonus = getPlayerFactionId() === 'england' ? 2 : 1;
       tower.units = Math.min(tower.maxUnits, tower.units + bonus);
       tower.mastilTerrainTimer = 0;
+    }
+
+    if (tower.supplyLinked && !tower.supplyRoot && tower.units < tower.maxUnits) {
+      tower.mastilSupplyTimer = (tower.mastilSupplyTimer || 0) + deltaTime;
+      const interval = tower.terrain === 'road' ? 8.4 : 10.8;
+      if (tower.mastilSupplyTimer >= interval) {
+        tower.units = Math.min(tower.maxUnits, tower.units + 1);
+        tower.mastilSupplyTimer = 0;
+      }
+    } else if (!tower.supplyLinked) {
+      tower.mastilSupplyTimer = 0;
     }
   }
 
@@ -3576,6 +3688,10 @@
         <span id="mastil-strategy-condition">-</span>
       </div>
       <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Vers.</span>
+        <span id="mastil-strategy-supply">-</span>
+      </div>
+      <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Wunder</span>
         <span id="mastil-strategy-faction">-</span>
       </div>
@@ -3627,6 +3743,7 @@
         <span id="mastil-stat-commands">0 Befehle</span>
         <span id="mastil-stat-spoils">0 Beute</span>
         <span id="mastil-stat-sieges">0 Belag.</span>
+        <span id="mastil-stat-supply">0% Vers.</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
         <span id="mastil-stat-threat">0 Feindbef.</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
@@ -3654,10 +3771,11 @@
     const front = document.getElementById('mastil-strategy-front');
     const threatNode = document.getElementById('mastil-strategy-threat');
     const conditionNode = document.getElementById('mastil-strategy-condition');
+    const supplyNode = document.getElementById('mastil-strategy-supply');
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !front || !threatNode || !conditionNode || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !front || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
@@ -3665,6 +3783,8 @@
     threatNode.textContent = threat.active ? `${threat.title} | ${threat.detail.split('.')[0]}` : 'keine Kommandantur';
     const condition = getBattlefieldCondition();
     conditionNode.textContent = `${condition.title} | ${condition.short}`;
+    const supply = computeSupplyState(own);
+    supplyNode.textContent = supply.detail;
     const trait = getFactionTrait();
     factionNode.textContent = `${trait.short} | ${trait.ability}`;
     if (selected && selected.faction === playerFaction) {
@@ -3710,10 +3830,11 @@
     const commands = document.getElementById('mastil-stat-commands');
     const spoils = document.getElementById('mastil-stat-spoils');
     const sieges = document.getElementById('mastil-stat-sieges');
+    const supplyStat = document.getElementById('mastil-stat-supply');
     const edicts = document.getElementById('mastil-stat-edicts');
     const threatStat = document.getElementById('mastil-stat-threat');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !sieges || !edicts || !threatStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !sieges || !supplyStat || !edicts || !threatStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -3747,20 +3868,34 @@
       threatProgress.style.width = `${Math.round(threat.progress * 100)}%`;
     }
     progress.style.width = `${Math.round(objective.progress * 100)}%`;
+    const supply = computeSupplyState(own);
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
     spoils.textContent = `${matchStats.spoils} Beute`;
     sieges.textContent = `${matchStats.sieges} Belag.`;
+    supplyStat.textContent = `${Math.round(supply.ratio * 100)}% Vers.`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
     threatStat.textContent = `${matchStats.enemyOrders} Feindbef.`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
+
+    if (supply.linked >= 4) {
+      unlockAchievement('supplyNetwork', { tower: own.find((tower) => tower.supplyLinked) || own[0] });
+    }
 
     const weakTower = own.find((tower) => tower.units <= Math.max(2, tower.maxUnits * 0.22));
     if (weakTower && enemy.length && now - lastLowUnitWarningAt > 14000) {
       lastLowUnitWarningAt = now;
       pushEvent('Ein Turm ist schwach besetzt', 'danger');
       spawnEffect(weakTower.x, weakTower.y, 'shield', { color: '#e2bd5a', duration: 850 });
+      playSound('blocked');
+    }
+    if (supply.isolated > 0 && enemy.length && now - lastSupplyWarningAt > 17000) {
+      lastSupplyWarningAt = now;
+      pushEvent('Versorgungslinie unterbrochen', 'supply');
+      if (supply.weakest) {
+        spawnEffect(supply.weakest.x, supply.weakest.y, 'shield', { color: '#ff8a6d', text: 'isoliert', duration: 1050, size: 0.86 });
+      }
       playSound('blocked');
     }
   }
