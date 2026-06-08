@@ -1,0 +1,57 @@
+{
+  "name": "mastil-app",
+  "version": "3.0.0",
+  "description": "MASTIL by Bytewerk Studio: Windows and web strategy game with offline AI, online 1v1, licensing and installer support.",
+  "main": "src/main/main.cjs",
+  "author": "Bytewerk Studio",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "dev": "electron .",
+    "dev:admin": "electron . --admin",
+    "dev:server": "node server/src/index.cjs",
+    "check": "node scripts/smoke-check.cjs",
+    "build:web": "node scripts/build-web.cjs",
+    "pack:win": "electron-builder --win --dir",
+    "installer": "powershell -ExecutionPolicy Bypass -File scripts/build-installer.ps1"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "nodemailer": "^8.0.10",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "sql.js": "^1.12.0",
+    "stripe": "^17.5.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "de.mastil.game",
+    "productName": "MASTIL",
+    "copyright": "Copyright © 2026 Bytewerk Studio",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "icon": "assets/branding/mastil-icon.ico"
+    }
+  }
+}

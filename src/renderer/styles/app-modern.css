@@ -1,0 +1,1820 @@
+:root {
+  --mastil-ink: #130d08;
+  --mastil-panel: rgba(28, 18, 12, 0.92);
+  --mastil-line: rgba(230, 190, 92, 0.42);
+  --mastil-gold: #e2bd5a;
+  --mastil-red: #8f2524;
+  --mastil-blue: #1d4e71;
+  --mastil-cream: #f4e6bf;
+}
+
+#game-canvas {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.mastil-music-btn,
+.mastil-sfx-btn {
+  display: inline-grid !important;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  border-radius: 50% !important;
+  border: 1px solid rgba(226, 189, 90, 0.48) !important;
+  background: rgba(18, 11, 7, 0.64) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3), inset 0 0 18px rgba(226, 189, 90, 0.08);
+}
+
+#start-sfx-btn {
+  position: fixed;
+  top: 18px;
+  right: 68px;
+  z-index: 5;
+}
+
+.top-bar-controls .mastil-sfx-btn {
+  position: static;
+}
+
+.mastil-music-icon,
+.mastil-sfx-icon,
+.mastil-loader-mark,
+.mastil-attack-icon,
+.mastil-check-icon,
+.mastil-play-icon,
+.mastil-home-icon {
+  display: inline-block;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  color: #f1cf6b;
+}
+
+.mastil-music-icon::before,
+.mastil-sfx-icon::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  clip-path: polygon(0 30%, 42% 30%, 100% 0, 100% 100%, 42% 70%, 0 70%);
+}
+
+.mastil-music-icon::after,
+.mastil-sfx-icon::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 3px;
+  width: 10px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-left: 0;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+}
+
+.mastil-sfx-icon::after {
+  width: 7px;
+  right: 2px;
+}
+
+.mastil-audio-off .mastil-music-icon::after,
+.mastil-audio-off .mastil-sfx-icon::after {
+  display: none;
+}
+
+.mastil-audio-off .mastil-music-icon,
+.mastil-audio-off .mastil-sfx-icon {
+  color: rgba(244, 230, 191, 0.58);
+}
+
+.mastil-audio-off .mastil-music-icon::before,
+.mastil-audio-off .mastil-sfx-icon::before {
+  background: rgba(244, 230, 191, 0.58);
+}
+
+.mastil-audio-off .mastil-music-icon {
+  transform: rotate(-8deg);
+}
+
+.mastil-loader-mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 244, 191, 0.18), transparent 54%),
+    rgba(18, 11, 7, 0.58);
+  border: 1px solid rgba(226, 189, 90, 0.55);
+}
+
+.mastil-loader-mark::before,
+.mastil-attack-icon::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  background: linear-gradient(180deg, #fff2a8, #b7822d);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M45 4l15 15-8 3-21 21 7 7-8 8-7-7-10 10-6-6 10-10-7-7 8-8 7 7 21-21 3-12zM8 8l10 4 28 28-8 8L10 20 8 8z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M45 4l15 15-8 3-21 21 7 7-8 8-7-7-10 10-6-6 10-10-7-7 8-8 7 7 21-21 3-12zM8 8l10 4 28 28-8 8L10 20 8 8z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.mastil-attack-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: -4px;
+}
+
+.mastil-attack-icon::before {
+  inset: 1px;
+}
+
+.mastil-check-icon::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 13px;
+  height: 8px;
+  border-left: 3px solid #fff2a8;
+  border-bottom: 3px solid #fff2a8;
+  transform: rotate(-45deg);
+}
+
+.mastil-play-icon::before {
+  content: "";
+  position: absolute;
+  inset: 3px 2px 3px 5px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.mastil-home-icon::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: currentColor;
+  clip-path: polygon(50% 0, 100% 38%, 84% 38%, 84% 100%, 58% 100%, 58% 68%, 42% 68%, 42% 100%, 16% 100%, 16% 38%, 0 38%);
+}
+
+#start-screen {
+  background: #0c0805 !important;
+  isolation: isolate;
+}
+
+#start-screen::before {
+  content: "";
+  position: fixed;
+  inset: -22px;
+  pointer-events: none;
+  background: url("../../../assets/backgrounds/start-bg.png") center/cover no-repeat;
+  filter: none;
+  opacity: 0.42;
+  transform: none;
+  z-index: 0;
+}
+
+#start-screen::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 50% 20%, rgba(245, 214, 139, 0.12), transparent 18rem),
+    linear-gradient(180deg, rgba(6, 4, 3, 0.16), rgba(6, 4, 3, 0.14) 44%, rgba(6, 4, 3, 0.62) 100%),
+    url("../../../assets/backgrounds/start-bg.png");
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-size: 100% 100%, 100% 100%, contain;
+  z-index: 1;
+}
+
+#start-screen > * {
+  position: relative;
+  z-index: 2;
+}
+
+.mastil-brand-mark {
+  width: min(104px, 18vw);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(226, 189, 90, 0.55);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 36px rgba(226, 189, 90, 0.24);
+  margin-bottom: 0.2rem;
+}
+
+#start-screen .start-title-container {
+  margin-top: clamp(16px, 3vh, 30px) !important;
+  margin-bottom: 0.8rem !important;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.25rem;
+}
+
+#start-screen .game-title {
+  font-size: clamp(3.2rem, 8vw, 6.4rem) !important;
+  line-height: 0.86 !important;
+  margin: 0 !important;
+  letter-spacing: 0 !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+#start-screen .game-title.glow,
+#start-screen .game-title::before,
+#start-screen .game-title::after {
+  animation: none !important;
+}
+
+#start-screen .game-subtitle {
+  max-width: min(860px, 88vw);
+  margin: 0 auto !important;
+  font-size: clamp(1rem, 1.75vw, 1.34rem) !important;
+  white-space: normal !important;
+}
+
+#start-screen .menu-container {
+  position: static !important;
+  z-index: 3;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) !important;
+  gap: 9px !important;
+  width: min(820px, 92vw) !important;
+  margin: auto auto clamp(28px, 5vh, 46px) !important;
+  padding: 12px !important;
+  border: 1px solid rgba(226, 189, 90, 0.28);
+  border-radius: 8px;
+  background: rgba(14, 9, 6, 0.76);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.36);
+  backdrop-filter: none;
+  inset: auto !important;
+  transform: none !important;
+}
+
+#start-screen .menu-button {
+  width: 100% !important;
+  min-height: 46px !important;
+  padding: 0 10px !important;
+  border-radius: 6px !important;
+}
+
+#start-screen .menu-button:nth-child(-n + 3) {
+  min-height: 52px !important;
+}
+
+#start-screen .copyright {
+  position: fixed !important;
+  left: auto !important;
+  right: 20px !important;
+  bottom: 12px !important;
+  transform: none !important;
+  margin: 0 !important;
+  text-align: right !important;
+  z-index: 151;
+}
+
+.mastil-publisher-mark {
+  position: fixed;
+  right: 20px;
+  top: 18px;
+  z-index: 150;
+  color: #f4e6bf;
+  border: 1px solid rgba(226, 189, 90, 0.34);
+  border-radius: 6px;
+  background: rgba(15, 10, 7, 0.64);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+  padding: 8px 11px;
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-top-note {
+  position: fixed;
+  left: 18px;
+  bottom: 14px;
+  z-index: 150;
+  color: rgba(244, 230, 191, 0.78);
+  font: 600 12px/1.35 "Segoe UI", sans-serif;
+  background: rgba(15, 10, 7, 0.62);
+  border: 1px solid rgba(226, 189, 90, 0.28);
+  padding: 8px 10px;
+  max-width: min(440px, calc(100vw - 36px));
+}
+
+.mastil-license-badge {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mastil-cream);
+  background: rgba(20, 12, 8, 0.78);
+  border: 1px solid var(--mastil-line);
+  padding: 8px 12px;
+  font: 700 12px/1 "Segoe UI", sans-serif;
+  letter-spacing: 0.02em;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+.mastil-license-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #c94b42;
+  box-shadow: 0 0 12px rgba(201, 75, 66, 0.8);
+}
+
+.mastil-license-badge.active::before {
+  background: #5bd18a;
+  box-shadow: 0 0 12px rgba(91, 209, 138, 0.8);
+}
+
+.mastil-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(7, 5, 4, 0.76);
+  backdrop-filter: none;
+}
+
+.mastil-modal.active {
+  display: flex;
+}
+
+.mastil-dialog {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: min(86vh, 740px);
+  overflow: auto;
+  color: var(--mastil-cream);
+  background:
+    linear-gradient(145deg, rgba(42, 26, 16, 0.96), rgba(16, 10, 7, 0.96)),
+    url("../../../assets/backgrounds/panel-bg.png") center/cover no-repeat;
+  border: 1px solid rgba(226, 189, 90, 0.56);
+  border-radius: 8px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.62);
+  padding: 22px;
+}
+
+.mastil-close-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  min-height: 34px;
+  border-radius: 50%;
+  padding: 0;
+  color: var(--mastil-cream);
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.mastil-dialog h2,
+.mastil-dialog h3 {
+  color: var(--mastil-gold);
+  font-family: Cinzel, Georgia, serif;
+  letter-spacing: 0;
+  margin: 0 0 10px;
+}
+
+.mastil-dialog p {
+  color: rgba(244, 230, 191, 0.86);
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.mastil-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mastil-field {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.mastil-field label {
+  color: rgba(244, 230, 191, 0.78);
+  font: 700 12px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-field input {
+  width: 100%;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 6px;
+  background: rgba(8, 5, 4, 0.72);
+  color: #fff7dd;
+  padding: 11px 12px;
+  font: 600 14px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.mastil-action {
+  border: 1px solid rgba(226, 189, 90, 0.62);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #d3ad4d, #8d641e);
+  color: #160d06;
+  cursor: pointer;
+  font: 800 13px/1 "Segoe UI", sans-serif;
+  min-height: 42px;
+  padding: 0 16px;
+  text-transform: uppercase;
+}
+
+.mastil-action.secondary {
+  color: var(--mastil-cream);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mastil-message {
+  min-height: 22px;
+  margin-top: 12px;
+  color: #f6d97b;
+  font: 700 13px/1.4 "Segoe UI", sans-serif;
+}
+
+.mastil-edict-modal {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(226, 189, 90, 0.16), transparent 22rem),
+    rgba(7, 5, 4, 0.82);
+}
+
+.mastil-edict-dialog {
+  width: min(840px, 100%);
+  overflow: visible;
+  text-align: center;
+}
+
+.mastil-edict-kicker {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: rgba(226, 189, 90, 0.9);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-edict-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.mastil-edict-card {
+  min-height: 178px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 15px;
+  color: var(--mastil-cream);
+  text-align: left;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(61, 39, 19, 0.92), rgba(12, 8, 5, 0.9)),
+    radial-gradient(circle at 20% 12%, rgba(255, 225, 138, 0.18), transparent 42%);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.mastil-edict-card:hover,
+.mastil-edict-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(255, 225, 138, 0.78);
+  background:
+    linear-gradient(145deg, rgba(83, 55, 24, 0.96), rgba(18, 12, 7, 0.94)),
+    radial-gradient(circle at 20% 12%, rgba(255, 225, 138, 0.24), transparent 42%);
+}
+
+.mastil-edict-card span {
+  justify-self: start;
+  padding: 5px 8px;
+  color: #1a1008;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f6dc85, #c08b2e);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-edict-card strong {
+  color: #fff2bf;
+  font: 950 18px/1.1 "Segoe UI", sans-serif;
+}
+
+.mastil-edict-card small {
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 13px/1.4 "Segoe UI", sans-serif;
+}
+
+.mastil-progress-dialog {
+  width: min(860px, 100%);
+}
+
+.mastil-progress-overview {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mastil-progress-overview span {
+  color: #fff2bf;
+  font: 900 13px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-progress-track {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(226, 189, 90, 0.36);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.mastil-progress-track span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #2f6fa5, #e2bd5a, #9ed6a2);
+  box-shadow: 0 0 18px rgba(226, 189, 90, 0.4);
+  transition: width 240ms ease;
+}
+
+.mastil-awards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mastil-award {
+  min-height: 132px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 8px;
+  background: rgba(8, 5, 4, 0.54);
+}
+
+.mastil-award.unlocked {
+  border-color: rgba(255, 225, 138, 0.62);
+  background: linear-gradient(145deg, rgba(66, 43, 19, 0.66), rgba(12, 8, 5, 0.56));
+}
+
+.mastil-award-mark {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(226, 189, 90, 0.42);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mastil-award.unlocked .mastil-award-mark {
+  background: linear-gradient(180deg, #f5db83, #9b6d25);
+  box-shadow: 0 0 18px rgba(226, 189, 90, 0.28);
+}
+
+.mastil-award strong {
+  color: #fff2bf;
+  font: 900 14px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-award small {
+  color: rgba(244, 230, 191, 0.76);
+  font: 700 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-award.locked {
+  opacity: 0.68;
+}
+
+#highscore-modal .highscore-list {
+  width: min(980px, 94vw) !important;
+  margin: 0 auto !important;
+}
+
+.mastil-highscore-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 4px auto 14px;
+}
+
+.mastil-highscore-summary div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.3);
+  border-radius: 8px;
+  background: rgba(8, 5, 4, 0.48);
+  text-align: center;
+}
+
+.mastil-highscore-summary span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-highscore-summary strong {
+  color: #fff2bf;
+  font: 950 22px/1 "Segoe UI", sans-serif;
+}
+
+#highscore-modal .highscore-entry {
+  min-height: 58px !important;
+  display: grid !important;
+  grid-template-columns: 54px minmax(0, 1fr) minmax(96px, auto);
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 7px !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(226, 189, 90, 0.18) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+#highscore-modal .highscore-rank {
+  width: 36px !important;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 50%;
+  color: #f4e6bf !important;
+  background: rgba(0, 0, 0, 0.32);
+  font: 950 12px/1 "Segoe UI", sans-serif !important;
+}
+
+#highscore-modal .highscore-rank.gold {
+  color: #1b1007 !important;
+  background: linear-gradient(180deg, #ffe18a, #ae741d);
+}
+
+#highscore-modal .highscore-rank.silver {
+  color: #1b1007 !important;
+  background: linear-gradient(180deg, #f2f0e6, #9c9b92);
+}
+
+#highscore-modal .highscore-rank.bronze {
+  color: #1b1007 !important;
+  background: linear-gradient(180deg, #e6b077, #8b5227);
+}
+
+#highscore-modal .highscore-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  margin-left: 0 !important;
+}
+
+#highscore-modal .highscore-name strong {
+  overflow-wrap: anywhere;
+  color: #fff2bf;
+  font: 900 14px/1.15 "Segoe UI", sans-serif;
+}
+
+#highscore-modal .highscore-name small {
+  color: rgba(244, 230, 191, 0.68);
+  font: 750 11px/1.2 "Segoe UI", sans-serif;
+}
+
+#highscore-modal .highscore-score {
+  width: auto !important;
+  color: #f4d77a !important;
+  font: 950 15px/1 "Segoe UI", sans-serif !important;
+}
+
+.mastil-credits-publisher {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid rgba(226, 189, 90, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mastil-credits-publisher span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-credits-publisher strong {
+  color: #fff2bf;
+  font: 950 18px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-credits-publisher small {
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-audio-option-row {
+  align-items: center;
+}
+
+.mastil-range-control {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 48px;
+  align-items: center;
+  gap: 10px;
+  width: min(330px, 100%);
+}
+
+.mastil-range-control input[type="range"] {
+  width: 100%;
+  accent-color: #d7ad48;
+  cursor: pointer;
+}
+
+.mastil-range-control span {
+  color: #f4e6bf;
+  font: 800 12px/1 "Segoe UI", sans-serif;
+  text-align: right;
+}
+
+#mastil-online-canvas {
+  position: static !important;
+  width: 100%;
+  height: auto !important;
+  max-height: min(48vh, 430px);
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 6px;
+  background: #e7d7b7;
+  display: block;
+}
+
+#loading-screen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(235, 191, 92, 0.16), transparent 23rem),
+    linear-gradient(180deg, rgba(4, 3, 2, 0.18), rgba(4, 3, 2, 0.74)),
+    url("../../../assets/backgrounds/loading-bg.png") center/cover no-repeat !important;
+  backdrop-filter: none !important;
+}
+
+#loading-screen::before,
+#loading-screen::after {
+  content: "" !important;
+  position: absolute;
+  pointer-events: none;
+}
+
+#loading-screen::before {
+  inset: -18%;
+  background:
+    radial-gradient(circle at 32% 30%, rgba(226, 189, 90, 0.14), transparent 13rem),
+    radial-gradient(circle at 72% 52%, rgba(80, 126, 148, 0.14), transparent 16rem);
+  animation: none !important;
+}
+
+#loading-screen::after {
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.52), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.52)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.48), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.62));
+}
+
+.mastil-loading-panel {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  width: min(640px, calc(100vw - 38px));
+  padding: 26px 28px 24px;
+  color: var(--mastil-cream);
+  background:
+    linear-gradient(145deg, rgba(32, 20, 12, 0.9), rgba(8, 6, 5, 0.84));
+  border: 1px solid rgba(226, 189, 90, 0.62);
+  border-radius: 8px;
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.62),
+    inset 0 0 54px rgba(226, 189, 90, 0.08);
+  backdrop-filter: none;
+}
+
+.mastil-loading-panel::before,
+.mastil-loading-panel::after {
+  content: "";
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(226, 189, 90, 0.72), transparent);
+}
+
+.mastil-loading-panel::before {
+  top: 14px;
+}
+
+.mastil-loading-panel::after {
+  bottom: 14px;
+}
+
+.mastil-loading-mark {
+  width: 74px;
+  height: 74px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(244, 230, 191, 0.78);
+  box-shadow: 0 0 34px rgba(226, 189, 90, 0.28);
+  margin-bottom: 10px;
+}
+
+.mastil-loading-kicker {
+  color: rgba(244, 230, 191, 0.72);
+  font: 800 12px/1.2 "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+#loading-screen .loading-text {
+  position: static !important;
+  top: auto !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+  color: #f4d77a !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: 800 2.2rem/1.08 Cinzel, Georgia, serif !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.92), 0 0 20px rgba(226, 189, 90, 0.24) !important;
+}
+
+.mastil-loading-subtext {
+  color: rgba(244, 230, 191, 0.78);
+  font: 700 14px/1.4 "Segoe UI", sans-serif;
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+#loading-bar-container {
+  width: min(520px, 74vw) !important;
+  height: 18px !important;
+  margin: 0 !important;
+  transform: none !important;
+  overflow: hidden !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(226, 189, 90, 0.62) !important;
+  background: rgba(7, 5, 4, 0.72) !important;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+#loading-bar-container::before,
+#loading-bar-container::after {
+  content: "" !important;
+  display: none !important;
+}
+
+#loading-bar {
+  height: 100% !important;
+  width: 0%;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(90deg, #7d2e26 0%, #d5a33e 42%, #fff2b4 55%, #d5a33e 72%, #2f6fa5 100%) !important;
+  background-size: 100% 100% !important;
+  box-shadow: 0 0 20px rgba(226, 189, 90, 0.45) !important;
+  animation: none !important;
+}
+
+#loading-bar-glow {
+  display: none !important;
+  top: -6px !important;
+  height: 30px !important;
+  width: 92px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 248, 214, 0.86), transparent) !important;
+  filter: none !important;
+  opacity: 0.78 !important;
+}
+
+@keyframes mastilLoadingFlow {
+  0% { background-position: 100% 0; }
+  100% { background-position: -120% 0; }
+}
+
+@keyframes mastilLoadingMist {
+  0% { transform: translate3d(-1.4%, -0.8%, 0) scale(1); opacity: 0.78; }
+  100% { transform: translate3d(1.4%, 0.8%, 0) scale(1.03); opacity: 1; }
+}
+
+.mastil-faction-icon {
+  --mastil-icon-color-a: #f6dc84;
+  --mastil-icon-color-b: #a87323;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M10 56V24h8V12h8v12h12V12h8v12h8v32H38V42H26v14H10zm10-22h8v-8h-8v8zm16 0h8v-8h-8v8z'/%3E%3C/svg%3E");
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  position: relative;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.34), transparent 27%),
+    linear-gradient(145deg, rgba(255, 244, 189, 0.25), rgba(60, 33, 13, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(91, 57, 25, 0.35), 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+.mastil-faction-icon::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  background: linear-gradient(180deg, var(--mastil-icon-color-a), var(--mastil-icon-color-b));
+  -webkit-mask: var(--mastil-icon) center / contain no-repeat;
+  mask: var(--mastil-icon) center / contain no-repeat;
+}
+
+.mastil-icon-england {
+  --mastil-icon-color-a: #f4d96e;
+  --mastil-icon-color-b: #825322;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M10 56V24h8V12h8v12h12V12h8v12h8v32H38V42H26v14H10zm10-22h8v-8h-8v8zm16 0h8v-8h-8v8z'/%3E%3C/svg%3E");
+}
+
+.mastil-icon-spain {
+  --mastil-icon-color-a: #72d2ee;
+  --mastil-icon-color-b: #1e627f;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M30 7h4v9h10v8H34v20c5-1 9-5 10-11h8c-2 13-10 21-20 24-10-3-18-11-20-24h8c1 6 5 10 10 11V24H20v-8h10V7z'/%3E%3C/svg%3E");
+}
+
+.mastil-icon-maya {
+  --mastil-icon-color-a: #f2a34e;
+  --mastil-icon-color-b: #8d3a20;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M6 56h52L32 8 6 56zm16-8h20l-5-9H27l-5 9zm10-18 4 7h-8l4-7z'/%3E%3C/svg%3E");
+}
+
+.mastil-icon-abbasid {
+  --mastil-icon-color-a: #c7a8ff;
+  --mastil-icon-color-b: #55308c;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' fill-rule='evenodd' d='M42 8c-10 3-17 12-17 24s7 21 17 24C25 59 10 48 10 32S25 5 42 8zm4 22 4-8 4 8 8 2-8 3-4 7-4-7-8-3 8-2z'/%3E%3C/svg%3E");
+}
+
+.mastil-icon-hre {
+  --mastil-icon-color-a: #ffd96f;
+  --mastil-icon-color-b: #b44336;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M8 50h48v8H8v-8zm0-30 13 12 11-22 11 22 13-12-5 26H13L8 20z'/%3E%3C/svg%3E");
+}
+
+.mastil-inline-icon {
+  width: 28px;
+  height: 28px;
+  margin-right: 9px;
+  vertical-align: -7px;
+}
+
+#game-container {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 232, 166, 0.08), transparent 22rem),
+    url("../../../assets/backgrounds/game-world.png") center/cover no-repeat !important;
+}
+
+#playername-modal {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(246, 211, 131, 0.08), transparent 22rem),
+    linear-gradient(180deg, rgba(6, 4, 3, 0.24), rgba(6, 4, 3, 0.48)),
+    url("../../../assets/backgrounds/name-screen-bg.png") center/cover no-repeat !important;
+  background-repeat: no-repeat, no-repeat, no-repeat !important;
+  background-size: 100% 100%, 100% 100%, cover !important;
+  background-position: center, center, center !important;
+  padding: 18px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#playername-modal .modal-content {
+  width: min(780px, 94vw);
+  min-width: 0 !important;
+  max-height: min(88vh, 720px);
+  overflow: visible !important;
+  color: var(--mastil-cream);
+  background:
+    linear-gradient(145deg, rgba(41, 25, 15, 0.9), rgba(11, 8, 6, 0.88)) !important;
+  border: 1px solid rgba(226, 189, 90, 0.7) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.66), inset 0 0 50px rgba(226, 189, 90, 0.1) !important;
+  backdrop-filter: none;
+}
+
+#playername-modal .modal-content::after {
+  content: "" !important;
+  width: 58px !important;
+  height: 58px !important;
+  top: -30px !important;
+  z-index: 2 !important;
+  background:
+    url("../../../assets/branding/mastil-logo.png") center/cover no-repeat,
+    radial-gradient(circle, #d4af37 0%, #715018 100%) !important;
+  border: 2px solid rgba(244, 230, 191, 0.86) !important;
+}
+
+#playername-modal label,
+#playername-modal .faction-selection-title {
+  color: #f2cf69 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.82) !important;
+  letter-spacing: 0 !important;
+}
+
+#playername-modal input[type="text"] {
+  width: min(340px, 86vw) !important;
+  max-width: 340px !important;
+  color: #fff7dc !important;
+  background: rgba(10, 7, 5, 0.78) !important;
+  border: 1px solid rgba(226, 189, 90, 0.66) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 10px 24px rgba(0, 0, 0, 0.28) !important;
+}
+
+#playername-modal .faction-selection {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(90px, 1fr));
+  gap: 10px !important;
+  max-width: 650px;
+  margin: 12px auto !important;
+}
+
+#playername-modal .faction-button {
+  min-width: 0 !important;
+  max-width: none !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(226, 189, 90, 0.34) !important;
+  background: rgba(244, 230, 191, 0.82) !important;
+  color: #24160d !important;
+  min-height: 116px;
+  padding: 10px 8px !important;
+}
+
+#playername-modal .faction-icon {
+  font-size: 25px !important;
+  line-height: 1 !important;
+}
+
+#playername-modal .faction-name {
+  font-size: 0.82rem !important;
+  line-height: 1.15 !important;
+  overflow-wrap: anywhere;
+}
+
+#playername-modal .faction-button:hover,
+#playername-modal .faction-button.nation-selected {
+  background: linear-gradient(180deg, #fff1bd, #d7ad48) !important;
+  border-color: rgba(255, 229, 142, 0.95) !important;
+  transform: translateY(-3px) !important;
+}
+
+#mastil-game-controls {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 1550;
+  display: none;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(17, 10, 7, 0.88);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: none;
+}
+
+#mastil-strategy-panel {
+  position: fixed;
+  left: 16px;
+  top: 82px;
+  z-index: 1545;
+  display: none;
+  width: min(300px, calc(100vw - 32px));
+  padding: 10px 12px;
+  color: var(--mastil-cream);
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(17, 10, 7, 0.9);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+#mastil-objective-panel {
+  position: fixed;
+  right: 16px;
+  top: 82px;
+  z-index: 1545;
+  display: none;
+  width: min(310px, calc(100vw - 32px));
+  padding: 12px;
+  color: var(--mastil-cream);
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(17, 10, 7, 0.9);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.mastil-objective-head {
+  display: grid;
+  gap: 2px;
+}
+
+.mastil-objective-head span {
+  color: rgba(226, 189, 90, 0.82);
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-objective-head strong {
+  color: #fff2bf;
+  font: 900 15px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-objective-detail {
+  margin-top: 6px;
+  color: rgba(244, 230, 191, 0.88);
+  font: 750 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-objective-bar {
+  height: 9px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 189, 90, 0.42);
+  background: rgba(0, 0, 0, 0.36);
+}
+
+.mastil-objective-bar span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2f6fa5, #e2bd5a);
+  box-shadow: 0 0 16px rgba(226, 189, 90, 0.38);
+  transition: width 220ms ease;
+}
+
+.mastil-objective-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: rgba(244, 230, 191, 0.82);
+  font: 800 11px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-objective-stats span {
+  padding: 5px 7px;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mastil-event-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.mastil-event-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-height: 22px;
+  color: rgba(244, 230, 191, 0.84);
+  font: 750 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-event-item span {
+  color: rgba(226, 189, 90, 0.72);
+}
+
+.mastil-event-item strong {
+  font-weight: 850;
+}
+
+.mastil-event-capture strong {
+  color: #9ed6a2;
+}
+
+.mastil-event-danger strong {
+  color: #ffb0a6;
+}
+
+.mastil-event-upgrade strong,
+.mastil-event-wave strong {
+  color: #f4d77a;
+}
+
+.mastil-event-defense strong {
+  color: #d8e9ff;
+}
+
+.mastil-event-achievement strong,
+.mastil-event-edict strong {
+  color: #ffe18a;
+}
+
+#mastil-achievement-toast {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  z-index: 2600;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: min(390px, calc(100vw - 28px));
+  padding: 10px 12px;
+  color: var(--mastil-cream);
+  border: 1px solid rgba(255, 225, 138, 0.64);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(43, 28, 14, 0.95), rgba(13, 9, 7, 0.93)),
+    radial-gradient(circle at 16% 20%, rgba(255, 225, 138, 0.28), transparent 36%);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.48), inset 0 0 30px rgba(226, 189, 90, 0.1);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -18px) scale(0.98);
+}
+
+#mastil-achievement-toast.active {
+  animation: mastilAchievementToast 4.2s ease forwards;
+}
+
+.mastil-achievement-mark {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 225, 138, 0.7);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f5db83, #9b6d25);
+  box-shadow: inset 0 0 0 4px rgba(42, 25, 12, 0.28), 0 0 20px rgba(226, 189, 90, 0.32);
+}
+
+.mastil-achievement-mark::before,
+.mastil-achievement-mark::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 2px;
+  background: #25160b;
+  transform: rotate(45deg);
+}
+
+.mastil-achievement-mark::after {
+  inset: 15px;
+  background: #fff1bd;
+}
+
+.mastil-achievement-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mastil-achievement-copy em {
+  color: rgba(226, 189, 90, 0.86);
+  font: 900 10px/1 "Segoe UI", sans-serif;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.mastil-achievement-copy strong {
+  overflow-wrap: anywhere;
+  color: #fff2bf;
+  font: 950 16px/1.1 "Segoe UI", sans-serif;
+}
+
+.mastil-achievement-copy small {
+  overflow-wrap: anywhere;
+  color: rgba(244, 230, 191, 0.84);
+  font: 750 12px/1.25 "Segoe UI", sans-serif;
+}
+
+@keyframes mastilAchievementToast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -18px) scale(0.98);
+  }
+  12%,
+  82% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px) scale(0.99);
+  }
+}
+
+#mastil-match-summary {
+  width: min(480px, 86vw);
+  margin: 10px auto 12px;
+  padding: 12px;
+  color: var(--mastil-cream);
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(12, 8, 5, 0.54);
+  box-shadow: inset 0 0 26px rgba(226, 189, 90, 0.08);
+}
+
+.mastil-summary-score {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(226, 189, 90, 0.25);
+}
+
+.mastil-summary-score span {
+  color: rgba(226, 189, 90, 0.88);
+  font: 900 12px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-summary-score strong {
+  color: #fff2bf;
+  font: 950 26px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mastil-summary-grid span {
+  min-height: 42px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 7px;
+  color: rgba(244, 230, 191, 0.82);
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  font: 800 11px/1.1 "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+.mastil-summary-grid strong {
+  color: #f4d77a;
+  font-size: 16px;
+}
+
+.mastil-summary-awards {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(226, 189, 90, 0.22);
+  text-align: left;
+}
+
+.mastil-summary-awards span {
+  color: rgba(226, 189, 90, 0.84);
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-summary-awards strong {
+  color: rgba(244, 230, 191, 0.92);
+  font: 800 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-strategy-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+  font: 800 12px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-strategy-label {
+  color: rgba(226, 189, 90, 0.82);
+  text-transform: uppercase;
+}
+
+.mastil-strategy-selected,
+.mastil-strategy-advice {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(226, 189, 90, 0.22);
+}
+
+.mastil-strategy-advice {
+  color: rgba(244, 230, 191, 0.9);
+}
+
+#game-container[style*="block"] ~ #mastil-game-controls,
+body:has(#game-container[style*="block"]) #mastil-game-controls {
+  display: flex;
+}
+
+body:has(#game-container[style*="block"]) #mastil-strategy-panel {
+  display: block;
+}
+
+body:has(#game-container[style*="block"]) #mastil-objective-panel {
+  display: block;
+}
+
+body:has(#game-container[style*="block"]) .mastil-license-badge,
+body:has(#game-container[style*="block"]) .mastil-top-note,
+body:has(#game-container[style*="block"]) .mastil-publisher-mark {
+  display: none;
+}
+
+body:has(#game-container[style*="block"]) #info-panel {
+  bottom: 78px !important;
+  max-width: min(520px, calc(100vw - 34px)) !important;
+  z-index: 1540;
+}
+
+#mastil-game-controls button {
+  min-height: 38px;
+  min-width: 104px;
+  border: 1px solid rgba(226, 189, 90, 0.58);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ddbd61, #8e651f);
+  color: #1c1007;
+  cursor: pointer;
+  font: 800 12px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+#mastil-game-controls button.off {
+  color: rgba(244, 230, 191, 0.82);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mastil-online-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.mastil-room-code {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(226, 189, 90, 0.32);
+  border-radius: 6px;
+  padding: 9px 11px;
+  font: 800 14px/1 Consolas, monospace;
+}
+
+#legends-modal,
+#credits-modal {
+  width: min(1040px, 92vw) !important;
+  max-width: 1040px !important;
+  max-height: 88vh !important;
+  padding: 28px !important;
+  color: var(--mastil-cream) !important;
+  border: 1px solid rgba(226, 189, 90, 0.62) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(145deg, rgba(34, 22, 14, 0.95), rgba(8, 6, 5, 0.94)),
+    url("../../../assets/backgrounds/loading-bg.png") center/cover no-repeat !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.68), inset 0 0 64px rgba(226, 189, 90, 0.08) !important;
+  z-index: 2400 !important;
+}
+
+#legends-modal h2 {
+  margin-bottom: 12px !important;
+  color: #f1cf6b !important;
+  letter-spacing: 0 !important;
+}
+
+#legends-modal .medieval-divider {
+  margin: 10px 0 14px !important;
+}
+
+.legends-intro {
+  color: rgba(244, 230, 191, 0.78) !important;
+  font: 700 14px/1.4 "Segoe UI", sans-serif !important;
+  margin-bottom: 14px !important;
+}
+
+.legends-selection {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px !important;
+  margin: 0 0 16px !important;
+}
+
+.legend-button {
+  min-height: 104px;
+  display: grid !important;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 12px 8px !important;
+  color: #24160d !important;
+  text-align: center !important;
+  background: linear-gradient(180deg, rgba(244, 230, 191, 0.9), rgba(197, 174, 126, 0.86)) !important;
+  border: 1px solid rgba(226, 189, 90, 0.48) !important;
+  border-radius: 8px !important;
+  font: 800 12px/1.15 "Segoe UI", sans-serif !important;
+}
+
+.legend-button:hover,
+.legend-button.active {
+  transform: translateY(-2px) !important;
+  background: linear-gradient(180deg, #fff1bd, #d6ad46) !important;
+  border-color: rgba(255, 229, 142, 0.95) !important;
+}
+
+.legend-button .legend-icon {
+  margin: 0 !important;
+  width: 38px;
+  height: 38px;
+}
+
+.legend-name {
+  overflow-wrap: anywhere;
+}
+
+.civilization-legend {
+  display: none;
+  max-height: min(48vh, 460px);
+  overflow: auto;
+  padding: 18px !important;
+  color: rgba(244, 230, 191, 0.86) !important;
+  border: 1px solid rgba(226, 189, 90, 0.35) !important;
+  border-radius: 8px !important;
+  background: rgba(7, 5, 4, 0.48) !important;
+}
+
+.civilization-legend h3 {
+  color: #f1cf6b !important;
+  margin-top: 0 !important;
+}
+
+.civilization-legend p {
+  line-height: 1.55;
+}
+
+.legend-accordion-title {
+  width: 100%;
+  min-height: 42px;
+  color: #f4e6bf !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(226, 189, 90, 0.26) !important;
+  border-radius: 6px !important;
+  text-align: left;
+}
+
+.legend-accordion-title.active,
+.legend-accordion-title:hover {
+  background: rgba(226, 189, 90, 0.16) !important;
+}
+
+.legend-accordion-panel {
+  color: rgba(244, 230, 191, 0.82) !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 0 0 6px 6px;
+}
+
+@media (max-width: 720px) {
+  .mastil-top-note {
+    display: none;
+  }
+
+  .mastil-publisher-mark {
+    right: 10px;
+    top: 10px;
+    font-size: 10px;
+    padding: 7px 9px;
+  }
+
+  #start-screen .menu-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: min(380px, 86vw) !important;
+    margin-bottom: clamp(18px, 4vh, 28px) !important;
+  }
+
+  #mastil-game-controls {
+    width: calc(100vw - 20px);
+    bottom: 10px;
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body:has(#game-container[style*="block"]) #mastil-game-controls {
+    display: grid;
+  }
+
+  body:has(#game-container[style*="block"]) #mastil-strategy-panel {
+    top: 68px;
+    left: 10px;
+    width: calc(50vw - 16px);
+    padding: 8px 10px;
+  }
+
+  body:has(#game-container[style*="block"]) #mastil-objective-panel {
+    top: 68px;
+    right: 10px;
+    width: calc(50vw - 16px);
+    padding: 8px 10px;
+  }
+
+  #mastil-achievement-toast {
+    top: 72px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    padding: 9px 10px;
+  }
+
+  .mastil-achievement-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mastil-achievement-copy strong {
+    font-size: 14px;
+  }
+
+  #mastil-match-summary {
+    width: min(430px, 88vw);
+    padding: 10px;
+  }
+
+  .mastil-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mastil-event-list {
+    display: none;
+  }
+
+  #mastil-game-controls button {
+    min-width: 0;
+    min-height: 36px;
+  }
+
+  #start-screen .game-title {
+    font-size: clamp(3rem, 17vw, 5.2rem) !important;
+  }
+
+  #start-screen .menu-button,
+  #start-screen .menu-button:nth-child(-n + 3) {
+    min-height: 44px !important;
+  }
+
+  .mastil-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-dialog {
+    padding: 16px;
+  }
+
+  .mastil-awards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-edict-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-edict-dialog {
+    max-height: 90vh;
+    overflow: auto;
+  }
+
+  .mastil-edict-card {
+    min-height: 118px;
+  }
+
+  .mastil-award {
+    min-height: 94px;
+  }
+
+  .mastil-highscore-summary {
+    grid-template-columns: 1fr;
+  }
+
+  #highscore-modal .highscore-entry {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  #highscore-modal .highscore-score {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .mastil-license-badge {
+    top: 10px;
+    left: 10px;
+  }
+
+  #loading-screen {
+    padding: 14px !important;
+  }
+
+  .mastil-loading-panel {
+    padding: 22px 16px 20px;
+  }
+
+  .mastil-loading-mark {
+    width: 60px;
+    height: 60px;
+  }
+
+  #loading-screen .loading-text {
+    font-size: 1.65rem !important;
+  }
+
+  .mastil-loading-subtext {
+    font-size: 12px;
+  }
+
+  #loading-bar-container {
+    width: min(420px, 82vw) !important;
+  }
+
+  #playername-modal {
+    padding: 12px;
+  }
+
+  #playername-modal .modal-content {
+    width: min(560px, 94vw);
+    padding: 36px 16px 22px !important;
+    max-height: 90vh;
+    overflow: auto !important;
+  }
+
+  #playername-modal .modal-content::after {
+    top: -20px !important;
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  #playername-modal .faction-selection {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 360px;
+  }
+
+  #playername-modal .faction-button {
+    min-height: 92px;
+  }
+
+  .legends-selection {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #legends-modal,
+  #credits-modal {
+    width: 94vw !important;
+    padding: 18px !important;
+  }
+
+  .legend-button {
+    min-height: 86px;
+  }
+
+  .civilization-legend {
+    max-height: 46vh;
+  }
+}

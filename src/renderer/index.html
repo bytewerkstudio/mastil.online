@@ -1,0 +1,366 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="MASTIL von Bytewerk Studio - ein mittelalterliches Tower-Conquest-Strategiespiel fuer Windows und Web.">
+  <meta name="theme-color" content="#171009">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>MASTIL</title>
+  <link rel="icon" href="../../assets/branding/mastil-icon.ico">
+  <link rel="stylesheet" href="./legacy/legacy-styles.css?v=3.2.0">
+  <link rel="stylesheet" href="./styles/app-modern.css?v=3.9.1">
+  <script src="./legacy/version-history.js?v=3.8.0"></script>
+</head>
+<body>
+  <audio id="background-music" loop preload="auto">
+    <source src="../../assets/audio/background.mp3" type="audio/mpeg">
+  </audio>
+<div id="start-screen">
+        <button id="start-music-btn" class="mastil-music-btn" title="Musik ein/aus" onclick="toggleMusic()"><span class="mastil-music-icon" aria-hidden="true"></span></button>
+        <div class="start-title-container">
+            <h1 class="game-title">MASTIL</h1>
+            <p class="game-subtitle">Der Schatten meiner Armee ist der Vorbote eures Untergangs.</p>
+        </div>
+        <div class="menu-container">
+            <button class="menu-button" onclick="startGame()">
+                <span class="button-text">Einzelkampagne</span>
+            </button>
+            <button class="menu-button" onclick="showLegends()">
+                <span class="button-text">Legenden von MASTIL</span>
+            </button>
+            <button class="menu-button" onclick="showOptions()">
+                <span class="button-text">Optionen</span>
+            </button>
+            <button class="menu-button" onclick="showHighscores()">
+                <span class="button-text">Highscore-Liste</span>
+            </button>
+            <button class="menu-button" onclick="showCredits()">
+                <span class="button-text">Credits</span>
+            </button>
+        </div>
+        <div class="copyright">&copy; 2025 MASTIL</div>
+    </div>
+    <div id="loading-screen">
+        <div class="mastil-loading-panel">
+            <img class="mastil-loading-mark" src="../../assets/branding/mastil-logo.png" alt="MASTIL">
+            <div class="mastil-loading-kicker">MASTIL</div>
+            <div class="loading-text">Die Welt wird vorbereitet...</div>
+            <div class="mastil-loading-subtext">Banner, Türme und Karten werden geladen</div>
+            <div id="loading-bar-container">
+                <div id="loading-bar"></div>
+                <div id="loading-bar-glow"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ladeanzeige zwischen den Wellen -->
+    <div id="wave-transition-screen">
+        <div class="wave-transition-content">
+            <div class="wave-transition-text">Welle <span id="next-wave-number">2</span> wird vorbereitet!</div>
+            <div class="wave-transition-loader">
+                <div class="loader-symbol"><span class="mastil-loader-mark" aria-hidden="true"></span></div>
+                <div class="loader-bar">
+                    <div class="loader-progress"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="playername-modal">
+        <div class="modal-content">
+
+            <label for="playername-input">Euer Hoheit, wie lautet euer Name?</label>
+            <input type="text" id="playername-input" maxlength="18" autocomplete="off" placeholder="Euer königlicher Name..." />
+            
+            <div class="faction-selection-title">Wählt Euer Reich:</div>
+            <div class="faction-selection">
+                <button class="faction-button" data-faction="england" onclick="selectFaction('england')" style="background: #b5a68a;">
+                    <span class="faction-icon mastil-faction-icon mastil-icon-england" aria-hidden="true"></span>
+                    <span class="faction-name">Die Engländer</span>
+                </button>
+                <button class="faction-button" data-faction="spain" onclick="selectFaction('spain')" style="background: #b5a68a;">
+                    <span class="faction-icon mastil-faction-icon mastil-icon-spain" aria-hidden="true"></span>
+                    <span class="faction-name">Die Solterraner</span>
+                </button>
+                <button class="faction-button" data-faction="maya" onclick="selectFaction('maya')" style="background: #b5a68a;">
+                    <span class="faction-icon mastil-faction-icon mastil-icon-maya" aria-hidden="true"></span>
+                    <span class="faction-name">Die Sternenleser</span>
+                </button>
+                <button class="faction-button" data-faction="abbasid" onclick="selectFaction('abbasid')" style="background: #b5a68a;">
+                    <span class="faction-icon mastil-faction-icon mastil-icon-abbasid" aria-hidden="true"></span>
+                    <span class="faction-name">Das Kalifat von Al-Kimiya</span>
+                </button>
+                <button class="faction-button" data-faction="hre" onclick="selectFaction('hre')" style="background: #b5a68a;">
+                    <span class="faction-icon mastil-faction-icon mastil-icon-hre" aria-hidden="true"></span>
+                    <span class="faction-name">Das Aethelgardische Reich</span>
+                </button>
+            </div>
+            
+            <div class="royal-scroll-decoration">
+                <svg width="180" height="15" viewBox="0 0 180 15" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 7.5 Q45 0 90 7.5 Q135 15 170 7.5" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.6"/>
+                </svg>
+            </div>
+            <button onclick="submitPlayerName()">
+                <span class="btn-text">Bestätigen</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="credits-modal">
+        <div class="medieval-seal"></div>
+        <button class="close-x-button" id="credits-x-close" title="Schließen">×</button>
+        <div class="credits-content"></div>
+        <div class="medieval-divider">
+            <svg width="200" height="20" viewBox="0 0 200 20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 10 H80 M120 10 H190" stroke="#d4af37" stroke-width="1.5" opacity="0.7"/>
+                <circle cx="100" cy="10" r="5" fill="#d4af37" opacity="0.7"/>
+            </svg>
+        </div>
+        <button class="close-button" onclick="closeCredits()">Schließen</button>
+    </div>
+
+    <div id="legends-modal">
+        <div class="medieval-seal"></div>
+        <button class="close-x-button" id="legends-x-close" title="Schließen">×</button>
+        <h2>Legenden von MASTIL</h2>
+        <div class="medieval-divider">
+            <svg width="200" height="20" viewBox="0 0 200 20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 10 H80 M120 10 H190" stroke="#d4af37" stroke-width="1.5" opacity="0.7"/>
+                <circle cx="100" cy="10" r="5" fill="#d4af37" opacity="0.7"/>
+            </svg>
+        </div>
+        <p class="legends-intro">Wähle eine Zivilisation, um ihre Geschichte zu entdecken:</p>
+        <div class="legends-selection">
+            <button class="legend-button" onclick="showCivilizationLegend('england')">
+                <span class="legend-icon mastil-faction-icon mastil-icon-england" aria-hidden="true"></span>
+                <span class="legend-name">Die Engländer</span>
+            </button>
+            <button class="legend-button" onclick="showCivilizationLegend('spain')">
+                <span class="legend-icon mastil-faction-icon mastil-icon-spain" aria-hidden="true"></span>
+                <span class="legend-name">Die Solterraner</span>
+            </button>
+            <button class="legend-button" onclick="showCivilizationLegend('maya')">
+                <span class="legend-icon mastil-faction-icon mastil-icon-maya" aria-hidden="true"></span>
+                <span class="legend-name">Die Sternenleser</span>
+            </button>
+            <button class="legend-button" onclick="showCivilizationLegend('abbasid')">
+                <span class="legend-icon mastil-faction-icon mastil-icon-abbasid" aria-hidden="true"></span>
+                <span class="legend-name">Das Kalifat von Al-Kimiya</span>
+            </button>
+            <button class="legend-button" onclick="showCivilizationLegend('hre')">
+                <span class="legend-icon mastil-faction-icon mastil-icon-hre" aria-hidden="true"></span>
+                <span class="legend-name">Das Aethelgardische Reich</span>
+            </button>
+        </div>
+        <div class="civilization-legend" id="legend-content">
+            <!-- Civilization legends will be displayed here -->
+        </div>
+        <div class="medieval-divider">
+            <svg width="200" height="20" viewBox="0 0 200 20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 10 H80 M120 10 H190" stroke="#d4af37" stroke-width="1.5" opacity="0.7"/>
+                <circle cx="100" cy="10" r="5" fill="#d4af37" opacity="0.7"/>
+            </svg>
+        </div>
+        <button class="close-button" onclick="closeLegends()">Schließen</button>
+    </div>
+
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-layer">
+            <div id="top-bar">
+                <div class="resource-display">
+                    <div class="gold-icon"></div>
+                    <span class="resource-value" id="gold-display">100</span>
+                </div>
+                <div class="nation-emblem" id="nation-emblem">
+                    <span class="nation-icon"></span>
+                    <span class="nation-name"></span>
+                </div>
+                <div id="wave-display">1</div>
+                <div class="top-bar-controls">
+                    <button id="music-btn" class="mastil-music-btn" title="Musik ein/aus" onclick="toggleMusic()"><span class="mastil-music-icon" aria-hidden="true"></span></button>
+                    <button id="help-btn" title="Spielregeln anzeigen" onclick="showTutorial()">?</button>
+                    <button id="pause-btn" title="Spiel pausieren" onclick="pauseGame()"><span class="pause-icon"></span></button>
+                </div>
+            </div>
+            
+            <div id="info-panel">
+                Tippe auf einen deiner Türme, um Aktionen auszuführen
+            </div>
+            
+            <div class="tower-menu" id="tower-menu">
+                <div class="action-ornament"></div>
+                <div class="tower-action-circle" id="upgrade-action">
+                    <div class="cost-indicator" id="upgrade-cost">50 Gold</div>
+                </div>
+                <div class="tower-action-circle" id="cancel-action"></div>
+            </div>
+            
+            <div id="game-over">
+                <div class="medieval-shield"></div>
+                <h2 class="medieval-title">Spiel Vorbei!</h2>
+                <div class="medieval-divider">
+                    <svg width="200" height="20" viewBox="0 0 200 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 10 H80 M120 10 H190" stroke="#d4af37" stroke-width="1.5" opacity="0.7"/>
+                        <circle cx="100" cy="10" r="5" fill="#d4af37" opacity="0.7"/>
+                    </svg>
+                </div>
+                <p class="royal-message">Euer Reich ist gefallen, edler Herrscher!</p>
+                <p id="gameover-wave" class="wave-counter"></p>
+                <div class="medieval-scroll-ornament">
+                    <svg width="60" height="15" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5,7.5 C15,2.5 25,12.5 30,7.5 C35,2.5 45,12.5 55,7.5" stroke="#d4af37" stroke-width="1" fill="none"/>
+                    </svg>
+                </div>
+                <button id="restart-button">Neu starten</button>
+            </div>
+            
+            <div id="tutorial">
+                <button class="close-x-button" id="tutorial-x-close" title="Schließen">×</button>
+                <h3 class="medieval-title">MASTIL Tower Conquest</h3>
+                <div class="medieval-divider">
+                    <svg width="200" height="20" viewBox="0 0 200 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 10 H80 M120 10 H190" stroke="#d4af37" stroke-width="1.5" opacity="0.7"/>
+                        <circle cx="100" cy="10" r="5" fill="#d4af37" opacity="0.7"/>
+                    </svg>
+                </div>
+                <p>Willkommen, edler Herrscher! Das Ziel ist es, das Königreich zu erobern und zu überleben.</p>
+                
+                <h4 class="tutorial-section-title">Über das Spiel</h4>
+                <p>MASTIL ist ein mittelalterliches Strategiespiel, in dem ihr eure Türme geschickt ausbauen und erobern müsst, um zu überleben.</p>
+                <ul class="medieval-list">
+                    <li>Ihr beginnt mit einem einzigen Turm (blau)</li>
+                    <li>Verstärkt eure Armee und erobert neutrale (grau) und feindliche (rot) Türme</li>
+                    <li>Mit jeder Welle werden die Feinde stärker und aggressiver</li>
+                    <li>Goldtürme bringen mehr Einkommen, Truppentürme bilden schneller Einheiten aus</li>
+                    <li>Wachtürme stärken verbündete Nachbartürme als Versorgungspunkt</li>
+                    <li>Befestigte Türme blocken einen Teil eingehender Angriffe</li>
+                </ul>
+                
+                <h4 class="tutorial-section-title">Steuerung</h4>
+                <ul class="medieval-list">
+                    <li>Tippe auf einen deiner Türme (blau), um das Aktionsmenü zu öffnen</li>
+                    <li>Wähle "Upgraden", um die Kapazität und Produktionsrate zu erhöhen</li>
+                    <li>Nutze "Befestigen", um wichtige Türme für kurze Zeit widerstandsfähiger zu machen</li>
+                    <li>Für einen schnellen Angriff, doppeltippe auf einen gegnerischen oder neutralen Turm</li>
+                    <li>Nutze die Zwei-Finger-Geste zum Zoomen und einen Finger zum Schwenken der Karte</li>
+                </ul>
+                
+                <h4 class="tutorial-section-title">Tipps & Strategien</h4>
+                <ul class="medieval-list">
+                    <li>Verbessert zuerst euren Heimatturm, um eure Produktionsrate zu steigern</li>
+                    <li>Erobert strategisch wichtige Türme mit hohem Goldertrag</li>
+                    <li>Achtet auf Turmverbindungen - kurze Wege sind schneller für Truppenbewegungen</li>
+                    <li>Sendet keine zu kleinen Einheiten gegen starke feindliche Türme</li>
+                    <li>Nutzt den Optionsbildschirm, um Grafikqualität anzupassen bei Leistungsproblemen</li>
+                </ul>
+                
+                <p>Möge der Ruhm mit Euch sein, mein Lehnsherr!</p>
+                <div class="medieval-scroll-ornament">
+                    <svg width="60" height="15" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5,7.5 C15,2.5 25,12.5 30,7.5 C35,2.5 45,12.5 55,7.5" stroke="#d4af37" stroke-width="1" fill="none"/>
+                    </svg>
+                </div>
+                <button id="tutorial-close">Verstanden</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pause-overlay">
+        <div class="pause-content">
+            <h2>Pause</h2>
+            <div class="medieval-divider">
+                <svg width="220" height="20" viewBox="0 0 220 20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 10 H90 M130 10 H210" stroke="#d4af37" stroke-width="1.5" opacity="0.7"/>
+                    <circle cx="110" cy="10" r="5" fill="#d4af37" opacity="0.7"/>
+                </svg>
+            </div>
+            <button id="resume-btn">
+                <span class="btn-icon mastil-play-icon" aria-hidden="true"></span>
+                <span>Weiter</span>
+            </button>
+            <button id="main-menu-btn">
+                <span class="btn-icon mastil-home-icon" aria-hidden="true"></span>
+                <span>Hauptmenü</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="options-modal">
+        <button class="close-x-button" id="options-x-close" title="Schließen">×</button>
+        <h2 id="options-title">Optionen</h2>
+        <div class="medieval-divider">
+            <svg width="200" height="20" viewBox="0 0 200 20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 10 H80 M120 10 H190" stroke="#d4af37" stroke-width="1.5" opacity="0.7"/>
+                <circle cx="100" cy="10" r="5" fill="#d4af37" opacity="0.7"/>
+            </svg>
+        </div>
+        <div class="option-row">
+            <span class="option-label" id="lang-label">Sprache:</span>
+            <select class="option-select" id="lang-select">
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        <div class="option-row">
+            <span class="option-label" id="cb-label">Farbschwäche-Modus:</span>
+            <input type="checkbox" class="option-checkbox" id="cb-toggle">
+        </div>
+        <div class="option-row">
+            <span class="option-label" id="reset-label">Fortschritt zurücksetzen:</span>
+            <button class="option-btn danger" id="reset-btn">Zurücksetzen</button>
+        </div>
+        <div class="option-row">
+            <span class="option-label" id="quality-label">Grafikqualität:</span>
+            <select class="option-select" id="quality-select">
+                <option value="HIGH">Hoch</option>
+                <option value="MEDIUM">Mittel</option>
+                <option value="LOW">Niedrig</option>
+            </select>
+        </div>
+        <div class="option-row mastil-audio-option-row">
+            <span class="option-label" id="music-volume-label">Musiklautstärke:</span>
+            <div class="mastil-range-control">
+                <input type="range" id="music-volume-range" min="0" max="100" step="1" value="50">
+                <span id="music-volume-value">50%</span>
+            </div>
+        </div>
+        <div class="option-row mastil-audio-option-row">
+            <span class="option-label" id="sfx-volume-label">Effektlautstärke:</span>
+            <div class="mastil-range-control">
+                <input type="range" id="sfx-volume-range" min="0" max="100" step="1" value="42">
+                <span id="sfx-volume-value">42%</span>
+            </div>
+        </div>
+        <div class="medieval-scroll-ornament">
+            <svg width="60" height="15" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5,7.5 C15,2.5 25,12.5 30,7.5 C35,2.5 45,12.5 55,7.5" stroke="#d4af37" stroke-width="1" fill="none"/>
+            </svg>
+        </div>
+        <button class="close-button" id="options-close-btn">Schließen</button>
+    </div>
+
+    <div id="highscore-modal">
+        <button class="close-x-button" id="highscore-close-btn">×</button>
+        <h2>Königliche Bestenliste</h2>
+        <div class="medieval-divider">
+            <svg width="200" height="20" viewBox="0 0 200 20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 10 H80 M120 10 H190" stroke="#d4af37" stroke-width="1.5" opacity="0.7"/>
+                <circle cx="100" cy="10" r="5" fill="#d4af37" opacity="0.7"/>
+            </svg>
+        </div>
+        <div class="highscore-list" id="highscore-list"></div>
+    </div>
+
+  <script src="../shared/game-core.js?v=3.2.0"></script>
+  <script src="./legacy/legacy-game.js?v=3.8.1"></script>
+  <script src="./app/audio-engine.js?v=3.7.0"></script>
+  <script src="./app/game-enhancements.js?v=3.9.1"></script>
+  <script src="./app/web-config.js?v=3.3.0"></script>
+  <script src="./app/license-client.js?v=3.3.0"></script>
+  <script src="./app/online-client.js?v=3.3.0"></script>
+  <script src="./app/app-shell.js?v=3.8.0"></script>
+</body>
+</html>

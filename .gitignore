@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-installer/
+dist-web/
+server/data/
+tools/node/
+tools/node-v*.zip
+.env
+*.log
+*.tmp

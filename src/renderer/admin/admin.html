@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MASTIL Lizenz-Admin</title>
+  <link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+  <main class="admin-shell">
+    <section class="hero">
+      <img src="../../../assets/branding/mastil-logo.png" alt="MASTIL">
+      <div>
+        <h1>MASTIL Lizenz-Admin</h1>
+        <p>Manuelle Lizenzcodes erzeugen, suchen und sperren.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Verbindung</h2>
+      <div class="grid">
+        <label>
+          Server
+          <input id="backend-url" value="http://localhost:3787">
+        </label>
+        <label>
+          Admin-Token
+          <input id="admin-token" type="password" placeholder="ADMIN_TOKEN">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Lizenz erzeugen</h2>
+      <div class="grid">
+        <label>
+          E-Mail
+          <input id="create-email" type="email" placeholder="kunde@example.com">
+        </label>
+        <label>
+          Quelle
+          <input id="create-source" value="admin">
+        </label>
+      </div>
+      <div class="actions">
+        <button id="create-license">Lizenz erzeugen</button>
+      </div>
+      <pre id="create-result"></pre>
+    </section>
+
+    <section class="panel">
+      <h2>Lizenzen</h2>
+      <div class="actions">
+        <input id="search-query" placeholder="E-Mail oder Lizenzcode">
+        <button id="refresh-list">Suchen</button>
+      </div>
+      <div id="license-list" class="license-list"></div>
+    </section>
+  </main>
+  <script src="./admin.js"></script>
+</body>
+</html>
