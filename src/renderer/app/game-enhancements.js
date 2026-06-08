@@ -17,27 +17,37 @@
     { id: 'endboss', title: 'Endboss-Zitadelle', waves: [21, 25], boss: 'Kaiser Veyron', image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png' }
   ];
   const MAP_NODES = [
-    { x: 0.16, y: 0.52, role: 'player', type: 'normal', rank: 0 },
-    { x: 0.29, y: 0.39, role: 'neutral', type: 'watch', rank: 1 },
-    { x: 0.30, y: 0.66, role: 'neutral', type: 'gold', rank: 1 },
-    { x: 0.43, y: 0.27, role: 'neutral', type: 'troop', rank: 2 },
-    { x: 0.46, y: 0.53, role: 'neutral', type: 'normal', rank: 2 },
-    { x: 0.46, y: 0.78, role: 'neutral', type: 'watch', rank: 2 },
-    { x: 0.60, y: 0.37, role: 'neutral', type: 'gold', rank: 3 },
-    { x: 0.62, y: 0.64, role: 'neutral', type: 'troop', rank: 3 },
-    { x: 0.74, y: 0.23, role: 'enemy', type: 'troop', rank: 4 },
-    { x: 0.79, y: 0.52, role: 'enemy', type: 'normal', rank: 4 },
-    { x: 0.72, y: 0.80, role: 'enemy', type: 'gold', rank: 4 },
-    { x: 0.88, y: 0.36, role: 'enemy', type: 'watch', rank: 5 },
-    { x: 0.90, y: 0.68, role: 'enemy', type: 'troop', rank: 5 },
-    { x: 0.22, y: 0.20, role: 'neutral', type: 'gold', rank: 6 },
-    { x: 0.22, y: 0.84, role: 'neutral', type: 'troop', rank: 6 },
-    { x: 0.55, y: 0.16, role: 'enemy', type: 'watch', rank: 7 },
-    { x: 0.56, y: 0.88, role: 'enemy', type: 'normal', rank: 7 },
-    { x: 0.38, y: 0.13, role: 'neutral', type: 'watch', rank: 8 },
-    { x: 0.39, y: 0.90, role: 'neutral', type: 'gold', rank: 8 },
-    { x: 0.93, y: 0.50, role: 'enemy', type: 'normal', rank: 9 }
+    { x: 0.16, y: 0.52, role: 'player', type: 'normal', rank: 0, terrain: 'keep' },
+    { x: 0.29, y: 0.39, role: 'neutral', type: 'watch', rank: 1, terrain: 'hill' },
+    { x: 0.30, y: 0.66, role: 'neutral', type: 'gold', rank: 1, terrain: 'market' },
+    { x: 0.43, y: 0.27, role: 'neutral', type: 'troop', rank: 2, terrain: 'barracks' },
+    { x: 0.46, y: 0.53, role: 'neutral', type: 'normal', rank: 2, terrain: 'road' },
+    { x: 0.46, y: 0.78, role: 'neutral', type: 'watch', rank: 2, terrain: 'ford' },
+    { x: 0.60, y: 0.37, role: 'neutral', type: 'gold', rank: 3, terrain: 'market' },
+    { x: 0.62, y: 0.64, role: 'neutral', type: 'troop', rank: 3, terrain: 'forest' },
+    { x: 0.74, y: 0.23, role: 'enemy', type: 'troop', rank: 4, terrain: 'barracks' },
+    { x: 0.79, y: 0.52, role: 'enemy', type: 'normal', rank: 4, terrain: 'road' },
+    { x: 0.72, y: 0.80, role: 'enemy', type: 'gold', rank: 4, terrain: 'market' },
+    { x: 0.88, y: 0.36, role: 'enemy', type: 'watch', rank: 5, terrain: 'hill' },
+    { x: 0.90, y: 0.68, role: 'enemy', type: 'troop', rank: 5, terrain: 'forest' },
+    { x: 0.22, y: 0.20, role: 'neutral', type: 'gold', rank: 6, terrain: 'quarry' },
+    { x: 0.22, y: 0.84, role: 'neutral', type: 'troop', rank: 6, terrain: 'ford' },
+    { x: 0.55, y: 0.16, role: 'enemy', type: 'watch', rank: 7, terrain: 'hill' },
+    { x: 0.56, y: 0.88, role: 'enemy', type: 'normal', rank: 7, terrain: 'keep' },
+    { x: 0.38, y: 0.13, role: 'neutral', type: 'watch', rank: 8, terrain: 'forest' },
+    { x: 0.39, y: 0.90, role: 'neutral', type: 'gold', rank: 8, terrain: 'market' },
+    { x: 0.93, y: 0.50, role: 'enemy', type: 'normal', rank: 9, terrain: 'keep' }
   ];
+  const TERRAIN = {
+    keep: { label: 'Burggrund', short: 'B', color: '#e4c56b', detail: 'stabiler Startpunkt' },
+    hill: { label: 'Höhenzug', short: 'H', color: '#b7d394', detail: 'bessere Verteidigung' },
+    market: { label: 'Markt', short: 'M', color: '#f0c85c', detail: 'zusätzliches Gold' },
+    barracks: { label: 'Kasernenhof', short: 'K', color: '#8fc3f0', detail: 'zusätzliche Truppen' },
+    road: { label: 'Königsweg', short: 'W', color: '#d8c49a', detail: 'schnellere Befehle' },
+    ford: { label: 'Flussfurt', short: 'F', color: '#8fc7d8', detail: 'zäher Widerstand' },
+    forest: { label: 'Waldsaum', short: 'W', color: '#9ed6a2', detail: 'Hinterhaltsschutz' },
+    quarry: { label: 'Steinbruch', short: 'S', color: '#c9c0aa', detail: 'billigere Befestigung' }
+  };
   const SIZE_LIMITS = { compact: 10, standard: 13, large: 16, war: 20 };
   const DIFFICULTY = {
     easy: { gold: 155, enemyUnits: 0.48, enemyLevel: 0, label: 'Training' },
@@ -114,6 +124,14 @@
     grandOffensive: {
       title: 'Großer Heerzug',
       detail: 'Ersten koordinierten Frontalangriff befohlen.'
+    },
+    bossBreaker: {
+      title: 'Bossbrecher',
+      detail: 'Ersten Boss-Turm gebrochen.'
+    },
+    terrainLord: {
+      title: 'Landesherr',
+      detail: 'Drei unterschiedliche Gelände gehalten.'
     }
   };
   const TOTAL_ACHIEVEMENTS = Object.keys(ACHIEVEMENTS).length;
@@ -656,6 +674,20 @@
     ctx.save();
     ctx.translate(x, y);
 
+    drawTerrainPlate(tower, width, height);
+
+    if (tower.boss && faction !== safe(() => FACTIONS.PLAYER, 'player')) {
+      const pulse = 0.76 + Math.sin(performance.now() * 0.004) * 0.12;
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(255, 177, 126, ${pulse})`;
+      ctx.lineWidth = 4;
+      ctx.setLineDash([9, 6]);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, width * 1.12, height * 0.9, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 18;
     ctx.shadowOffsetY = 10;
@@ -810,6 +842,107 @@
 
     drawTowerRoleDetails(tower, width, height, base);
     drawTowerBadges(tower, width, height, level);
+    ctx.restore();
+  }
+
+  function drawTerrainPlate(tower, width, height) {
+    const terrain = getTerrainInfo(tower.terrain);
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = 'rgba(18, 11, 7, 0.42)';
+    ctx.beginPath();
+    ctx.ellipse(0, height * 0.4, width * 0.92, height * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = rgba(terrain.color, 0.58);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, height * 0.4, width * 0.82, height * 0.2, 0, Math.PI * 0.12, Math.PI * 1.88);
+    ctx.stroke();
+
+    ctx.fillStyle = rgba(terrain.color, 0.88);
+    ctx.strokeStyle = 'rgba(18, 11, 7, 0.75)';
+    ctx.lineWidth = 1.4;
+    roundRect(ctx, -width * 0.48, height * 0.48, 20, 17, 6);
+    ctx.fill();
+    ctx.stroke();
+    drawTerrainIcon(tower.terrain, -width * 0.48 + 10, height * 0.48 + 8.5, terrain.color);
+    ctx.restore();
+  }
+
+  function drawTerrainIcon(terrain, x, y, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = '#171009';
+    ctx.fillStyle = '#171009';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (terrain === 'market') {
+      ctx.beginPath();
+      ctx.arc(-3, 1, 3, 0, Math.PI * 2);
+      ctx.arc(4, -1, 3, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (terrain === 'barracks') {
+      ctx.beginPath();
+      ctx.moveTo(-5, 5);
+      ctx.lineTo(0, -6);
+      ctx.lineTo(5, 5);
+      ctx.closePath();
+      ctx.fill();
+    } else if (terrain === 'hill') {
+      ctx.beginPath();
+      ctx.moveTo(-7, 5);
+      ctx.lineTo(-1, -5);
+      ctx.lineTo(7, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(-1, -5);
+      ctx.lineTo(2, -1);
+      ctx.lineTo(-3, -1);
+      ctx.closePath();
+      ctx.fill();
+    } else if (terrain === 'forest') {
+      for (let i = -1; i <= 1; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(i * 4, -6);
+        ctx.lineTo(i * 4 - 4, 3);
+        ctx.lineTo(i * 4 + 4, 3);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (terrain === 'ford') {
+      ctx.beginPath();
+      ctx.moveTo(-7, -2);
+      ctx.quadraticCurveTo(-3, -6, 0, -2);
+      ctx.quadraticCurveTo(4, 2, 7, -2);
+      ctx.moveTo(-7, 4);
+      ctx.quadraticCurveTo(-3, 0, 0, 4);
+      ctx.quadraticCurveTo(4, 8, 7, 4);
+      ctx.stroke();
+    } else if (terrain === 'quarry') {
+      ctx.beginPath();
+      ctx.moveTo(-6, 5);
+      ctx.lineTo(-2, -5);
+      ctx.lineTo(5, -1);
+      ctx.lineTo(6, 5);
+      ctx.closePath();
+      ctx.fill();
+    } else if (terrain === 'keep') {
+      roundRect(ctx, -5, -5, 10, 10, 2);
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.fillRect(-2, -2, 4, 7);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(-7, 3);
+      ctx.lineTo(7, -3);
+      ctx.moveTo(-6, -2);
+      ctx.lineTo(6, 4);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -1414,6 +1547,64 @@
     return order[(index + 1) % order.length];
   }
 
+  function getTerrainInfo(terrain) {
+    return TERRAIN[terrain] || TERRAIN.road;
+  }
+
+  function getHeldTerrainTypes(towerList = getPlayerTowers()) {
+    return new Set(towerList.map((tower) => tower.terrain).filter(Boolean));
+  }
+
+  function applyTerrainEconomy(tower, deltaTime) {
+    if (!tower || tower.faction !== safe(() => FACTIONS.PLAYER, 'player')) return;
+    tower.mastilTerrainTimer = (tower.mastilTerrainTimer || 0) + deltaTime;
+
+    if (tower.terrain === 'market') {
+      tower.mastilMarketTimer = (tower.mastilMarketTimer || 0) + deltaTime * (0.36 + tower.level * 0.05);
+      if (tower.mastilMarketTimer >= 1) {
+        const bonus = Math.floor(tower.mastilMarketTimer);
+        safe(() => {
+          gold += bonus;
+        });
+        tower.mastilMarketTimer -= bonus;
+      }
+    }
+
+    if (tower.terrain === 'barracks' && tower.mastilTerrainTimer >= 5.6 && tower.units < tower.maxUnits) {
+      tower.units = Math.min(tower.maxUnits, tower.units + 1);
+      tower.mastilTerrainTimer = 0;
+    }
+  }
+
+  function getBossTowers() {
+    return safe(() => towers.filter((tower) => tower.boss && tower.faction !== FACTIONS.PLAYER), []);
+  }
+
+  function promoteBossTower(waveNumber) {
+    const region = getRegionForWave(waveNumber);
+    const enemies = getEnemyTowers();
+    if (!enemies.length) return null;
+    enemies.forEach((tower) => {
+      tower.boss = false;
+      tower.bossName = '';
+    });
+    const boss = enemies
+      .map((tower) => ({
+        tower,
+        score: (tower.level || 1) * 20 + tower.units + tower.routeRank * 3 + (tower.type === 'watch' ? 12 : 0)
+      }))
+      .sort((a, b) => b.score - a.score)[0].tower;
+    boss.boss = true;
+    boss.bossName = region.boss;
+    boss.level = Math.min(7, Math.max(boss.level || 1, 3 + Math.floor(waveNumber / 5)));
+    if (typeof getTowerMaxUnits === 'function') {
+      boss.maxUnits = getTowerMaxUnits(boss.faction, boss.type, boss.level);
+    }
+    boss.units = Math.min(boss.maxUnits, Math.max(boss.units, Math.floor(boss.maxUnits * 0.88)));
+    boss.fortifiedUntil = performance.now() + 18000;
+    return boss;
+  }
+
   function createEdictModal() {
     if (edictModalReady || document.getElementById('mastil-edict-modal')) return;
     edictModalReady = true;
@@ -1601,6 +1792,15 @@
     if (selected.type === 'watch') {
       return 'Wachturm schützt Nachbarn: Umgebung ausbauen.';
     }
+    if (selected.terrain === 'market') {
+      return 'Markt halten: dieser Standort finanziert lange Gefechte.';
+    }
+    if (selected.terrain === 'barracks') {
+      return 'Kasernenhof halten: hier wachsen Reserven schneller.';
+    }
+    if (['hill', 'forest', 'ford'].includes(selected.terrain)) {
+      return `${getTerrainInfo(selected.terrain).label}: guter Ort für Schild oder Sammelbefehl.`;
+    }
     if (selected.units >= Math.ceil(selected.maxUnits * 0.7)) {
       return 'Genug Truppen: ein gezielter Angriff lohnt sich.';
     }
@@ -1611,9 +1811,12 @@
     const currentWave = safe(() => wave, 1);
     if (isBossWave(currentWave) && enemy.length > 0) {
       const region = getRegionForWave(currentWave);
+      const bossCount = getBossTowers().length;
       return {
         title: `Boss: ${region.boss}`,
-        detail: `Halte die Linien und besiege ${enemy.length} Boss-Tuerme.`,
+        detail: bossCount
+          ? `Breche den markierten Boss-Turm. ${enemy.length} Feindposten stehen noch.`
+          : `Halte die Linien und besiege ${enemy.length} Feindposten.`,
         progress: Math.min(1, own.length / Math.max(1, enemy.length + own.length))
       };
     }
@@ -1654,20 +1857,21 @@
     if (!isBossWave(waveNumber)) return;
     const region = getRegionForWave(waveNumber);
     const enemy = getEnemyTowers();
+    const boss = promoteBossTower(waveNumber);
     enemy.forEach((tower) => {
-      tower.level = Math.min(5, (tower.level || 1) + 1);
+      tower.level = Math.min(tower === boss ? 7 : 5, (tower.level || 1) + 1);
       tower.maxUnits = typeof getTowerMaxUnits === 'function'
         ? getTowerMaxUnits(tower.faction, tower.type, tower.level)
         : tower.maxUnits + 8;
-      tower.units = Math.min(tower.maxUnits, Math.max(tower.units, Math.floor(tower.maxUnits * 0.78)));
+      tower.units = Math.min(tower.maxUnits, Math.max(tower.units, Math.floor(tower.maxUnits * (tower === boss ? 0.92 : 0.72))));
       spawnEffect(tower.x, tower.y, 'achievement', {
-        color: '#e2bd5a',
-        text: 'Boss',
+        color: tower === boss ? '#ffb17e' : '#e2bd5a',
+        text: tower === boss ? 'Boss' : 'Wache',
         duration: 1400,
         size: 1.12
       });
     });
-    pushEvent(`Bosswelle: ${region.boss}`, 'danger');
+    pushEvent(boss ? `Bosswelle: ${region.boss} erscheint` : `Bosswelle: ${region.boss}`, 'danger');
     showEnhancementNotice(`Bosswelle ${waveNumber}: ${region.boss} betritt die Karte.`);
     playSound('wave');
   }
@@ -1705,6 +1909,9 @@
       tower.units = Math.max(1, Math.floor(tower.maxUnits * unitFactor));
     }
     tower.routeRank = node.rank;
+    tower.terrain = node.terrain || 'road';
+    tower.boss = false;
+    tower.bossName = '';
     return tower;
   }
 
@@ -1765,6 +1972,10 @@
     if (enemyIndex === 0) {
       const front = MAP_NODES.find((node) => node.role === 'enemy') || { x: 0.82, y: 0.5, type: 'normal', rank: 4 };
       towers.push(createBattleTower(front, getEnemyFaction(0, opponentCount), 1 + difficulty.enemyLevel, difficulty.enemyUnits));
+    }
+
+    if (bossWave) {
+      promoteBossTower(currentWave);
     }
 
     window.MASTIL_ACTIVE_REGION = getActiveRegion();
@@ -2036,8 +2247,11 @@
       const originalSendUnits = sendUnitsFromTower;
       sendUnitsFromTower = function enhancedSendUnits(sourceTower, targetTower, unitCount) {
         const available = Math.floor(sourceTower && sourceTower.units ? sourceTower.units : 0);
-        const sent = Math.max(0, Math.min(unitCount || 0, available));
-        const result = originalSendUnits.apply(this, arguments);
+        let requested = Math.max(0, Math.floor(unitCount || 0));
+        if (sourceTower && sourceTower.terrain === 'road') requested = Math.ceil(requested * 1.08);
+        if (sourceTower && sourceTower.terrain === 'barracks') requested += requested >= 6 ? 1 : 0;
+        const sent = Math.max(0, Math.min(requested, available));
+        const result = originalSendUnits.call(this, sourceTower, targetTower, sent);
         if (sourceTower && targetTower && sent > 0) {
           spawnEffect(sourceTower.x, sourceTower.y, 'attack', {
             color: colorForFaction(sourceTower.faction),
@@ -2089,6 +2303,24 @@
         const beforeUnits = targetTower ? targetTower.units : 0;
         const beforeFaction = targetTower ? targetTower.faction : null;
         const wasFortified = targetTower && targetTower.fortifiedUntil && targetTower.fortifiedUntil > performance.now();
+        if (unit && targetTower && unit.faction !== targetTower.faction) {
+          const terrainBlock = {
+            hill: 0.13,
+            ford: 0.11,
+            forest: 0.08,
+            keep: 0.06,
+            quarry: 0.04
+          }[targetTower.terrain] || 0;
+          if (terrainBlock > 0 && Math.random() < terrainBlock) {
+            spawnEffect(targetTower.x, targetTower.y, 'shield', {
+              color: getTerrainInfo(targetTower.terrain).color,
+              text: getTerrainInfo(targetTower.terrain).short,
+              duration: 620,
+              size: 0.85
+            });
+            return undefined;
+          }
+        }
         const result = originalArrival.apply(this, arguments);
         if (unit && targetTower && unit.faction !== beforeFaction) {
           const key = `${Math.round(targetTower.x)}:${Math.round(targetTower.y)}`;
@@ -2120,19 +2352,29 @@
       const originalUpdateTowers = updateTowers;
       updateTowers = function enhancedUpdateTowers(deltaTime) {
         const before = new Map();
-        safe(() => towers.forEach((tower) => before.set(tower, tower.faction)));
+        safe(() => towers.forEach((tower) => before.set(tower, { faction: tower.faction, boss: Boolean(tower.boss), terrain: tower.terrain })));
         const result = originalUpdateTowers.apply(this, arguments);
+        safe(() => towers.forEach((tower) => applyTerrainEconomy(tower, deltaTime || 0)));
         safe(() => towers.forEach((tower) => {
           const previous = before.get(tower);
-          if (previous && previous !== tower.faction) {
+          if (previous && previous.faction !== tower.faction) {
             if (tower.faction === safe(() => FACTIONS.PLAYER, 'player')) {
               matchStats.captured += 1;
               pushEvent(`${getTowerRoleName(tower.type)} erobert`, 'capture');
               unlockAchievement('firstCapture', { tower });
+              if (previous.boss) {
+                tower.boss = false;
+                tower.bossName = '';
+                pushEvent('Boss-Turm gebrochen', 'achievement');
+                unlockAchievement('bossBreaker', { tower });
+              }
+              if (getHeldTerrainTypes().size >= 3) {
+                unlockAchievement('terrainLord', { tower });
+              }
               if (matchStats.captured >= 3) {
                 unlockAchievement('bannerLord', { tower });
               }
-            } else if (previous === safe(() => FACTIONS.PLAYER, 'player')) {
+            } else if (previous.faction === safe(() => FACTIONS.PLAYER, 'player')) {
               matchStats.lost += 1;
               pushEvent('Eigener Turm verloren', 'danger');
             }
@@ -2232,8 +2474,8 @@
     controls.innerHTML = `
       <button type="button" data-action="select" title="Wählt deinen stärksten Turm"><span class="mastil-command-icon mastil-icon-select" aria-hidden="true"></span><span>Stärkster</span></button>
       <button type="button" data-action="attack" title="Sendet 50% zum schwächsten nahen Ziel"><span class="mastil-command-icon mastil-icon-attack" aria-hidden="true"></span><span>Schnell</span></button>
-      <button type="button" data-action="assault" title="Mehrere eigene Türme greifen koordinierte Ziele an"><span class="mastil-command-icon mastil-icon-assault" aria-hidden="true"></span><span>Front</span></button>
-      <button type="button" data-action="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span></button>
+      <button type="button" data-action="assault" data-cooldown-key="assault" title="Mehrere eigene Türme greifen koordinierte Ziele an"><span class="mastil-command-icon mastil-icon-assault" aria-hidden="true"></span><span>Front</span><small></small></button>
+      <button type="button" data-action="rally" data-cooldown-key="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span><small></small></button>
       <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span></button>
       <button type="button" data-action="specialize" title="Wechselt die Rolle des gewählten Turms"><span class="mastil-command-icon mastil-icon-specialize" aria-hidden="true"></span><span>Gilde</span></button>
       <button type="button" data-action="fortify" title="Befestigt den gewählten Turm kurzzeitig"><span class="mastil-command-icon mastil-icon-fortify" aria-hidden="true"></span><span>Schild</span></button>
@@ -2256,6 +2498,21 @@
         button.classList.toggle('off', !minimapEnabled);
         showEnhancementNotice(minimapEnabled ? 'Mini-Karte sichtbar.' : 'Mini-Karte ausgeblendet.');
       }
+    });
+  }
+
+  function updateCommandButtons() {
+    const controls = document.getElementById('mastil-game-controls');
+    if (!controls) return;
+    const now = performance.now();
+    controls.querySelectorAll('button[data-cooldown-key]').forEach((button) => {
+      const key = button.dataset.cooldownKey;
+      const readyAt = commandCooldowns.get(key) || 0;
+      const remaining = Math.max(0, readyAt - now);
+      const small = button.querySelector('small');
+      button.classList.toggle('cooling', remaining > 0);
+      button.style.setProperty('--cooldown-progress', remaining > 0 ? String(Math.min(1, remaining / (key === 'assault' ? 14000 : 11000))) : '0');
+      if (small) small.textContent = remaining > 0 ? `${Math.ceil(remaining / 1000)}s` : '';
     });
   }
 
@@ -2338,7 +2595,8 @@
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
     if (selected && selected.faction === playerFaction) {
       const fortified = selected.fortifiedUntil && selected.fortifiedUntil > now ? ' | befestigt' : '';
-      selectedNode.textContent = `${getTowerTierName(selected.level)} | ${getTowerRoleName(selected.type)} | ${Math.floor(selected.units)}/${selected.maxUnits}${fortified}`;
+      const terrain = getTerrainInfo(selected.terrain);
+      selectedNode.textContent = `${getTowerTierName(selected.level)} | ${getTowerRoleName(selected.type)} | ${terrain.label} | ${Math.floor(selected.units)}/${selected.maxUnits}${fortified}`;
     } else {
       selectedNode.textContent = 'keiner gewählt';
     }
@@ -2418,6 +2676,7 @@
         originalRenderUI();
         updateStrategyPanel();
         updateObjectivePanel();
+        updateCommandButtons();
         drawEffects();
         drawEnhancedMinimap();
       };

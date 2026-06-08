@@ -1634,6 +1634,7 @@ body:has(#game-container[style*="block"]) #info-panel {
   font: 900 11px/1 "Segoe UI", sans-serif;
   text-transform: uppercase;
   box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.42), 0 8px 16px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
 #mastil-game-controls button:hover {
@@ -1641,7 +1642,24 @@ body:has(#game-container[style*="block"]) #info-panel {
   filter: brightness(1.08);
 }
 
+#mastil-game-controls button::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: calc(var(--cooldown-progress, 0) * 100%);
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(18, 11, 7, 0.08), rgba(18, 11, 7, 0.44));
+  opacity: 0;
+  transition: height 160ms linear, opacity 160ms ease;
+}
+
+#mastil-game-controls button.cooling::after {
+  opacity: 1;
+}
+
 #mastil-game-controls button span:last-child {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   overflow: hidden;
   text-align: center;
@@ -1651,6 +1669,31 @@ body:has(#game-container[style*="block"]) #info-panel {
   line-height: 1.02;
 }
 
+#mastil-game-controls button small {
+  position: absolute;
+  z-index: 2;
+  right: 4px;
+  top: 3px;
+  min-width: 24px;
+  padding: 2px 4px;
+  color: #fff2bf;
+  border: 1px solid rgba(255, 242, 191, 0.42);
+  border-radius: 999px;
+  background: rgba(18, 11, 7, 0.72);
+  font: 900 9px/1 "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+#mastil-game-controls button small:empty {
+  display: none;
+}
+
+#mastil-game-controls button.cooling {
+  color: rgba(255, 242, 191, 0.86);
+  border-color: rgba(226, 189, 90, 0.34);
+  background: linear-gradient(180deg, rgba(114, 86, 38, 0.9), rgba(47, 32, 15, 0.92));
+}
+
 #mastil-game-controls button.off {
   color: rgba(244, 230, 191, 0.82);
   background: rgba(255, 255, 255, 0.08);
@@ -1658,6 +1701,7 @@ body:has(#game-container[style*="block"]) #info-panel {
 
 .mastil-command-icon {
   position: relative;
+  z-index: 1;
   display: block;
   width: 22px;
   height: 22px;
