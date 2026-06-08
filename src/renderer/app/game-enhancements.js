@@ -115,6 +115,72 @@
     forest: { label: 'Waldsaum', short: 'W', color: '#9ed6a2', detail: 'Hinterhaltsschutz' },
     quarry: { label: 'Steinbruch', short: 'S', color: '#c9c0aa', detail: 'billigere Befestigung' }
   };
+  const STRATEGIC_SITES = {
+    keep: {
+      id: 'crownkeep',
+      title: 'Kronburg',
+      short: 'Krone',
+      mark: 'K',
+      color: '#e8c65d',
+      bonus: 'Ausbau und Verteidigung bleiben stabil.'
+    },
+    hill: {
+      id: 'signal',
+      title: 'Signalfeuer',
+      short: 'Signal',
+      mark: 'S',
+      color: '#b7d394',
+      bonus: 'Fronttürme erhalten bessere Warnung und Reserven.'
+    },
+    market: {
+      id: 'trade',
+      title: 'Handelsstadt',
+      short: 'Handel',
+      mark: 'H',
+      color: '#f0c85c',
+      bonus: 'Regelmäßiges Zusatzgold.'
+    },
+    barracks: {
+      id: 'warcamp',
+      title: 'Heerlager',
+      short: 'Heer',
+      mark: 'L',
+      color: '#8fc3f0',
+      bonus: 'Schwache Türme bekommen Reserven.'
+    },
+    road: {
+      id: 'royalroad',
+      title: 'Königsstraße',
+      short: 'Straße',
+      mark: 'R',
+      color: '#d8c49a',
+      bonus: 'Befehle laden schneller auf.'
+    },
+    ford: {
+      id: 'rivergate',
+      title: 'Flusstor',
+      short: 'Tor',
+      mark: 'F',
+      color: '#8fc7d8',
+      bonus: 'Gefährdete Linien halten länger.'
+    },
+    forest: {
+      id: 'hunterwood',
+      title: 'Jägerhain',
+      short: 'Jäger',
+      mark: 'J',
+      color: '#9ed6a2',
+      bonus: 'Frontposten werden aus dem Hinterland gestützt.'
+    },
+    quarry: {
+      id: 'stoneworks',
+      title: 'Steinwerk',
+      short: 'Stein',
+      mark: 'W',
+      color: '#c9c0aa',
+      bonus: 'Befestigungen werden günstiger.'
+    }
+  };
   const SIZE_LIMITS = { compact: 10, standard: 13, large: 16, war: 20 };
   const DIFFICULTY = {
     easy: { gold: 155, enemyUnits: 0.48, enemyLevel: 0, label: 'Training' },
@@ -302,6 +368,10 @@
       title: 'Quartiermeister',
       detail: 'Drei Geländebeuten in einer Partie gesammelt.'
     },
+    warPlanner: {
+      title: 'Kartenherr',
+      detail: 'Vier strategische Orte in einer Partie gehalten.'
+    },
     firstEnemyOrder: {
       title: 'Feindkontakt',
       detail: 'Ersten KI-Kommandantenbefehl überstanden.'
@@ -372,6 +442,11 @@
     nextWave: 0,
     choices: [],
     continueWave: null
+  };
+  const strategicState = {
+    pulseTimer: 0,
+    lastHeldCount: 0,
+    lastSignature: ''
   };
   const matchStats = {
     captured: 0,
@@ -531,14 +606,17 @@
 
   function getSpecializationCost(tower) {
     const base = 42 + (tower.level || 1) * 16 + matchStats.specialized * 6;
-    return getPlayerFactionId() === 'abbasid' ? Math.max(28, Math.floor(base * 0.82)) : base;
+    const factionDiscount = getPlayerFactionId() === 'abbasid' ? 0.82 : 1;
+    const tradeDiscount = hasStrategicSite('trade') ? 0.94 : 1;
+    return Math.max(28, Math.floor(base * factionDiscount * tradeDiscount));
   }
 
   function getFortifyCost(tower) {
     const base = 28 + ((tower.level || 1) * 7);
     const terrainDiscount = tower.terrain === 'quarry' ? 0.82 : 1;
     const factionDiscount = getPlayerFactionId() === 'england' || getPlayerFactionId() === 'hre' ? 0.9 : 1;
-    return Math.max(18, Math.floor(base * terrainDiscount * factionDiscount));
+    const stoneworksDiscount = hasStrategicSite('stoneworks') ? 0.9 : 1;
+    return Math.max(18, Math.floor(base * terrainDiscount * factionDiscount * stoneworksDiscount));
   }
 
   function getSiegeCost(tower) {
@@ -1264,6 +1342,7 @@
 
   function drawTerrainPlate(tower, width, height) {
     const terrain = getTerrainInfo(tower.terrain);
+    const site = getStrategicSiteInfo(tower);
     ctx.save();
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = 'rgba(18, 11, 7, 0.42)';
@@ -1283,6 +1362,23 @@
     ctx.fill();
     ctx.stroke();
     drawTerrainIcon(tower.terrain, -width * 0.48 + 10, height * 0.48 + 8.5, terrain.color);
+
+    ctx.fillStyle = tower.faction === safe(() => FACTIONS.PLAYER, 'player') ? rgba(site.color, 0.95) : 'rgba(22, 14, 9, 0.82)';
+    ctx.strokeStyle = rgba(site.color, tower.faction === safe(() => FACTIONS.PLAYER, 'player') ? 0.86 : 0.58);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(width * 0.48 - 10, height * 0.48);
+    ctx.lineTo(width * 0.48, height * 0.48 + 8.5);
+    ctx.lineTo(width * 0.48 - 10, height * 0.48 + 17);
+    ctx.lineTo(width * 0.48 - 20, height * 0.48 + 8.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = tower.faction === safe(() => FACTIONS.PLAYER, 'player') ? '#171009' : rgba(site.color, 0.92);
+    ctx.font = '950 9px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(site.mark, width * 0.48 - 10, height * 0.48 + 8.8);
     ctx.restore();
   }
 
@@ -2041,6 +2137,9 @@
     lastLowUnitWarningAt = 0;
     lastSupplyWarningAt = 0;
     lastFrontWarningAt = 0;
+    strategicState.pulseTimer = 0;
+    strategicState.lastHeldCount = 0;
+    strategicState.lastSignature = '';
     matchStats.captured = 0;
     matchStats.lost = 0;
     matchStats.upgrades = 0;
@@ -2102,6 +2201,61 @@
 
   function getTerrainInfo(terrain) {
     return TERRAIN[terrain] || TERRAIN.road;
+  }
+
+  function getStrategicSiteInfo(towerOrTerrain) {
+    const terrain = typeof towerOrTerrain === 'string' ? towerOrTerrain : towerOrTerrain && towerOrTerrain.terrain;
+    return STRATEGIC_SITES[terrain] || STRATEGIC_SITES.road;
+  }
+
+  function computeStrategicSiteState(towerList = safe(() => towers, [])) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const allSites = new Map();
+    const heldSites = new Map();
+    const contestedSites = [];
+
+    towerList.filter(Boolean).forEach((tower) => {
+      const site = getStrategicSiteInfo(tower);
+      if (!allSites.has(site.id)) {
+        allSites.set(site.id, { ...site, towers: [] });
+      }
+      allSites.get(site.id).towers.push(tower);
+      if (tower.faction === playerFaction) {
+        if (!heldSites.has(site.id)) {
+          heldSites.set(site.id, { ...site, towers: [] });
+        }
+        heldSites.get(site.id).towers.push(tower);
+      } else {
+        contestedSites.push({ tower, site });
+      }
+    });
+
+    const held = Array.from(heldSites.values());
+    const total = allSites.size || 1;
+    const nextTarget = contestedSites
+      .map((entry) => ({
+        ...entry,
+        score: (entry.tower.routeRank || 0) * 10 + Math.hypot(entry.tower.x - gameWidth * 0.16, entry.tower.y - gameHeight * 0.52) / 120
+      }))
+      .sort((a, b) => a.score - b.score)[0] || null;
+    const labels = held.map((site) => site.short).slice(0, 3);
+
+    return {
+      held,
+      heldIds: new Set(held.map((site) => site.id)),
+      heldCount: held.length,
+      total,
+      ratio: Math.min(1, held.length / total),
+      nextTarget,
+      signature: held.map((site) => site.id).sort().join('|'),
+      detail: held.length
+        ? `${held.length}/${total} Orte: ${labels.join(', ')}${held.length > labels.length ? '...' : ''}`
+        : `0/${total} strategische Orte.`
+    };
+  }
+
+  function hasStrategicSite(id) {
+    return computeStrategicSiteState().heldIds.has(id);
   }
 
   function getHeldTerrainTypes(towerList = getPlayerTowers()) {
@@ -2283,6 +2437,69 @@
     }
   }
 
+  function applyStrategicSitePulse(deltaTime) {
+    const own = getPlayerTowers();
+    const enemy = getEnemyTowers();
+    if (!own.length) return;
+
+    const state = computeStrategicSiteState();
+    if (state.signature !== strategicState.lastSignature) {
+      strategicState.lastSignature = state.signature;
+      if (state.heldCount > strategicState.lastHeldCount) {
+        pushEvent(`Strategische Orte: ${state.heldCount}/${state.total}`, 'site');
+        if (state.heldCount >= 4) unlockAchievement('warPlanner', { tower: own[0] });
+      }
+      strategicState.lastHeldCount = state.heldCount;
+    }
+
+    strategicState.pulseTimer += deltaTime || 0;
+    if (strategicState.pulseTimer < 8.5) return;
+    strategicState.pulseTimer = 0;
+
+    const ids = state.heldIds;
+    const waveNumber = Math.max(1, safe(() => wave, 1));
+    let pulseText = '';
+
+    if (ids.has('trade')) {
+      const bonus = 2 + Math.floor(state.heldCount / 2) + Math.floor(waveNumber / 6);
+      safe(() => {
+        gold += bonus;
+        updateUI();
+      });
+      pulseText = `Handel +${bonus}`;
+    }
+
+    if (ids.has('warcamp')) {
+      const weakest = own
+        .filter((tower) => tower.units < tower.maxUnits)
+        .sort((a, b) => (a.units / Math.max(1, a.maxUnits)) - (b.units / Math.max(1, b.maxUnits)))[0];
+      if (weakest) {
+        weakest.units = Math.min(weakest.maxUnits, weakest.units + 1);
+        spawnEffect(weakest.x, weakest.y, 'achievement', { color: STRATEGIC_SITES.barracks.color, text: '+1', duration: 760, size: 0.72 });
+        pulseText = pulseText || 'Heerlager +1';
+      }
+    }
+
+    if (ids.has('royalroad')) {
+      reduceCommandCooldowns(850);
+    }
+
+    if ((ids.has('signal') || ids.has('rivergate') || ids.has('hunterwood')) && enemy.length) {
+      const front = computeFrontPressure(own, enemy);
+      const target = front.hottest || own.sort((a, b) => a.units - b.units)[0];
+      if (target && target.units < target.maxUnits) {
+        target.units = Math.min(target.maxUnits, target.units + 1);
+        spawnEffect(target.x, target.y, 'shield', { color: '#b7d394', text: 'Wache', duration: 780, size: 0.72 });
+        pulseText = pulseText || 'Frontwache +1';
+      }
+    }
+
+    if (pulseText && state.heldCount >= 3) {
+      const anchor = own.find((tower) => getStrategicSiteInfo(tower).id === 'crownkeep') || own[0];
+      spawnEffect(anchor.x, anchor.y, 'achievement', { color: '#e8c65d', text: pulseText, duration: 900, size: 0.82 });
+    }
+  }
+
   function getBossTowers() {
     return safe(() => towers.filter((tower) => tower.boss && tower.faction !== FACTIONS.PLAYER), []);
   }
@@ -2377,6 +2594,7 @@
     if (!tower || tower.lootClaimed || tower.faction !== safe(() => FACTIONS.PLAYER, 'player')) return;
     tower.lootClaimed = true;
     const terrain = getTerrainInfo(tower.terrain);
+    const site = getStrategicSiteInfo(tower);
     const currentWave = safe(() => wave, 1);
     let message = '';
 
@@ -2386,19 +2604,19 @@
         gold += bonus;
         updateUI();
       });
-      message = `Marktbeute: +${bonus} Gold`;
+      message = `${site.title}: +${bonus} Gold`;
     } else if (tower.terrain === 'barracks') {
       const amount = getPlayerFactionId() === 'england' ? 4 : 3;
       getPlayerTowers().forEach((own) => {
         own.units = Math.min(own.maxUnits, own.units + amount);
         spawnEffect(own.x, own.y, 'achievement', { color: '#8fc3f0', text: `+${amount}`, duration: 900, size: 0.72 });
       });
-      message = `Kasernenbeute: +${amount} Truppen je Turm`;
+      message = `${site.title}: +${amount} Truppen je Turm`;
     } else if (tower.terrain === 'hill' || tower.terrain === 'ford' || tower.terrain === 'forest') {
       const duration = tower.terrain === 'hill' ? 24000 : 19000;
       tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + duration);
       tower.units = Math.min(tower.maxUnits, tower.units + 4);
-      message = `${terrain.label}: Verteidigung gesichert`;
+      message = `${site.title}: Verteidigung gesichert`;
     } else if (tower.terrain === 'quarry') {
       const bonus = 34 + currentWave * 3;
       safe(() => {
@@ -2406,24 +2624,24 @@
         updateUI();
       });
       tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + 22000);
-      message = `Steinbruch: +${bonus} Gold und Schutz`;
+      message = `${site.title}: +${bonus} Gold und Schutz`;
     } else if (tower.terrain === 'keep') {
       tower.level = Math.min(8, (tower.level || 1) + 1);
       if (typeof getTowerMaxUnits === 'function') {
         tower.maxUnits = getTowerMaxUnits(tower.faction, tower.type, tower.level);
       }
       tower.units = Math.min(tower.maxUnits, tower.units + 8);
-      message = `Burggrund: ${getTowerTierName(tower.level)} gesichert`;
+      message = `${site.title}: ${getTowerTierName(tower.level)} gesichert`;
     } else {
       reduceCommandCooldowns(5200);
-      message = 'Königsweg: Befehle schneller bereit';
+      message = `${site.title}: Befehle schneller bereit`;
     }
 
     matchStats.spoils += 1;
     pushEvent(message, 'spoils');
     spawnEffect(tower.x, tower.y, 'achievement', {
-      color: terrain.color,
-      text: 'Beute',
+      color: site.color || terrain.color,
+      text: site.short,
       duration: 1350,
       size: 1.05
     });
@@ -2629,6 +2847,10 @@
     if (neutral.length && own.length < 3) {
       return 'Früh expandieren: neutrale Türme sichern.';
     }
+    if (selected.lootClaimed || selected.supplyLinked) {
+      const site = getStrategicSiteInfo(selected);
+      return `${site.title} gehalten: ${site.bonus}`;
+    }
     if (selected.type === 'gold' && currentGold < upgradeCost) {
       return 'Goldturm halten, Einkommen wächst langsam aber stetig.';
     }
@@ -2699,6 +2921,7 @@
   function getWarContractState(own, enemy, neutral) {
     const currentTowers = safe(() => towers, []);
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const strategic = computeStrategicSiteState(currentTowers);
     const hasMarket = own.some((tower) => tower.terrain === 'market');
     const capturableMarket = currentTowers.some((tower) => tower.terrain === 'market' && tower.faction !== playerFaction);
     if (!hasMarket && capturableMarket) {
@@ -2706,6 +2929,14 @@
         title: 'Kriegsauftrag: Markt sichern',
         detail: 'Erobere einen Markt für Kriegsbeute und Einkommen.',
         progress: 0
+      };
+    }
+
+    if (strategic.heldCount < Math.min(3, strategic.total) && strategic.nextTarget) {
+      return {
+        title: 'Kriegsauftrag: Kartenmacht',
+        detail: `${strategic.heldCount}/${strategic.total} Orte. Ziel: ${strategic.nextTarget.site.title}.`,
+        progress: strategic.ratio
       };
     }
 
@@ -3629,6 +3860,7 @@
         safe(() => towers.forEach((tower) => before.set(tower, { faction: tower.faction, boss: Boolean(tower.boss), terrain: tower.terrain, commander: tower.commander || getEnemyCommander(tower.faction) })));
         const result = originalUpdateTowers.apply(this, arguments);
         safe(() => towers.forEach((tower) => applyTerrainEconomy(tower, deltaTime || 0)));
+        safe(() => applyStrategicSitePulse(deltaTime || 0));
         safe(() => towers.forEach((tower) => assignEnemyCommander(tower)));
         safe(() => applyEnemyCommanderPressure());
         safe(() => towers.forEach((tower) => {
@@ -3838,6 +4070,10 @@
         <span id="mastil-strategy-pressure">-</span>
       </div>
       <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Orte</span>
+        <span id="mastil-strategy-sites">-</span>
+      </div>
+      <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Feind</span>
         <span id="mastil-strategy-threat">-</span>
       </div>
@@ -3887,6 +4123,11 @@
         <span id="mastil-contract-detail">Sichere wichtige Orte.</span>
         <em><i id="mastil-contract-progress"></i></em>
       </div>
+      <div class="mastil-site-panel" id="mastil-site-panel">
+        <strong id="mastil-site-title">Strategische Orte</strong>
+        <span id="mastil-site-detail">Erobere Kartenorte für Reichsboni.</span>
+        <em><i id="mastil-site-progress"></i></em>
+      </div>
       <div class="mastil-threat-panel" id="mastil-threat-panel">
         <strong id="mastil-threat-title">Feindkommando</strong>
         <span id="mastil-threat-detail">Keine feindliche Kommandantur aktiv.</span>
@@ -3929,13 +4170,14 @@
     const domain = document.getElementById('mastil-strategy-domain');
     const front = document.getElementById('mastil-strategy-front');
     const pressureNode = document.getElementById('mastil-strategy-pressure');
+    const siteNode = document.getElementById('mastil-strategy-sites');
     const threatNode = document.getElementById('mastil-strategy-threat');
     const conditionNode = document.getElementById('mastil-strategy-condition');
     const supplyNode = document.getElementById('mastil-strategy-supply');
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !front || !pressureNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !front || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
@@ -3945,8 +4187,12 @@
     conditionNode.textContent = `${condition.title} | ${condition.short}`;
     const supply = computeSupplyState(own);
     const frontState = computeFrontPressure(own, enemy);
+    const siteState = computeStrategicSiteState(currentTowers);
     supplyNode.textContent = supply.detail;
     pressureNode.textContent = frontState.detail;
+    siteNode.textContent = siteState.nextTarget
+      ? `${siteState.detail} | nächstes Ziel: ${siteState.nextTarget.site.short}`
+      : siteState.detail;
     const trait = getFactionTrait();
     factionNode.textContent = `${trait.short} | ${trait.ability}`;
     if (selected && selected.faction === playerFaction) {
@@ -3982,6 +4228,10 @@
     const contractBox = document.getElementById('mastil-war-contract');
     const contractDetail = document.getElementById('mastil-contract-detail');
     const contractProgress = document.getElementById('mastil-contract-progress');
+    const siteBox = document.getElementById('mastil-site-panel');
+    const siteTitle = document.getElementById('mastil-site-title');
+    const siteDetail = document.getElementById('mastil-site-detail');
+    const siteProgress = document.getElementById('mastil-site-progress');
     const threatBox = document.getElementById('mastil-threat-panel');
     const threatTitle = document.getElementById('mastil-threat-title');
     const threatDetail = document.getElementById('mastil-threat-detail');
@@ -4020,6 +4270,16 @@
       if (label) label.textContent = contract.title;
       contractDetail.textContent = contract.detail;
       contractProgress.style.width = `${Math.round(contract.progress * 100)}%`;
+    }
+    if (siteBox && siteTitle && siteDetail && siteProgress) {
+      const siteState = computeStrategicSiteState(currentTowers);
+      const next = siteState.nextTarget;
+      siteBox.classList.toggle('strong', siteState.heldCount >= 4);
+      siteTitle.textContent = `Strategische Orte: ${siteState.heldCount}/${siteState.total}`;
+      siteDetail.textContent = next
+        ? `${siteState.detail} Nächstes Ziel: ${next.site.title}.`
+        : `${siteState.detail} Alle wichtigen Orte sind in Eurer Hand.`;
+      siteProgress.style.width = `${Math.round(siteState.ratio * 100)}%`;
     }
     if (threatBox && threatTitle && threatDetail && threatProgress) {
       const threat = getEnemyThreatState(own, enemy);
