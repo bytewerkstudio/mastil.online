@@ -102,6 +102,18 @@
     councilMaster: {
       title: 'Rat der Krone',
       detail: 'Drei Edikte in einer Partie genutzt.'
+    },
+    firstSpecialist: {
+      title: 'Gildenmeister',
+      detail: 'Ersten Turm spezialisiert.'
+    },
+    tacticalCommander: {
+      title: 'Kriegsrat',
+      detail: 'Drei taktische Befehle in einer Partie geführt.'
+    },
+    grandOffensive: {
+      title: 'Großer Heerzug',
+      detail: 'Ersten koordinierten Frontalangriff befohlen.'
     }
   };
   const TOTAL_ACHIEVEMENTS = Object.keys(ACHIEVEMENTS).length;
@@ -152,6 +164,7 @@
   let lastLowUnitWarningAt = 0;
   const visualEffects = [];
   const impactThrottle = new Map();
+  const commandCooldowns = new Map();
   const eventLog = [];
   const matchAchievements = new Set();
   const unlockedAchievements = new Set(loadAchievementIds());
@@ -167,7 +180,11 @@
     upgrades: 0,
     fortified: 0,
     edicts: 0,
-    waves: 1
+    waves: 1,
+    commands: 0,
+    specialized: 0,
+    assaults: 0,
+    rallies: 0
   };
 
   function safe(fn, fallback) {
@@ -758,6 +775,39 @@
       ctx.fill();
     }
 
+    if (level >= 5) {
+      ctx.strokeStyle = 'rgba(255, 226, 136, 0.72)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-mainW * 0.58, -mainH * 0.54);
+      ctx.lineTo(-mainW * 0.72, -mainH * 0.18);
+      ctx.lineTo(-mainW * 0.58, mainH * 0.2);
+      ctx.moveTo(mainW * 0.58, -mainH * 0.54);
+      ctx.lineTo(mainW * 0.72, -mainH * 0.18);
+      ctx.lineTo(mainW * 0.58, mainH * 0.2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 225, 138, 0.72)';
+      for (const sx of [-mainW * 0.72, mainW * 0.72]) {
+        ctx.beginPath();
+        ctx.arc(sx, mainH * 0.24, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (level >= 7) {
+      ctx.strokeStyle = 'rgba(255, 239, 188, 0.58)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(0, -mainH * 0.72, width * 0.7, Math.PI * 1.08, Math.PI * 1.92);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 239, 188, 0.86)';
+      for (let i = -1; i <= 1; i += 1) {
+        ctx.beginPath();
+        ctx.arc(i * width * 0.18, -mainH * 0.88 - Math.abs(i) * 4, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     drawTowerRoleDetails(tower, width, height, base);
     drawTowerBadges(tower, width, height, level);
     ctx.restore();
@@ -820,6 +870,67 @@
     }
   }
 
+  function drawTowerRoleIcon(type, centerX, centerY, color) {
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.strokeStyle = '#171009';
+    ctx.fillStyle = '#171009';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (type === 'gold') {
+      ctx.beginPath();
+      ctx.arc(-3, 1, 4.5, 0, Math.PI * 2);
+      ctx.arc(4, -2, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(-6, 1);
+      ctx.lineTo(-1, 1);
+      ctx.moveTo(1, -2);
+      ctx.lineTo(7, -2);
+      ctx.stroke();
+    } else if (type === 'troop') {
+      ctx.beginPath();
+      ctx.moveTo(-6, 6);
+      ctx.lineTo(0, -7);
+      ctx.lineTo(6, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, -6);
+      ctx.lineTo(0, 7);
+      ctx.stroke();
+    } else if (type === 'watch') {
+      ctx.beginPath();
+      ctx.arc(0, 0, 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(0, -8);
+      ctx.lineTo(0, -5);
+      ctx.moveTo(0, 5);
+      ctx.lineTo(0, 8);
+      ctx.moveTo(-8, 0);
+      ctx.lineTo(-5, 0);
+      ctx.moveTo(5, 0);
+      ctx.lineTo(8, 0);
+      ctx.stroke();
+    } else {
+      roundRect(ctx, -6, -5, 12, 10, 2);
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.fillRect(-3, -2, 2, 4);
+      ctx.fillRect(1, -2, 2, 4);
+    }
+    ctx.restore();
+  }
+
   function drawSideTurret(x, y, w, h, base, faction) {
     const gradient = ctx.createLinearGradient(x - w, y - h, x + w, y + h);
     gradient.addColorStop(0, shade(base, 92));
@@ -876,11 +987,11 @@
     const roleText = roleLabels[tower.type];
     if (roleText) {
       ctx.font = '900 10px Segoe UI';
-      ctx.fillStyle = tower.type === 'gold' ? '#d8b13d' : tower.type === 'troop' ? '#8fc3f0' : '#9ed6a2';
+      const roleColor = tower.type === 'gold' ? '#d8b13d' : tower.type === 'troop' ? '#8fc3f0' : '#9ed6a2';
+      ctx.fillStyle = roleColor;
       roundRect(ctx, width * 0.2, height * 0.34, 22, 18, 7);
       ctx.fill();
-      ctx.fillStyle = '#171009';
-      ctx.fillText(roleText, width * 0.2 + 11, height * 0.34 + 9);
+      drawTowerRoleIcon(tower.type, width * 0.2 + 11, height * 0.34 + 9, roleColor);
     }
 
     if (tower.fortifiedUntil && tower.fortifiedUntil > performance.now()) {
@@ -1254,6 +1365,11 @@
     matchStats.fortified = 0;
     matchStats.edicts = 0;
     matchStats.waves = 1;
+    matchStats.commands = 0;
+    matchStats.specialized = 0;
+    matchStats.assaults = 0;
+    matchStats.rallies = 0;
+    commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
     edictState.choices = [];
@@ -1278,6 +1394,24 @@
       normal: 'Bastion'
     };
     return names[type] || 'Bastion';
+  }
+
+  function getTowerTierName(level) {
+    const current = Number(level) || 1;
+    if (current >= 9) return 'Kaiserzitadelle';
+    if (current >= 7) return 'Hochfeste';
+    if (current >= 5) return 'Zitadelle';
+    if (current >= 4) return 'Festung';
+    if (current >= 3) return 'Burg';
+    if (current >= 2) return 'Wehrturm';
+    return 'Vorposten';
+  }
+
+  function getNextTowerType(type) {
+    const types = safe(() => TOWER_TYPES, { NORMAL: 'normal', TROOP: 'troop', GOLD: 'gold', WATCH: 'watch' });
+    const order = [types.NORMAL, types.TROOP, types.GOLD, types.WATCH];
+    const index = Math.max(0, order.indexOf(type));
+    return order[(index + 1) % order.length];
   }
 
   function createEdictModal() {
@@ -1449,6 +1583,15 @@
     if (currentGold >= upgradeCost && selected.units >= Math.ceil(selected.maxUnits * 0.45)) {
       return 'Ausbau bereit: dieser Turm kann stärker werden.';
     }
+    if (own.length >= 3 && enemy.length && selected.units < selected.maxUnits * 0.32) {
+      return 'Reserveturm schwach: Sammeln bündelt Truppen an der Front.';
+    }
+    if (own.length >= 3 && enemy.length && own.some((tower) => tower.units > tower.maxUnits * 0.55)) {
+      return 'Mehrere Türme bereit: Frontangriff kann die Linie brechen.';
+    }
+    if (currentGold >= 42 + selected.level * 16 && selected.level >= 2) {
+      return 'Gilde verfügbar: Spezialisiere Türme für Gold, Truppen oder Wacht.';
+    }
     if (neutral.length && own.length < 3) {
       return 'Früh expandieren: neutrale Türme sichern.';
     }
@@ -1571,6 +1714,9 @@
     const currentWave = Math.max(1, safe(() => wave, 1));
     const bossWave = isBossWave(currentWave);
     const limit = SIZE_LIMITS[config.size] || SIZE_LIMITS.standard;
+    const skirmishStartRank = config.mode === 'skirmish'
+      ? ({ compact: 0, standard: 1, large: 1, war: 2 }[config.size] || 1)
+      : 0;
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
     const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
     const opponentCount = Math.max(1, Math.min(3, Number(config.opponents) || 2));
@@ -1590,11 +1736,14 @@
 
     let enemyIndex = 0;
     for (const node of activeNodes) {
-      if (node.role === 'player') {
+      const playerStartNode = node.role === 'player' || (config.mode === 'skirmish' && node.role === 'neutral' && node.rank <= skirmishStartRank);
+      if (playerStartNode) {
         const home = createBattleTower(node, playerFaction, previousHome && options.preserveHome ? previousHome.level : 1, 0.65);
         if (previousHome && options.preserveHome) {
           home.units = Math.min(home.maxUnits, Math.max(10, Math.floor(previousHome.units * 0.65)));
           home.type = previousHome.type || home.type;
+        } else if (config.mode === 'skirmish' && node.role !== 'player') {
+          home.units = Math.min(home.maxUnits, Math.max(home.units, Math.floor(home.maxUnits * 0.54)));
         }
         towers.push(home);
         continue;
@@ -1620,6 +1769,8 @@
 
     window.MASTIL_ACTIVE_REGION = getActiveRegion();
     window.MASTIL_ACTIVE_BOSS_WAVE = bossWave;
+    const graceByDifficulty = { easy: 22000, normal: 17000, hard: 12500, brutal: 9000 };
+    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 15000) : 12000);
     safe(() => saveGameState());
     pushEvent(config.mode === 'skirmish' ? `Gefecht: ${difficulty.label}` : 'Kampagne gestartet', 'wave');
   }
@@ -1681,6 +1832,124 @@
     showEnhancementNotice(`Schnellangriff: ${amount} Einheiten entsandt.`);
   }
 
+  function isCommandReady(key, cooldownMs, label) {
+    const now = performance.now();
+    const readyAt = commandCooldowns.get(key) || 0;
+    if (now < readyAt) {
+      const seconds = Math.ceil((readyAt - now) / 1000);
+      showEnhancementNotice(`${label} wieder bereit in ${seconds}s.`);
+      playSound('error');
+      return false;
+    }
+    commandCooldowns.set(key, now + cooldownMs);
+    return true;
+  }
+
+  function recordTacticalCommand(text, kind = 'info') {
+    matchStats.commands += 1;
+    pushEvent(text, kind);
+    if (matchStats.commands >= 3) {
+      unlockAchievement('tacticalCommander');
+    }
+  }
+
+  function getNearestTargetFor(source, candidates) {
+    return candidates
+      .map((tower) => ({
+        tower,
+        score:
+          tower.units +
+          Math.hypot(tower.x - source.x, tower.y - source.y) / 95 +
+          (tower.faction === safe(() => FACTIONS.NEUTRAL, 'neutral') ? 8 : 0)
+      }))
+      .sort((a, b) => a.score - b.score)[0]?.tower || null;
+  }
+
+  function coordinatedAssault() {
+    if (!isCommandReady('assault', 14000, 'Frontalangriff')) return;
+
+    const own = getPlayerTowers().filter((tower) => tower.units >= Math.max(4, tower.maxUnits * 0.24));
+    const enemies = getEnemyTowers();
+    const neutral = safe(() => towers.filter((tower) => tower.faction === FACTIONS.NEUTRAL), []);
+    const candidates = enemies.length ? enemies : neutral;
+    if (!own.length || !candidates.length) {
+      commandCooldowns.delete('assault');
+      showEnhancementNotice('Frontalangriff braucht eigene Truppen und ein Ziel.');
+      playSound('error');
+      return;
+    }
+
+    let sentTotal = 0;
+    own.forEach((source) => {
+      const target = getNearestTargetFor(source, candidates);
+      if (!target) return;
+      const pressure = source.type === safe(() => TOWER_TYPES && TOWER_TYPES.TROOP, 'troop') ? 0.45 : 0.34;
+      const amount = Math.max(1, Math.floor(source.units * pressure));
+      if (amount <= 0) return;
+      sentTotal += amount;
+      safe(() => sendUnitsFromTower(source, target, amount));
+      spawnEffect(source.x, source.y, 'attack', { color: colorForFaction(source.faction), text: `-${amount}`, duration: 850, size: 1.05 });
+      spawnEffect(target.x, target.y, 'impact', { color: '#f1cf6b', duration: 760, size: 0.85 });
+    });
+
+    if (sentTotal <= 0) {
+      commandCooldowns.delete('assault');
+      showEnhancementNotice('Keine Truppen für den Frontalangriff bereit.');
+      playSound('error');
+      return;
+    }
+
+    matchStats.assaults += 1;
+    recordTacticalCommand(`Frontalangriff: ${sentTotal} Einheiten`, 'danger');
+    unlockAchievement('grandOffensive');
+    showEnhancementNotice(`Frontalangriff: ${sentTotal} Einheiten marschieren.`);
+    playSound('attack');
+  }
+
+  function rallyToSelectedTower() {
+    if (!isCommandReady('rally', 11000, 'Sammelbefehl')) return;
+
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const own = getPlayerTowers();
+    let target = safe(() => selectedTower && selectedTower.faction === playerFaction ? selectedTower : null, null);
+    if (!target) {
+      target = own
+        .map((tower) => ({ tower, need: tower.maxUnits - tower.units }))
+        .sort((a, b) => b.need - a.need)[0]?.tower || null;
+    }
+
+    if (!target) {
+      commandCooldowns.delete('rally');
+      showEnhancementNotice('Kein Sammelziel gefunden.');
+      playSound('error');
+      return;
+    }
+
+    let sentTotal = 0;
+    own
+      .filter((source) => source !== target && source.units >= 5)
+      .forEach((source) => {
+        const amount = Math.max(1, Math.floor(source.units * 0.28));
+        sentTotal += amount;
+        safe(() => sendUnitsFromTower(source, target, amount));
+        spawnEffect(source.x, source.y, 'attack', { color: colorForFaction(source.faction), text: `-${amount}`, duration: 820, size: 0.86 });
+      });
+
+    if (sentTotal <= 0) {
+      commandCooldowns.delete('rally');
+      showEnhancementNotice('Keine Reserven zum Sammeln bereit.');
+      playSound('error');
+      return;
+    }
+
+    selectedTower = target;
+    matchStats.rallies += 1;
+    recordTacticalCommand(`Sammelbefehl: ${sentTotal} Reserven`, 'defense');
+    spawnEffect(target.x, target.y, 'fortify', { color: '#8fc3f0', text: `+${sentTotal}`, duration: 1150, size: 1.05 });
+    showEnhancementNotice(`Sammelbefehl: ${sentTotal} Reserven zum ${getTowerTierName(target.level)}.`);
+    playSound('select');
+  }
+
   function upgradeSelectedTower() {
     const selected = safe(() => selectedTower, null);
     if (!selected || selected.faction !== safe(() => FACTIONS.PLAYER, 'player')) {
@@ -1689,6 +1958,45 @@
       return;
     }
     safe(() => handleUpgrade());
+  }
+
+  function specializeSelectedTower() {
+    const selected = safe(() => selectedTower, null);
+    if (!selected || selected.faction !== safe(() => FACTIONS.PLAYER, 'player')) {
+      showEnhancementNotice('Bitte zuerst einen eigenen Turm auswählen.');
+      playSound('error');
+      return;
+    }
+
+    const currentGold = safe(() => gold, 0);
+    const cost = 42 + selected.level * 16 + matchStats.specialized * 6;
+    if (currentGold < cost) {
+      showEnhancementNotice(`Spezialisierung benötigt ${cost} Gold.`);
+      playSound('error');
+      return;
+    }
+
+    const nextType = getNextTowerType(selected.type);
+    safe(() => {
+      gold -= cost;
+      selected.type = nextType;
+      if (typeof getTowerMaxUnits === 'function') {
+        selected.maxUnits = getTowerMaxUnits(selected.faction, selected.type, selected.level);
+      }
+      selected.units = Math.min(selected.maxUnits, Math.ceil(selected.units + selected.level * 2));
+      hideTowerMenu();
+    });
+    matchStats.specialized += 1;
+    recordTacticalCommand(`Spezialisierung: ${getTowerRoleName(nextType)}`, 'upgrade');
+    unlockAchievement('firstSpecialist', { tower: selected });
+    spawnEffect(selected.x, selected.y, 'upgrade', {
+      color: '#e2bd5a',
+      text: getTowerRoleName(nextType),
+      duration: 1300,
+      size: 1.05
+    });
+    showEnhancementNotice(`${getTowerTierName(selected.level)} ist jetzt ${getTowerRoleName(nextType)}. -${cost} Gold`);
+    playSound('upgrade');
   }
 
   function fortifySelectedTower() {
@@ -1922,23 +2230,30 @@
     const controls = document.createElement('div');
     controls.id = 'mastil-game-controls';
     controls.innerHTML = `
-      <button type="button" data-action="select" title="Wählt deinen stärksten Turm">Stärkster Turm</button>
-      <button type="button" data-action="attack" title="Sendet 50% zum schwächsten nahen Ziel">Schnellangriff</button>
-      <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm">Verbessern</button>
-      <button type="button" data-action="fortify" title="Befestigt den gewählten Turm kurzzeitig">Befestigen</button>
-      <button type="button" data-action="map" title="Mini-Karte ein- oder ausblenden">Mini-Karte</button>
+      <button type="button" data-action="select" title="Wählt deinen stärksten Turm"><span class="mastil-command-icon mastil-icon-select" aria-hidden="true"></span><span>Stärkster</span></button>
+      <button type="button" data-action="attack" title="Sendet 50% zum schwächsten nahen Ziel"><span class="mastil-command-icon mastil-icon-attack" aria-hidden="true"></span><span>Schnell</span></button>
+      <button type="button" data-action="assault" title="Mehrere eigene Türme greifen koordinierte Ziele an"><span class="mastil-command-icon mastil-icon-assault" aria-hidden="true"></span><span>Front</span></button>
+      <button type="button" data-action="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span></button>
+      <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span></button>
+      <button type="button" data-action="specialize" title="Wechselt die Rolle des gewählten Turms"><span class="mastil-command-icon mastil-icon-specialize" aria-hidden="true"></span><span>Gilde</span></button>
+      <button type="button" data-action="fortify" title="Befestigt den gewählten Turm kurzzeitig"><span class="mastil-command-icon mastil-icon-fortify" aria-hidden="true"></span><span>Schild</span></button>
+      <button type="button" data-action="map" title="Mini-Karte ein- oder ausblenden"><span class="mastil-command-icon mastil-icon-map" aria-hidden="true"></span><span>Karte</span></button>
     `;
     document.body.appendChild(controls);
 
     controls.addEventListener('click', (event) => {
-      const action = event.target && event.target.dataset ? event.target.dataset.action : '';
+      const button = event.target && event.target.closest ? event.target.closest('button[data-action]') : null;
+      const action = button && button.dataset ? button.dataset.action : '';
       if (action === 'select') selectStrongestTower();
       if (action === 'attack') quickAttackWeakest();
+      if (action === 'assault') coordinatedAssault();
+      if (action === 'rally') rallyToSelectedTower();
       if (action === 'upgrade') upgradeSelectedTower();
+      if (action === 'specialize') specializeSelectedTower();
       if (action === 'fortify') fortifySelectedTower();
       if (action === 'map') {
         minimapEnabled = !minimapEnabled;
-        event.target.classList.toggle('off', !minimapEnabled);
+        button.classList.toggle('off', !minimapEnabled);
         showEnhancementNotice(minimapEnabled ? 'Mini-Karte sichtbar.' : 'Mini-Karte ausgeblendet.');
       }
     });
@@ -1990,6 +2305,7 @@
       <div class="mastil-objective-stats">
         <span id="mastil-stat-captured">0 erobert</span>
         <span id="mastil-stat-upgrades">0 Ausbau</span>
+        <span id="mastil-stat-commands">0 Befehle</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
       </div>
@@ -2022,7 +2338,7 @@
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
     if (selected && selected.faction === playerFaction) {
       const fortified = selected.fortifiedUntil && selected.fortifiedUntil > now ? ' | befestigt' : '';
-      selectedNode.textContent = `${getTowerRoleName(selected.type)} L${selected.level} | ${Math.floor(selected.units)}/${selected.maxUnits}${fortified}`;
+      selectedNode.textContent = `${getTowerTierName(selected.level)} | ${getTowerRoleName(selected.type)} | ${Math.floor(selected.units)}/${selected.maxUnits}${fortified}`;
     } else {
       selectedNode.textContent = 'keiner gewählt';
     }
@@ -2048,9 +2364,10 @@
     const progress = document.getElementById('mastil-objective-progress');
     const captured = document.getElementById('mastil-stat-captured');
     const upgrades = document.getElementById('mastil-stat-upgrades');
+    const commands = document.getElementById('mastil-stat-commands');
     const edicts = document.getElementById('mastil-stat-edicts');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !edicts || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !edicts || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -2065,6 +2382,7 @@
     progress.style.width = `${Math.round(objective.progress * 100)}%`;
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
+    commands.textContent = `${matchStats.commands} Befehle`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
 
@@ -2122,7 +2440,10 @@
     init,
     selectStrongestTower,
     quickAttackWeakest,
+    coordinatedAssault,
+    rallyToSelectedTower,
     upgradeSelectedTower,
+    specializeSelectedTower,
     fortifySelectedTower,
     unlockAchievement,
     getAchievementProgress,

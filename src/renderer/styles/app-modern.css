@@ -1233,7 +1233,9 @@
   transform: translateX(-50%);
   z-index: 1550;
   display: none;
-  gap: 8px;
+  grid-template-columns: repeat(8, minmax(72px, 1fr));
+  gap: 7px;
+  width: min(860px, calc(100vw - 28px));
   padding: 8px;
   border: 1px solid rgba(226, 189, 90, 0.38);
   border-radius: 8px;
@@ -1591,7 +1593,7 @@
 
 #game-container[style*="block"] ~ #mastil-game-controls,
 body:has(#game-container[style*="block"]) #mastil-game-controls {
-  display: flex;
+  display: grid;
 }
 
 body:has(#game-container[style*="block"]) #mastil-strategy-panel {
@@ -1615,20 +1617,151 @@ body:has(#game-container[style*="block"]) #info-panel {
 }
 
 #mastil-game-controls button {
-  min-height: 38px;
-  min-width: 104px;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  min-width: 0;
+  padding: 6px 5px;
   border: 1px solid rgba(226, 189, 90, 0.58);
   border-radius: 6px;
   background: linear-gradient(180deg, #ddbd61, #8e651f);
   color: #1c1007;
   cursor: pointer;
-  font: 800 12px/1 "Segoe UI", sans-serif;
+  font: 900 11px/1 "Segoe UI", sans-serif;
   text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.42), 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+#mastil-game-controls button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+#mastil-game-controls button span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.02;
 }
 
 #mastil-game-controls button.off {
   color: rgba(244, 230, 191, 0.82);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.mastil-command-icon {
+  position: relative;
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(28, 16, 7, 0.7);
+  border-radius: 50%;
+  background: rgba(255, 242, 191, 0.52);
+  box-shadow: inset 0 0 0 3px rgba(28, 16, 7, 0.08);
+}
+
+.mastil-command-icon::before,
+.mastil-command-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #1c1007;
+}
+
+.mastil-icon-select::before {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #1c1007;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-icon-select::after {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.mastil-icon-attack::before,
+.mastil-icon-assault::before {
+  width: 14px;
+  height: 3px;
+  border-radius: 3px;
+}
+
+.mastil-icon-attack::after {
+  width: 8px;
+  height: 8px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: translate(-10%, -50%);
+}
+
+.mastil-icon-assault::before {
+  box-shadow: 0 -5px 0 #1c1007, 0 5px 0 #1c1007;
+}
+
+.mastil-icon-assault::after,
+.mastil-icon-rally::after {
+  width: 8px;
+  height: 8px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: translate(8%, -50%);
+}
+
+.mastil-icon-rally::before {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #1c1007;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-icon-upgrade::before {
+  width: 4px;
+  height: 14px;
+}
+
+.mastil-icon-upgrade::after {
+  width: 12px;
+  height: 12px;
+  clip-path: polygon(50% 0, 100% 48%, 70% 48%, 70% 100%, 30% 100%, 30% 48%, 0 48%);
+}
+
+.mastil-icon-specialize::before {
+  width: 14px;
+  height: 14px;
+  clip-path: polygon(50% 0, 62% 34%, 98% 34%, 69% 55%, 80% 90%, 50% 68%, 20% 90%, 31% 55%, 2% 34%, 38% 34%);
+}
+
+.mastil-icon-fortify::before {
+  width: 13px;
+  height: 15px;
+  border-radius: 0 0 7px 7px;
+  clip-path: polygon(0 0, 100% 0, 88% 68%, 50% 100%, 12% 68%);
+}
+
+.mastil-icon-map::before {
+  width: 14px;
+  height: 12px;
+  border: 2px solid #1c1007;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.mastil-icon-map::after {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  box-shadow: -4px -2px 0 #1c1007, 4px 3px 0 #1c1007;
 }
 
 .mastil-online-toolbar {
