@@ -964,7 +964,10 @@
       createdAt: performance.now(),
       size: options.size || 1,
       sourceX: options.sourceX,
-      sourceY: options.sourceY
+      sourceY: options.sourceY,
+      targetX: options.targetX,
+      targetY: options.targetY,
+      count: options.count || 0
     });
     if (visualEffects.length > 80) visualEffects.splice(0, visualEffects.length - 80);
   }
@@ -2385,6 +2388,112 @@
     ctx.restore();
   }
 
+  function drawCommandTrail(effect, ease, progress) {
+    if (typeof effect.targetX !== 'number' || typeof effect.targetY !== 'number') return;
+    const tx = effect.targetX - effect.x;
+    const ty = effect.targetY - effect.y;
+    const distance = Math.sqrt(tx * tx + ty * ty);
+    if (distance < 4) return;
+
+    const angle = Math.atan2(ty, tx);
+    const bend = Math.min(42, Math.max(14, distance * 0.12)) * (effect.count >= 12 ? 1 : 0.72);
+    const midX = tx * 0.5 + Math.cos(angle + Math.PI / 2) * bend;
+    const midY = ty * 0.5 + Math.sin(angle + Math.PI / 2) * bend;
+    const heavy = effect.count >= 12;
+
+    const trail = ctx.createLinearGradient(0, 0, tx, ty);
+    trail.addColorStop(0, rgba(effect.color, 0.1));
+    trail.addColorStop(0.42, rgba(effect.color, heavy ? 0.58 : 0.42));
+    trail.addColorStop(1, rgba('#fff2bf', heavy ? 0.5 : 0.32));
+    ctx.strokeStyle = trail;
+    ctx.lineWidth = heavy ? 6 : 4;
+    ctx.lineCap = 'round';
+    ctx.setLineDash(heavy ? [18, 10] : [12, 9]);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(midX, midY, tx, ty);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const markerCount = heavy ? 4 : 3;
+    for (let i = 0; i < markerCount; i += 1) {
+      const t = (progress * 0.72 + i / markerCount) % 1;
+      const inv = 1 - t;
+      const px = inv * inv * 0 + 2 * inv * t * midX + t * t * tx;
+      const py = inv * inv * 0 + 2 * inv * t * midY + t * t * ty;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(angle);
+      ctx.fillStyle = i === 0 ? '#fff2bf' : rgba(effect.color, 0.92);
+      ctx.beginPath();
+      ctx.moveTo(10 + effect.size * 2, 0);
+      ctx.lineTo(-7, -5);
+      ctx.lineTo(-4, 0);
+      ctx.lineTo(-7, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(angle);
+    ctx.fillStyle = rgba('#fff2bf', 0.9);
+    ctx.beginPath();
+    ctx.moveTo(13 + ease * 5, 0);
+    ctx.lineTo(-9, -8);
+    ctx.lineTo(-4, 0);
+    ctx.lineTo(-9, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTargetLock(effect, ease) {
+    const radius = 18 + ease * 22 * effect.size;
+    ctx.strokeStyle = rgba(effect.color, 0.88);
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([8, 7]);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = 'rgba(255, 242, 190, 0.82)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i += 1) {
+      const angle = (Math.PI / 2) * i;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * (radius - 5), Math.sin(angle) * (radius - 5));
+      ctx.lineTo(Math.cos(angle) * (radius + 10), Math.sin(angle) * (radius + 10));
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = rgba(effect.color, 0.12);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 0.54, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawClashBurst(effect, ease) {
+    const sparks = 9;
+    ctx.strokeStyle = rgba(effect.color, 0.9);
+    ctx.lineWidth = 2;
+    for (let i = 0; i < sparks; i += 1) {
+      const angle = (Math.PI * 2 * i) / sparks + effect.createdAt * 0.001;
+      const inner = 5 + effect.size * 2;
+      const outer = 16 + ease * (22 + effect.size * 8);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      ctx.stroke();
+    }
+    ctx.fillStyle = rgba('#fff2bf', 0.62);
+    ctx.beginPath();
+    ctx.arc(0, 0, 6 + ease * 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   function drawEffects() {
     if (!visualEffects.length) return;
     const now = performance.now();
@@ -2403,6 +2512,18 @@
       ctx.save();
       ctx.translate(effect.x, effect.y);
       ctx.globalAlpha = alpha;
+
+      if (effect.type === 'commandTrail') {
+        drawCommandTrail(effect, ease, p);
+      }
+
+      if (effect.type === 'targetLock') {
+        drawTargetLock(effect, ease);
+      }
+
+      if (effect.type === 'clash') {
+        drawClashBurst(effect, ease);
+      }
 
       if (effect.type === 'attack') {
         ctx.strokeStyle = rgba(effect.color, 0.8);
@@ -4237,6 +4358,9 @@
       Math.max(2, Math.floor(source.units * (0.24 + waveBonus)))
     );
     if (amount <= 0) return '';
+    if (safe(() => wave, 1) <= 1 && own.length <= 1 && target.units <= Math.max(6, target.maxUnits * 0.45)) {
+      return '';
+    }
 
     safe(() => sendUnitsFromTower(source, target, amount));
     spawnEffect(source.x, source.y, 'attack', { color: group.commander.color, text: group.commander.short, duration: 900, size: 1.05 });
@@ -4455,6 +4579,12 @@
           if (config.size === 'war' || warPlan === WAR_PLANS.fortress) {
             home.fortifiedUntil = Math.max(home.fortifiedUntil || 0, performance.now() + 16000);
           }
+        } else {
+          const campaignStartRatio = currentWave <= 1 ? 0.86 : 0.72;
+          home.units = Math.min(home.maxUnits, Math.max(home.units, Math.floor(home.maxUnits * campaignStartRatio)));
+          if (currentWave <= 1) {
+            home.fortifiedUntil = Math.max(home.fortifiedUntil || 0, performance.now() + 18000);
+          }
         }
         towers.push(home);
         continue;
@@ -4493,7 +4623,7 @@
     const graceByDifficulty = { easy: 26000, normal: 20500, hard: 16500, brutal: 12200 };
     const sizeGrace = { compact: 0.96, standard: 1.06, large: 1.2, war: 1.38 }[config.size] || 1;
     const opponentGrace = 1 + Math.max(0, opponentCount - 1) * 0.08;
-    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 18000) * warPlan.graceFactor * sizeGrace * opponentGrace : 12000);
+    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 18000) * warPlan.graceFactor * sizeGrace * opponentGrace : 22000);
     enemyCommandState.readyAt.clear();
     enemyCommandState.lastOrderText = 'Feindliche Kommandanten sondieren die Front.';
     enemyCommandState.lastCommanderId = '';
@@ -5182,6 +5312,20 @@
             duration: 780,
             size: Math.min(1.6, 0.85 + sent / 28)
           });
+          spawnEffect(sourceTower.x, sourceTower.y, 'commandTrail', {
+            color: colorForFaction(sourceTower.faction),
+            targetX: targetTower.x,
+            targetY: targetTower.y,
+            count: sent,
+            duration: sourceTower.faction === safe(() => FACTIONS.PLAYER, 'player') ? 1250 : 940,
+            size: Math.min(1.55, 0.8 + sent / 24)
+          });
+          spawnEffect(targetTower.x, targetTower.y, 'targetLock', {
+            color: colorForFaction(sourceTower.faction),
+            text: sourceTower.faction === safe(() => FACTIONS.PLAYER, 'player') ? 'Ziel' : '',
+            duration: 780,
+            size: Math.min(1.35, 0.78 + sent / 36)
+          });
           if (sourceTower.faction === safe(() => FACTIONS.PLAYER, 'player')) {
             unlockAchievement('firstCommand', { tower: sourceTower });
             addTowerRenown(sourceTower, sent >= 8 ? 2 : 1, 'Befehl');
@@ -5296,6 +5440,11 @@
                 color: colorForFaction(unit.faction),
                 duration: 580,
                 size: 0.86
+              });
+              spawnEffect(targetTower.x, targetTower.y, 'clash', {
+                color: colorForFaction(unit.faction),
+                duration: 420,
+                size: unit.mastilFormationSize && unit.mastilFormationSize >= 10 ? 1.08 : 0.82
               });
               if (now - lastImpactSoundAt > 260) {
                 playSound('impact');
@@ -5931,11 +6080,21 @@
 
   function getBattleDebug() {
     const currentUnits = safe(() => units, []);
+    const effectTypes = visualEffects.reduce((types, effect) => {
+      types[effect.type] = (types[effect.type] || 0) + 1;
+      return types;
+    }, {});
     return {
       formations: battleFormations.size,
       taggedUnits: currentUnits.filter((unit) => unit.mastilFormationId).length,
       units: currentUnits.length,
-      effects: visualEffects.length
+      effects: visualEffects.length,
+      effectTypes,
+      latestEffects: visualEffects.slice(-8).map((effect) => ({
+        type: effect.type,
+        text: effect.text || '',
+        count: effect.count || 0
+      }))
     };
   }
 

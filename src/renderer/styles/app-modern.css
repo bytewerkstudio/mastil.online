@@ -198,6 +198,22 @@
   z-index: 2;
 }
 
+#start-screen #start-music-btn {
+  position: fixed !important;
+  top: 18px !important;
+  left: 146px !important;
+  right: auto !important;
+  z-index: 151 !important;
+}
+
+#start-screen #start-sfx-btn {
+  position: fixed !important;
+  top: 18px !important;
+  left: 196px !important;
+  right: auto !important;
+  z-index: 151 !important;
+}
+
 .mastil-brand-mark {
   width: min(104px, 18vw);
   aspect-ratio: 1;
@@ -244,15 +260,17 @@
   z-index: 3;
   display: grid !important;
   grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
-  gap: 8px !important;
-  width: min(1080px, 92vw) !important;
-  max-height: min(72vh, 680px);
+  gap: 10px !important;
+  width: min(1160px, 94vw) !important;
+  max-height: min(74vh, 720px);
   overflow: auto;
   margin: auto auto clamp(22px, 4vh, 36px) !important;
-  padding: 12px !important;
+  padding: 14px !important;
   border: 1px solid rgba(226, 189, 90, 0.38);
   border-radius: 8px;
   background:
+    radial-gradient(circle at 14% 12%, rgba(115, 183, 220, 0.16), transparent 22rem),
+    radial-gradient(circle at 84% 18%, rgba(225, 122, 92, 0.14), transparent 21rem),
     linear-gradient(145deg, rgba(17, 11, 8, 0.9), rgba(7, 6, 6, 0.84)),
     url("../../../assets/backgrounds/panel-bg.png") center/cover no-repeat;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.52), inset 0 0 44px rgba(226, 189, 90, 0.08);
@@ -287,8 +305,39 @@
 }
 
 .mastil-menu-header {
-  padding: 4px 8px 8px;
-  border-bottom: 1px solid rgba(226, 189, 90, 0.22);
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(226, 189, 90, 0.11), rgba(115, 183, 220, 0.08)),
+    rgba(10, 7, 5, 0.48);
+}
+
+.mastil-menu-titleline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.mastil-menu-seal {
+  width: 74px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(226, 189, 90, 0.5);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 28%, rgba(255, 242, 191, 0.22), transparent 30%),
+    rgba(10, 7, 5, 0.62);
+  box-shadow: 0 0 30px rgba(226, 189, 90, 0.16);
+}
+
+.mastil-menu-seal img {
+  width: 82%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .mastil-menu-header span,
@@ -315,6 +364,44 @@
   flex-wrap: wrap;
   gap: 7px;
   margin-top: 1px;
+}
+
+.mastil-menu-dashboard {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mastil-menu-dashboard article {
+  min-height: 88px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(16, 22, 23, 0.72), rgba(10, 7, 5, 0.58)),
+    radial-gradient(circle at 18% 16%, rgba(226, 189, 90, 0.12), transparent 46%);
+}
+
+.mastil-menu-dashboard span {
+  color: rgba(226, 189, 90, 0.82);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-menu-dashboard strong {
+  color: #fff2bf;
+  font: 950 16px/1.08 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-dashboard small {
+  color: rgba(244, 230, 191, 0.72);
+  font: 750 11px/1.32 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
 }
 
 .mastil-menu-badges small,
@@ -346,7 +433,7 @@
   grid-column: span 3;
   width: 100% !important;
   min-width: 0 !important;
-  min-height: 88px !important;
+  min-height: 92px !important;
   display: grid !important;
   grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
@@ -359,6 +446,7 @@
   border: 1px solid rgba(226, 189, 90, 0.28) !important;
   border-radius: 8px !important;
   background:
+    radial-gradient(circle at 12% 12%, color-mix(in srgb, var(--menu-tone-a) 18%, transparent), transparent 46%),
     linear-gradient(145deg, color-mix(in srgb, var(--menu-tone-b) 24%, rgba(255, 255, 255, 0.06)), rgba(0, 0, 0, 0.22)) !important;
   box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.035), 0 12px 28px rgba(0, 0, 0, 0.28) !important;
   overflow: hidden;
@@ -396,7 +484,7 @@
 
 #start-screen .menu-button.mastil-menu-primary {
   grid-column: span 4;
-  min-height: 122px !important;
+  min-height: 132px !important;
   grid-template-columns: 52px minmax(0, 1fr);
   padding: 14px !important;
 }
@@ -3018,7 +3106,16 @@ body:has(#game-container[style*="block"]) #info-panel {
   }
 
   .mastil-menu-header {
-    padding: 4px 4px 9px;
+    padding: 9px;
+  }
+
+  .mastil-menu-titleline {
+    grid-template-columns: minmax(0, 1fr) 52px;
+    gap: 10px;
+  }
+
+  .mastil-menu-seal {
+    width: 52px;
   }
 
   .mastil-menu-header strong {
@@ -3031,6 +3128,20 @@ body:has(#game-container[style*="block"]) #info-panel {
 
   .mastil-menu-badges {
     display: none;
+  }
+
+  .mastil-menu-dashboard {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .mastil-menu-dashboard article {
+    min-height: 74px;
+    padding: 10px;
+  }
+
+  .mastil-menu-dashboard strong {
+    font-size: 14px;
   }
 
   .mastil-menu-footer {

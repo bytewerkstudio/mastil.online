@@ -6,28 +6,28 @@
   const SKIRMISH_KEY = 'mastil-skirmish-config';
   const WORLD_REGIONS = [
     { id: 'startgebiet', title: 'Startgebiet', waves: '1-5', boss: 'Grenzwacht Roderich', difficulty: 'Einsteiger', terrain: 'Wiesen, Wege, erste Burgen', style: 'Ausgewogen', image: '../../assets/backgrounds/worlds/world-01-startgebiet.png' },
-    { id: 'grenzlande', title: 'Grenzlande', waves: '6-10', boss: 'Der Eisenvogt', difficulty: 'Normal', terrain: 'Engpaesse, Signalhoehen, Frontdruck', style: 'Verteidigung', image: '../../assets/backgrounds/worlds/world-02-grenzlande.png' },
-    { id: 'wuestenreich', title: 'Wuestenreich', waves: '11-15', boss: 'Sultan der Sandkrone', difficulty: 'Hart', terrain: 'Maerkte, Steinbrueche, weite Wege', style: 'Wirtschaft', image: '../../assets/backgrounds/worlds/world-03-wuestenreich.png' },
+    { id: 'grenzlande', title: 'Grenzlande', waves: '6-10', boss: 'Der Eisenvogt', difficulty: 'Normal', terrain: 'Engpässe, Signalhöhen, Frontdruck', style: 'Verteidigung', image: '../../assets/backgrounds/worlds/world-02-grenzlande.png' },
+    { id: 'wuestenreich', title: 'Wüstenreich', waves: '11-15', boss: 'Sultan der Sandkrone', difficulty: 'Hart', terrain: 'Märkte, Steinbrüche, weite Wege', style: 'Wirtschaft', image: '../../assets/backgrounds/worlds/world-03-wuestenreich.png' },
     { id: 'nachtfestung', title: 'Nachtfestung', waves: '16-20', boss: 'Nachtgraf Malrec', difficulty: 'Sehr hart', terrain: 'Waldsaum, Hinterhalte, Nachtwege', style: 'Taktik', image: '../../assets/backgrounds/worlds/world-04-nachtfestung.png' },
     { id: 'endboss', title: 'Endboss-Zitadelle', waves: '21-25', boss: 'Kaiser Veyron', difficulty: 'Endboss', terrain: 'Zitadellen, Aschefelder, Bossfront', style: 'Belagerung', image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png' }
   ];
   const SKIRMISH_SIZES = {
     compact: { label: 'Kompakt', towers: '10 Orte', detail: 'schnelle Trainingsrunde mit kurzer Front' },
     standard: { label: 'Standard', towers: '13 Orte', detail: 'klassische Karte mit klarer Mitte' },
-    large: { label: 'Gross', towers: '16 Orte', detail: 'mehr Burgen, laengere Versorgungslinien' },
+    large: { label: 'Groß', towers: '16 Orte', detail: 'mehr Burgen, längere Versorgungslinien' },
     war: { label: 'Kriegskarte', towers: '20 Orte', detail: 'volle Weltkarte mit mehreren Fronten' }
   };
   const SKIRMISH_DIFFICULTIES = {
     easy: { label: 'Training', detail: 'ruhiger KI-Start zum Ueben' },
-    normal: { label: 'Normal', detail: 'ausgewogene Kriegsfuehrung' },
+    normal: { label: 'Normal', detail: 'ausgewogene Kriegsführung' },
     hard: { label: 'Hart', detail: 'starker Gegnerdruck' },
     brutal: { label: 'Brutal', detail: 'kaum Schonzeit, harte Front' }
   };
   const SKIRMISH_PLANS = {
     balanced: { label: 'Ausgewogen', detail: 'KI baut, sammelt und greift gemischt an.' },
-    raiders: { label: 'Pluenderer', detail: 'mehr Truppentuerme, schnellere Angriffe.' },
-    fortress: { label: 'Festungskrieg', detail: 'staerkere Burgen, mehr Belagerungsziele.' },
-    economy: { label: 'Handelskrieg', detail: 'mehr Maerkte, Gold und lange Wege.' }
+    raiders: { label: 'Plünderer', detail: 'mehr Truppentürme, schnellere Angriffe.' },
+    fortress: { label: 'Festungskrieg', detail: 'stärkere Burgen, mehr Belagerungsziele.' },
+    economy: { label: 'Handelskrieg', detail: 'mehr Märkte, Gold und lange Wege.' }
   };
   const DEFAULT_SKIRMISH = {
     mode: 'campaign',
@@ -53,7 +53,7 @@
     },
     online: {
       label: 'Online 1v1',
-      detail: 'Erstelle oder betrete Raeume fuer echte Duelle.',
+      detail: 'Erstelle oder betrete Räume für echte Duelle.',
       tone: 'green',
       rank: 'primary'
     },
@@ -71,7 +71,7 @@
     },
     buy: {
       label: 'Kaufen 10,99 EUR',
-      detail: 'Einmaliger Kauf fuer die Vollversion.',
+      detail: 'Einmaliger Kauf für die Vollversion.',
       tone: 'gold',
       rank: 'secondary'
     },
@@ -123,6 +123,7 @@
     if (!badge) return;
     badge.classList.toggle('active', status.active);
     badge.textContent = status.active ? 'Lizenz aktiv' : 'Demo: Wellen 1-5 frei';
+    updateMenuDashboard();
   }
 
   function createBadge() {
@@ -320,7 +321,7 @@
     brief.innerHTML = `
       <strong>${region.title}: ${region.style}</strong>
       <span>${region.terrain}. ${size.towers}, ${size.detail}. ${opponentText}, ${difficulty.label.toLowerCase()}: ${difficulty.detail}. ${plan.label}: ${plan.detail}</span>
-      <em style="--chosen-color:${values.color || '#2f6fa5'}"><i></i> Eure Reichsfarbe wird auf alle eigenen Tuerme uebertragen.</em>
+      <em style="--chosen-color:${values.color || '#2f6fa5'}"><i></i> Eure Reichsfarbe wird auf alle eigenen Türme übertragen.</em>
     `;
   }
 
@@ -335,17 +336,17 @@
         <div class="mastil-world-head">
           <span>Weltkarte</span>
           <h2 id="mastil-world-title">Die Reiche von MASTIL</h2>
-          <p>Waehle Kampagne oder Gefecht. Im Gefechtsmodus bestimmst du Karte, Gegner, Groesse, Farbe und Kriegsart.</p>
+          <p>Wähle Kampagne oder Gefecht. Im Gefechtsmodus bestimmst du Karte, Gegner, Größe, Farbe und Kriegsart.</p>
         </div>
         <div class="mastil-world-grid" id="mastil-world-grid"></div>
         <div class="mastil-skirmish-panel">
           <h3>Gefechtsmodus</h3>
           <div class="mastil-skirmish-options">
             <label>Karte<select id="mastil-skirmish-map"></select></label>
-            <label>Groesse<select id="mastil-skirmish-size">
+            <label>Größe<select id="mastil-skirmish-size">
               <option value="compact">Kompakt</option>
               <option value="standard">Standard</option>
-              <option value="large">Gross</option>
+              <option value="large">Groß</option>
               <option value="war">Kriegskarte</option>
             </select></label>
             <label>Schwierigkeit<select id="mastil-skirmish-difficulty">
@@ -361,7 +362,7 @@
             </select></label>
             <label>KI-Plan<select id="mastil-skirmish-plan">
               <option value="balanced">Ausgewogen</option>
-              <option value="raiders">Pluenderer</option>
+              <option value="raiders">Plünderer</option>
               <option value="fortress">Festungskrieg</option>
               <option value="economy">Handelskrieg</option>
             </select></label>
@@ -604,6 +605,39 @@
     }
   }
 
+  function getMenuRegion(bestWave) {
+    return WORLD_REGIONS.find((region) => {
+      const end = Number(region.waves.split('-')[1]);
+      return bestWave <= end;
+    }) || WORLD_REGIONS[WORLD_REGIONS.length - 1];
+  }
+
+  function getBackendStatusText() {
+    const webConfig = window.MASTIL_WEB_CONFIG || {};
+    const value = String(localStorage.getItem('mastil-backend-url') || webConfig.backendUrl || '').trim();
+    if (!value) return 'Offline bereit';
+    return value.includes('localhost') || value.includes('127.0.0.1') ? 'Lokaler Server' : 'Server gesetzt';
+  }
+
+  function updateMenuDashboard() {
+    const bestWave = getBestWave();
+    const region = getMenuRegion(bestWave);
+    const progress = getRegionProgress(region, bestWave);
+    const current = byId('mastil-menu-current-region');
+    const boss = byId('mastil-menu-next-boss');
+    const license = byId('mastil-menu-license-state');
+    const online = byId('mastil-menu-online-state');
+    const footer = byId('mastil-menu-footer-state');
+
+    if (current) current.textContent = `${region.title} | ${progress}`;
+    if (boss) boss.textContent = `Bestwelle ${bestWave} | Boss: ${region.boss}`;
+    if (license) license.textContent = state.licenseActive ? 'Vollversion aktiv' : 'Demo bis Welle 5';
+    if (online) online.textContent = getBackendStatusText();
+    if (footer) footer.textContent = state.licenseActive
+      ? 'Vollversion: alle Wellen freigeschaltet'
+      : 'Demo aktiv: Kampagne frei bis Welle 5';
+  }
+
   function decorateMenuButton(button, key, handler) {
     const item = START_MENU_ITEMS[key] || {
       label: button.textContent.trim(),
@@ -642,16 +676,53 @@
       const header = document.createElement('div');
       header.className = 'mastil-menu-header';
       header.innerHTML = `
-        <span>Kommandozelt</span>
-        <strong>Waehle deinen naechsten Feldzug</strong>
-        <p>Kampagne, Gefecht, Online-Duell und Reichsarchiv sind jetzt als klare Spielbereiche geordnet.</p>
-        <div class="mastil-menu-badges">
+        <div class="mastil-menu-titleline">
+          <div>
+            <span>Kommandozelt</span>
+            <strong>Wähle deinen nächsten Feldzug</strong>
+            <p>Starte die Kampagne, trainiere Gefechte oder öffne das Reichsarchiv. Alles ist als schnelle Spielzentrale aufgebaut.</p>
+          </div>
+          <div class="mastil-menu-seal" aria-hidden="true">
+            <img src="../../assets/branding/mastil-logo.png" alt="">
+          </div>
+        </div>
+        <div class="mastil-menu-badges" aria-label="Spielstatus">
           <small>Offline spielbar</small>
-          <small>Demo bis Welle 5</small>
-          <small>Online bereit</small>
+          <small id="mastil-menu-footer-state">Demo aktiv</small>
+          <small>Web und Windows</small>
         </div>
       `;
       menu.prepend(header);
+    }
+
+    if (!menu.querySelector('.mastil-menu-dashboard')) {
+      const dashboard = document.createElement('div');
+      dashboard.className = 'mastil-menu-dashboard';
+      dashboard.innerHTML = `
+        <article>
+          <span>Aktuelle Front</span>
+          <strong id="mastil-menu-current-region">Startgebiet</strong>
+          <small id="mastil-menu-next-boss">Bestwelle 1 | Boss: Grenzwacht Roderich</small>
+        </article>
+        <article>
+          <span>Freischaltung</span>
+          <strong id="mastil-menu-license-state">Demo bis Welle 5</strong>
+          <small>Kauf und Aktivierung bleiben im Spielmenü erreichbar.</small>
+        </article>
+        <article>
+          <span>Online-Basis</span>
+          <strong id="mastil-menu-online-state">Offline bereit</strong>
+          <small>GitHub hostet die Seite, der MASTIL-Server die Duelle.</small>
+        </article>
+      `;
+      const header = menu.querySelector('.mastil-menu-header');
+      if (header && header.nextSibling) {
+        menu.insertBefore(dashboard, header.nextSibling);
+      } else if (header) {
+        menu.appendChild(dashboard);
+      } else {
+        menu.prepend(dashboard);
+      }
     }
 
     if (!menu.querySelector('.mastil-menu-footer')) {
@@ -659,10 +730,12 @@
       footer.className = 'mastil-menu-footer';
       footer.innerHTML = `
         <span>MASTIL Weltstatus</span>
-        <strong>GitHub Pages fuer Website, MASTIL-Server fuer Online-Spiel</strong>
+        <strong>GitHub Pages für Website, MASTIL-Server für Online-Spiel</strong>
       `;
       menu.appendChild(footer);
     }
+
+    updateMenuDashboard();
   }
 
   function enhanceMenu() {

@@ -243,15 +243,15 @@ writeFile(path.join(outDir, 'index.html'), `<!doctype html>
     <main class="hero">
       <div class="kicker">Mittelalterliche Tower-Conquest-Strategie</div>
       <h1>MASTIL</h1>
-      <p class="copy">Erobere Tuerme, sichere Handelswege, ueberstehe Wellen und fuehre dein Reich durch Kampagne, Gefechtsmodus und spaeter echtes Online-1v1.</p>
+      <p class="copy">Erobere Türme, sichere Handelswege, überstehe Wellen und führe dein Reich durch Kampagne, Gefechtsmodus und später echtes Online-1v1.</p>
       <div class="actions">
         <a class="button" href="./src/renderer/index.html">Spiel starten</a>
         <a class="button secondary" href="https://github.com/bytewerkstudio/mastil.online">GitHub ansehen</a>
       </div>
       <section class="cards" aria-label="MASTIL Status">
-        <article class="card"><span>Web</span><strong>Direkt spielbar</strong><small>Offline gegen KI laeuft im Browser ueber GitHub Pages.</small></article>
-        <article class="card"><span>Gefecht</span><strong>Freie Kriege</strong><small>Kartengroesse, Gegner, Schwierigkeit und Farbe waehlen.</small></article>
-        <article class="card"><span>Online</span><strong>Server vorbereitet</strong><small>1v1 nutzt spaeter api.mastil.online als MASTIL-Server.</small></article>
+        <article class="card"><span>Web</span><strong>Direkt spielbar</strong><small>Offline gegen KI läuft im Browser über GitHub Pages.</small></article>
+        <article class="card"><span>Gefecht</span><strong>Freie Kriege</strong><small>Kartengröße, Gegner, Schwierigkeit und Farbe wählen.</small></article>
+        <article class="card"><span>Online</span><strong>Server vorbereitet</strong><small>1v1 nutzt später api.mastil.online als MASTIL-Server.</small></article>
         <article class="card"><span>Windows</span><strong>EXE & Installer</strong><small>Desktop-Version mit Lizenzsystem und Admin-Werkzeug.</small></article>
       </section>
     </main>
@@ -263,11 +263,11 @@ writeFile(path.join(outDir, 'index.html'), `<!doctype html>
 writeFile(path.join(outDir, 'MASTIL-WEBSITE.txt'), `MASTIL Website-Version
 Publisher: Bytewerk Studio
 
-Diese Dateien koennen direkt auf GitHub Pages oder einen normalen Webspace geladen werden.
+Diese Dateien können direkt auf GitHub Pages oder einen normalen Webspace geladen werden.
 Startdatei: index.html
 
 Offline gegen KI funktioniert ohne Server.
-Online 1v1, Kauf und Lizenz-Aktivierung brauchen spaeter einen oeffentlichen MASTIL-Server.
+Online 1v1, Kauf und Lizenz-Aktivierung brauchen später einen öffentlichen MASTIL-Server.
 Die Server-Adresse kann in src/renderer/app/web-config.js hinterlegt werden.
 `);
 
