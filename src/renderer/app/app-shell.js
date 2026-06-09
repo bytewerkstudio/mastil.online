@@ -15,7 +15,8 @@
     compact: { label: 'Kompakt', towers: '10 Orte', detail: 'schnelle Trainingsrunde mit kurzer Front' },
     standard: { label: 'Standard', towers: '13 Orte', detail: 'klassische Karte mit klarer Mitte' },
     large: { label: 'Groß', towers: '16 Orte', detail: 'mehr Burgen, längere Versorgungslinien' },
-    war: { label: 'Kriegskarte', towers: '20 Orte', detail: 'volle Weltkarte mit mehreren Fronten' }
+    war: { label: 'Kriegskarte', towers: '20 Orte', detail: 'volle Weltkarte mit mehreren Fronten' },
+    epic: { label: 'Reichskrieg', towers: '24 Orte', detail: 'große Kriegskarte mit Außenburgen und Nebenfronten' }
   };
   const SKIRMISH_DIFFICULTIES = {
     easy: { label: 'Training', detail: 'ruhiger KI-Start zum Ueben' },
@@ -27,7 +28,8 @@
     balanced: { label: 'Ausgewogen', detail: 'KI baut, sammelt und greift gemischt an.' },
     raiders: { label: 'Plünderer', detail: 'mehr Truppentürme, schnellere Angriffe.' },
     fortress: { label: 'Festungskrieg', detail: 'stärkere Burgen, mehr Belagerungsziele.' },
-    economy: { label: 'Handelskrieg', detail: 'mehr Märkte, Gold und lange Wege.' }
+    economy: { label: 'Handelskrieg', detail: 'mehr Märkte, Gold und lange Wege.' },
+    conquest: { label: 'Reichskrieg', detail: 'mehr Burgen, längere Fronten und harte Endstellungen.' }
   };
   const DEFAULT_SKIRMISH = {
     mode: 'campaign',
@@ -348,6 +350,7 @@
               <option value="standard">Standard</option>
               <option value="large">Groß</option>
               <option value="war">Kriegskarte</option>
+              <option value="epic">Reichskrieg</option>
             </select></label>
             <label>Schwierigkeit<select id="mastil-skirmish-difficulty">
               <option value="easy">Training</option>
@@ -365,6 +368,7 @@
               <option value="raiders">Plünderer</option>
               <option value="fortress">Festungskrieg</option>
               <option value="economy">Handelskrieg</option>
+              <option value="conquest">Reichskrieg</option>
             </select></label>
             <label>Farbe<input id="mastil-skirmish-color" type="color" value="#2f6fa5"></label>
           </div>
@@ -627,12 +631,21 @@
     const boss = byId('mastil-menu-next-boss');
     const license = byId('mastil-menu-license-state');
     const online = byId('mastil-menu-online-state');
+    const skirmish = byId('mastil-menu-skirmish-state');
+    const skirmishDetail = byId('mastil-menu-skirmish-detail');
     const footer = byId('mastil-menu-footer-state');
+    const saved = readSkirmishConfig();
+    const savedRegion = getRegionById(saved.mapId);
+    const savedSize = SKIRMISH_SIZES[saved.size] || SKIRMISH_SIZES.standard;
+    const savedDifficulty = SKIRMISH_DIFFICULTIES[saved.difficulty] || SKIRMISH_DIFFICULTIES.normal;
+    const savedPlan = SKIRMISH_PLANS[saved.plan] || SKIRMISH_PLANS.balanced;
 
     if (current) current.textContent = `${region.title} | ${progress}`;
     if (boss) boss.textContent = `Bestwelle ${bestWave} | Boss: ${region.boss}`;
     if (license) license.textContent = state.licenseActive ? 'Vollversion aktiv' : 'Demo bis Welle 5';
     if (online) online.textContent = getBackendStatusText();
+    if (skirmish) skirmish.textContent = `${savedSize.label} | ${savedDifficulty.label}`;
+    if (skirmishDetail) skirmishDetail.textContent = `${savedRegion.title}, ${saved.opponents} KI, ${savedPlan.label}`;
     if (footer) footer.textContent = state.licenseActive
       ? 'Vollversion: alle Wellen freigeschaltet'
       : 'Demo aktiv: Kampagne frei bis Welle 5';
@@ -713,6 +726,11 @@
           <span>Online-Basis</span>
           <strong id="mastil-menu-online-state">Offline bereit</strong>
           <small>GitHub hostet die Seite, der MASTIL-Server die Duelle.</small>
+        </article>
+        <article>
+          <span>Gefechtsplan</span>
+          <strong id="mastil-menu-skirmish-state">Standard | Normal</strong>
+          <small id="mastil-menu-skirmish-detail">Startgebiet, 2 KI, Ausgewogen</small>
         </article>
       `;
       const header = menu.querySelector('.mastil-menu-header');

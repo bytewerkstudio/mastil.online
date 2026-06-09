@@ -103,14 +103,20 @@
     { x: 0.56, y: 0.88, role: 'enemy', type: 'normal', rank: 7, terrain: 'keep' },
     { x: 0.38, y: 0.13, role: 'neutral', type: 'watch', rank: 8, terrain: 'forest' },
     { x: 0.39, y: 0.90, role: 'neutral', type: 'gold', rank: 8, terrain: 'market' },
-    { x: 0.93, y: 0.50, role: 'enemy', type: 'normal', rank: 9, terrain: 'keep' }
+    { x: 0.93, y: 0.50, role: 'enemy', type: 'normal', rank: 9, terrain: 'keep' },
+    { x: 0.08, y: 0.30, role: 'neutral', type: 'watch', rank: 10, terrain: 'hill' },
+    { x: 0.08, y: 0.74, role: 'neutral', type: 'gold', rank: 10, terrain: 'market' },
+    { x: 0.68, y: 0.08, role: 'enemy', type: 'watch', rank: 10, terrain: 'keep' },
+    { x: 0.68, y: 0.92, role: 'enemy', type: 'troop', rank: 10, terrain: 'keep' }
   ];
   const MAP_LINKS = [
     [0, 1], [0, 2], [1, 3], [1, 4], [2, 4], [2, 5],
     [3, 6], [4, 6], [4, 7], [5, 7], [6, 8], [6, 9],
     [7, 9], [7, 10], [8, 11], [9, 11], [9, 12], [10, 12],
     [3, 13], [5, 14], [13, 17], [14, 18], [8, 15], [10, 16],
-    [15, 11], [16, 12], [11, 19], [12, 19], [4, 9]
+    [15, 11], [16, 12], [11, 19], [12, 19], [4, 9],
+    [0, 20], [20, 1], [20, 13], [0, 21], [21, 2], [21, 14],
+    [15, 22], [22, 8], [22, 11], [22, 19], [16, 23], [23, 10], [23, 12], [23, 19]
   ];
   const MAP_VARIANTS = {
     startgebiet: {
@@ -120,7 +126,7 @@
       yShift: 0,
       jitterX: 0.006,
       jitterY: 0.004,
-      terrains: ['keep', 'hill', 'market', 'barracks', 'road', 'ford', 'market', 'forest', 'barracks', 'road', 'market', 'hill', 'forest', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep']
+      terrains: ['keep', 'hill', 'market', 'barracks', 'road', 'ford', 'market', 'forest', 'barracks', 'road', 'market', 'hill', 'forest', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep', 'hill', 'market', 'keep', 'keep']
     },
     grenzlande: {
       spreadX: 0.9,
@@ -129,7 +135,7 @@
       yShift: -0.006,
       jitterX: 0.012,
       jitterY: 0.01,
-      terrains: ['keep', 'hill', 'ford', 'hill', 'road', 'ford', 'barracks', 'forest', 'barracks', 'road', 'ford', 'hill', 'forest', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep']
+      terrains: ['keep', 'hill', 'ford', 'hill', 'road', 'ford', 'barracks', 'forest', 'barracks', 'road', 'ford', 'hill', 'forest', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep', 'hill', 'ford', 'keep', 'keep']
     },
     wuestenreich: {
       spreadX: 1.03,
@@ -138,7 +144,7 @@
       yShift: 0.03,
       jitterX: 0.016,
       jitterY: 0.014,
-      terrains: ['keep', 'road', 'market', 'quarry', 'market', 'road', 'market', 'barracks', 'quarry', 'road', 'market', 'hill', 'barracks', 'quarry', 'market', 'hill', 'keep', 'road', 'market', 'keep']
+      terrains: ['keep', 'road', 'market', 'quarry', 'market', 'road', 'market', 'barracks', 'quarry', 'road', 'market', 'hill', 'barracks', 'quarry', 'market', 'hill', 'keep', 'road', 'market', 'keep', 'market', 'quarry', 'keep', 'market']
     },
     nachtfestung: {
       spreadX: 0.98,
@@ -147,7 +153,7 @@
       yShift: 0,
       jitterX: 0.02,
       jitterY: 0.018,
-      terrains: ['keep', 'forest', 'ford', 'forest', 'road', 'forest', 'market', 'barracks', 'forest', 'road', 'ford', 'hill', 'forest', 'quarry', 'ford', 'forest', 'keep', 'forest', 'market', 'keep']
+      terrains: ['keep', 'forest', 'ford', 'forest', 'road', 'forest', 'market', 'barracks', 'forest', 'road', 'ford', 'hill', 'forest', 'quarry', 'ford', 'forest', 'keep', 'forest', 'market', 'keep', 'forest', 'ford', 'keep', 'keep']
     },
     endboss: {
       spreadX: 1.02,
@@ -156,7 +162,7 @@
       yShift: -0.005,
       jitterX: 0.01,
       jitterY: 0.006,
-      terrains: ['keep', 'hill', 'quarry', 'barracks', 'road', 'ford', 'market', 'barracks', 'keep', 'road', 'quarry', 'hill', 'barracks', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep']
+      terrains: ['keep', 'hill', 'quarry', 'barracks', 'road', 'ford', 'market', 'barracks', 'keep', 'road', 'quarry', 'hill', 'barracks', 'quarry', 'ford', 'hill', 'keep', 'forest', 'market', 'keep', 'keep', 'quarry', 'keep', 'keep']
     }
   };
   const TERRAIN = {
@@ -240,7 +246,7 @@
     { threshold: 18, title: 'Veteran', mark: 'II', color: '#f4d77a' },
     { threshold: 34, title: 'Legendär', mark: 'III', color: '#ffb17e' }
   ];
-  const SIZE_LIMITS = { compact: 10, standard: 13, large: 16, war: 20 };
+  const SIZE_LIMITS = { compact: 10, standard: 13, large: 16, war: 20, epic: 24 };
   const DIFFICULTY = {
     easy: { gold: 155, enemyUnits: 0.48, enemyLevel: 0, label: 'Training' },
     normal: { gold: 130, enemyUnits: 0.62, enemyLevel: 0, label: 'Normal' },
@@ -283,6 +289,15 @@
       graceFactor: 1.02,
       commanderTempo: 1,
       detail: 'mehr Maerkte und laengere Versorgungslinien'
+    },
+    conquest: {
+      label: 'Reichskrieg',
+      enemyUnits: 1.05,
+      enemyLevel: 1,
+      goldBonus: 24,
+      graceFactor: 1.14,
+      commanderTempo: 0.96,
+      detail: 'grosse Karten, Burgen und mehrere Fronten'
     }
   };
   const FACTION_TRAITS = {
@@ -736,6 +751,15 @@
       if (plan === WAR_PLANS.economy && node.role !== 'player') {
         node.type = index % 3 === 0 ? 'gold' : node.type;
         node.terrain = index % 3 === 0 ? 'market' : index % 4 === 0 ? 'quarry' : node.terrain;
+      }
+      if (plan === WAR_PLANS.conquest) {
+        if (node.role === 'enemy' && node.rank >= 4) {
+          node.type = index % 2 === 0 ? 'watch' : node.type;
+          node.terrain = node.rank >= 7 ? 'keep' : index % 3 === 0 ? 'hill' : node.terrain;
+        } else if (node.role === 'neutral' && node.rank >= 2) {
+          node.type = index % 2 === 0 ? 'troop' : node.type;
+          node.terrain = index % 3 === 0 ? 'road' : node.terrain;
+        }
       }
     }
 
@@ -1454,7 +1478,8 @@
     const faction = tower.faction || 'neutral';
     const base = colorForFaction(faction);
     const visualTier = getTowerVisualTier(level);
-    const size = Math.min(86, 34 + level * 7 + visualTier * 2);
+    const siteScale = tower.mastilCastleSite ? 1.1 : tower.mastilRoadHub ? 1.04 : 1;
+    const size = Math.min(tower.mastilCastleSite ? 96 : 86, (34 + level * 7 + visualTier * 2) * siteScale);
     const height = size * 1.05;
     const width = size * 0.88;
     const isSelected = safe(() => selectedTower === tower, false);
@@ -1529,8 +1554,8 @@
     wallGradient.addColorStop(0.38, shade(base, 28));
     wallGradient.addColorStop(1, shade(base, -50));
 
-    if (visualTier >= 3) {
-      drawCastleCurtainWall(width, height, base, faction, visualTier);
+    if (visualTier >= 3 || tower.mastilCastleSite) {
+      drawCastleCurtainWall(width, height, base, faction, Math.max(3, visualTier));
     }
 
     const mainW = width * (0.62 + visualTier * 0.035);
@@ -3027,7 +3052,9 @@
     const capGain = Math.max(1, nextCap - (tower.maxUnits || 0));
     let detail = `+${capGain} Garnison und schnellere Ausbildung`;
 
-    if (level < 3 && nextLevel >= 3) {
+    if (tower.mastilCastleSite && level < 2) {
+      detail = 'Burgstandort: mehr Garnison und längerer Schutz';
+    } else if (level < 3 && nextLevel >= 3) {
       detail = 'Burgmauern: Schutz und frische Reserven';
     } else if (level < 5 && nextLevel >= 5) {
       if (tower.type === typeFromKey('gold')) detail = 'Zitadellenmarkt: Goldschub beim Ausbau';
@@ -4338,6 +4365,14 @@
       };
     }
 
+    if (config.mode === 'skirmish' && plan === WAR_PLANS.conquest && strategic.heldCount < Math.min(5, strategic.total) && strategic.nextTarget) {
+      return {
+        title: 'Gefecht: Reichskrieg',
+        detail: `${strategic.heldCount}/${strategic.total} Schlüsselorte. Nächstes Ziel: ${strategic.nextTarget.site.title}.`,
+        progress: strategic.ratio
+      };
+    }
+
     if (!hasMarket && capturableMarket) {
       return {
         title: 'Kriegsauftrag: Markt sichern',
@@ -4694,6 +4729,35 @@
     });
   }
 
+  function applyBattleSiteBonus(tower, node, faction, unitFactor) {
+    if (!tower || !node) return tower;
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const isCastleSite = node.terrain === 'keep' || node.rank >= 9;
+    const isRoadHub = MAP_LINKS.filter(([a, b]) => a === node.index || b === node.index).length >= 3;
+
+    tower.mastilCastleSite = isCastleSite;
+    tower.mastilRoadHub = isRoadHub;
+    tower.mastilBattleRole = node.role;
+
+    if (isCastleSite) {
+      const capBonus = node.rank >= 9 ? 7 : 4;
+      tower.maxUnits += capBonus;
+      if (faction === playerFaction) {
+        tower.units = Math.min(tower.maxUnits, tower.units + Math.ceil(capBonus / 2));
+      } else {
+        tower.units = Math.max(tower.units, Math.floor(tower.maxUnits * unitFactor));
+      }
+      tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + (node.rank >= 9 ? 22000 : 14000));
+    }
+
+    if (isRoadHub && !isCastleSite) {
+      tower.maxUnits += 2;
+      tower.units = Math.min(tower.maxUnits, tower.units + 1);
+    }
+
+    return tower;
+  }
+
   function createBattleTower(node, faction, level, unitFactor) {
     const tower = createTower(
       gameWidth * node.x,
@@ -4716,6 +4780,7 @@
     tower.mastilRenown = 0;
     tower.mastilVeteranRank = 0;
     tower.mastilVeteranCapacityApplied = 0;
+    applyBattleSiteBonus(tower, node, faction, unitFactor);
     assignEnemyCommander(tower);
     return tower;
   }
@@ -4728,7 +4793,7 @@
     const bossWave = isBossWave(currentWave);
     const limit = SIZE_LIMITS[config.size] || SIZE_LIMITS.standard;
     const skirmishStartRank = config.mode === 'skirmish'
-      ? ({ compact: 0, standard: 1, large: 1, war: 2 }[config.size] || 1)
+      ? ({ compact: 0, standard: 1, large: 1, war: 2, epic: 2 }[config.size] || 1)
       : 0;
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
     const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
@@ -4781,18 +4846,24 @@
 
       if (node.role === 'enemy') {
         const faction = getEnemyFaction(enemyIndex, opponentCount);
-        const level = 1 + difficulty.enemyLevel + warPlan.enemyLevel + Math.floor(currentWave / 6) + (bossWave ? 1 : 0);
+        let level = 1 + difficulty.enemyLevel + warPlan.enemyLevel + Math.floor(currentWave / 6) + (bossWave ? 1 : 0);
+        if (node.terrain === 'keep') level += 1;
+        if (config.mode === 'skirmish' && warPlan === WAR_PLANS.conquest && node.rank >= 7) level += 1;
         const factor = Math.min(0.98, (difficulty.enemyUnits + currentWave * 0.018 + (bossWave ? 0.16 : 0)) * warPlan.enemyUnits);
         const tower = createBattleTower(node, faction, level, factor);
         if (config.mode === 'skirmish' && warPlan === WAR_PLANS.fortress) {
           tower.fortifiedUntil = performance.now() + 14000;
+        }
+        if (config.mode === 'skirmish' && warPlan === WAR_PLANS.conquest && node.terrain === 'keep') {
+          tower.fortifiedUntil = performance.now() + 18000;
         }
         towers.push(tower);
         enemyIndex += 1;
         continue;
       }
 
-      const neutralLevel = currentWave >= 10 && node.rank >= 4 ? 2 : 1;
+      let neutralLevel = currentWave >= 10 && node.rank >= 4 ? 2 : 1;
+      if (config.mode === 'skirmish' && node.terrain === 'keep') neutralLevel += 1;
       const neutralFactor = 0.36 + Math.min(0.16, currentWave * 0.01) + (config.mode === 'skirmish' && warPlan === WAR_PLANS.economy ? 0.06 : 0);
       towers.push(createBattleTower(node, neutralFaction, neutralLevel, neutralFactor));
     }
@@ -6293,12 +6364,24 @@
   }
 
   function getBattleDebug() {
+    const currentTowers = safe(() => towers, []);
     const currentUnits = safe(() => units, []);
     const effectTypes = visualEffects.reduce((types, effect) => {
       types[effect.type] = (types[effect.type] || 0) + 1;
       return types;
     }, {});
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
     return {
+      config: getMatchConfig(),
+      activeRegion: getActiveRegion().title,
+      warPlan: getWarPlan(getMatchConfig()).label,
+      towers: currentTowers.length,
+      playerTowers: currentTowers.filter((tower) => tower.faction === playerFaction).length,
+      enemyTowers: currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction).length,
+      neutralTowers: currentTowers.filter((tower) => tower.faction === neutralFaction).length,
+      castleSites: currentTowers.filter((tower) => tower.mastilCastleSite).length,
+      roadHubs: currentTowers.filter((tower) => tower.mastilRoadHub).length,
       formations: battleFormations.size,
       taggedUnits: currentUnits.filter((unit) => unit.mastilFormationId).length,
       units: currentUnits.length,
