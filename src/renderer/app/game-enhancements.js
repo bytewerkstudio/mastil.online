@@ -436,6 +436,48 @@
       pressure: 14
     }
   };
+  const BOSS_ORDERS = {
+    startgebiet: {
+      kind: 'charge',
+      label: 'Grenzruf',
+      detail: 'Roderich sammelt einen schweren Ansturm gegen die schwache Front.',
+      color: '#ffb17e',
+      warning: 3200,
+      interval: 19000
+    },
+    grenzlande: {
+      kind: 'bulwark',
+      label: 'Eisenwall',
+      detail: 'Der Eisenvogt haertet seine Grenzburgen und fuellt die Wachen.',
+      color: '#bde3ff',
+      warning: 3400,
+      interval: 20500
+    },
+    wuestenreich: {
+      kind: 'tribute',
+      label: 'Sandtribut',
+      detail: 'Der Sultan stoert Handel und zwingt Gold aus unsicheren Wegen.',
+      color: '#f0c875',
+      warning: 3300,
+      interval: 19800
+    },
+    nachtfestung: {
+      kind: 'shadow',
+      label: 'Nachtmal',
+      detail: 'Malrec markiert einen isolierten Turm fuer einen dunklen Schlag.',
+      color: '#b99cff',
+      warning: 3000,
+      interval: 18200
+    },
+    endboss: {
+      kind: 'imperial',
+      label: 'Kaiserzug',
+      detail: 'Veyron befiehlt eine doppelte Zitadellenoffensive.',
+      color: '#ff8a6d',
+      warning: 3600,
+      interval: 17200
+    }
+  };
   worldImage.onload = () => {
     worldImageReady = true;
     worldBackgroundRevision += 1;
@@ -773,6 +815,7 @@
     warEvents: 0,
     incidentFailures: 0,
     enemyOrders: 0,
+    bossOrders: 0,
     veterans: 0,
     contracts: 0,
     convoys: 0,
@@ -788,6 +831,18 @@
     vigilanceUntil: 0,
     vigilanceText: '',
     vigilanceCounteredAt: 0
+  };
+  const bossCommandState = {
+    nextAt: 0,
+    pendingAt: 0,
+    warningStartedAt: 0,
+    warningUntil: 0,
+    activeUntil: 0,
+    lastWave: 0,
+    lastBossName: '',
+    lastKind: '',
+    lastText: 'Kein Bossbefehl aktiv.',
+    counteredAt: 0
   };
 
   function safe(fn, fallback) {
@@ -2050,6 +2105,7 @@
     drawTowerReadinessBar(tower, width, height);
     drawTowerBadges(tower, width, height, level);
     drawEnemyIntentMarker(tower, width, height);
+    drawBossOrderMarker(tower, width, height);
     ctx.restore();
   }
 
@@ -2372,6 +2428,44 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(countered ? 'Konter' : tower.commander.short || 'Auge', countered ? badgeX : badgeX + 10, badgeY);
+    ctx.restore();
+  }
+
+  function drawBossOrderMarker(tower, width, height) {
+    if (!tower || !tower.boss || !tower.bossName) return;
+
+    const now = performance.now();
+    const pending = bossCommandState.lastBossName === tower.bossName && now < (bossCommandState.warningUntil || 0);
+    const active = bossCommandState.lastBossName === tower.bossName && now < (bossCommandState.activeUntil || 0);
+    const countered = bossCommandState.lastBossName === tower.bossName && now - (bossCommandState.counteredAt || 0) < 5200;
+    if (!pending && !active && !countered) return;
+
+    const order = BOSS_ORDERS[bossCommandState.lastKind] || BOSS_ORDERS[getRegionForWave(safe(() => wave, 1)).id] || BOSS_ORDERS.startgebiet;
+    const color = countered ? '#73d6a1' : order.color;
+    const label = countered ? 'gekontert' : pending ? 'Bosszug' : order.label;
+    const pulse = 0.68 + Math.sin(now * 0.009) * 0.18;
+
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = rgba(color, countered ? 0.8 : pulse);
+    ctx.lineWidth = pending ? 4 : 2.6;
+    ctx.setLineDash(pending ? [12, 5] : countered ? [4, 8] : []);
+    ctx.beginPath();
+    ctx.ellipse(0, -height * 0.04, width * 1.34, height * 1.02, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = countered ? 'rgba(7, 28, 20, 0.9)' : 'rgba(28, 9, 7, 0.9)';
+    ctx.strokeStyle = rgba(color, 0.88);
+    ctx.lineWidth = 1.4;
+    roundRect(ctx, -44, -height * 1.26, 88, 20, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = countered ? '#d9fff0' : '#fff2bf';
+    ctx.font = '950 10px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, -height * 1.26 + 10);
     ctx.restore();
   }
 
@@ -3617,6 +3711,7 @@
       matchStats.convoys * 130 +
       matchStats.reserves * 105 +
       matchStats.commandChains * 145 +
+      matchStats.bossOrders * 95 +
       Math.round(matchStats.maxMorale * 8) +
       Math.round(computeSupplyState().ratio * 220) +
       matchAchievements.size * 420 +
@@ -3679,6 +3774,7 @@
         <span><strong>${Math.round(matchStats.maxMorale)}</strong> beste Moral</span>
         <span><strong>${matchStats.warEvents}</strong> Ereignisse</span>
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
+        <span><strong>${matchStats.bossOrders}</strong> Bossbefehle</span>
         <span><strong>${matchStats.contracts}</strong> Aufträge</span>
         <span><strong>${matchStats.convoys}</strong> Konvois</span>
         <span><strong>${matchStats.reserves}</strong> Reserven</span>
@@ -3763,6 +3859,7 @@
     enemyCommandState.vigilanceUntil = 0;
     enemyCommandState.vigilanceText = '';
     enemyCommandState.vigilanceCounteredAt = 0;
+    resetBossCommandState();
     matchAchievements.clear();
     completedContracts.clear();
     matchSummarySaved = false;
@@ -3820,6 +3917,7 @@
     matchStats.warEvents = 0;
     matchStats.incidentFailures = 0;
     matchStats.enemyOrders = 0;
+    matchStats.bossOrders = 0;
     matchStats.veterans = 0;
     matchStats.contracts = 0;
     matchStats.convoys = 0;
@@ -5563,6 +5661,55 @@
     };
   }
 
+  function getBossCommandPanelState() {
+    const now = performance.now();
+    const context = getBossCommandContext();
+    if (!context) {
+      return {
+        active: false,
+        title: 'Bossbefehl',
+        detail: 'Kein Bosszug aktiv.',
+        progress: 0,
+        color: '#ffb17e',
+        warning: false
+      };
+    }
+
+    const { order, region } = context;
+    if (bossCommandState.pendingAt && now < bossCommandState.pendingAt) {
+      const total = Math.max(1, bossCommandState.pendingAt - (bossCommandState.warningStartedAt || now));
+      return {
+        active: true,
+        title: `${region.boss}: ${order.label}`,
+        detail: `${order.detail} Gegenfenster offen.`,
+        progress: clamp((now - (bossCommandState.warningStartedAt || now)) / total, 0, 1),
+        color: order.color,
+        warning: true
+      };
+    }
+
+    if (now < (bossCommandState.activeUntil || 0)) {
+      return {
+        active: true,
+        title: `${region.boss}: Bosszug`,
+        detail: bossCommandState.lastText || `${order.label} wirkt auf dem Feld.`,
+        progress: clamp((bossCommandState.activeUntil - now) / 8200, 0, 1),
+        color: order.color,
+        warning: false
+      };
+    }
+
+    const wait = bossCommandState.nextAt ? Math.max(0, Math.ceil((bossCommandState.nextAt - now) / 1000)) : 0;
+    return {
+      active: true,
+      title: `${region.boss}: ${order.label}`,
+      detail: wait > 0 ? `Naechster Bosszug in ${wait}s. ${order.detail}` : `${order.detail}`,
+      progress: bossCommandState.nextAt ? clamp(1 - ((bossCommandState.nextAt - now) / Math.max(1, order.interval)), 0, 1) : 0,
+      color: order.color,
+      warning: false
+    };
+  }
+
   function getWeakPlayerTarget(own, source) {
     return own
       .map((tower) => {
@@ -5716,6 +5863,214 @@
     pushEvent(boss ? `Bosswelle: ${region.boss} erscheint` : `Bosswelle: ${region.boss}`, 'danger');
     showEnhancementNotice(`Bosswelle ${waveNumber}: ${region.boss} betritt die Karte.`);
     playSound('wave');
+  }
+
+  function resetBossCommandState() {
+    bossCommandState.nextAt = 0;
+    bossCommandState.pendingAt = 0;
+    bossCommandState.warningStartedAt = 0;
+    bossCommandState.warningUntil = 0;
+    bossCommandState.activeUntil = 0;
+    bossCommandState.lastWave = 0;
+    bossCommandState.lastBossName = '';
+    bossCommandState.lastKind = '';
+    bossCommandState.lastText = 'Kein Bossbefehl aktiv.';
+    bossCommandState.counteredAt = 0;
+  }
+
+  function getBossCommandContext() {
+    const boss = getBossTowers()[0] || null;
+    if (!boss) return null;
+    const currentWave = Math.max(1, safe(() => wave, 1));
+    const region = WORLD_REGIONS.find((entry) => entry.boss === boss.bossName) || getBossRegionForWave(currentWave);
+    const order = BOSS_ORDERS[region.id] || BOSS_ORDERS.startgebiet;
+    return { boss, currentWave, region, order };
+  }
+
+  function scheduleBossCommandWarning(context, now = performance.now()) {
+    if (!context || !context.boss || !context.order) return;
+    const { boss, currentWave, region, order } = context;
+    bossCommandState.pendingAt = now + order.warning;
+    bossCommandState.warningStartedAt = now;
+    bossCommandState.warningUntil = bossCommandState.pendingAt;
+    bossCommandState.lastWave = currentWave;
+    bossCommandState.lastBossName = boss.bossName || region.boss;
+    bossCommandState.lastKind = region.id;
+    bossCommandState.lastText = `${order.label}: ${order.detail}`;
+    spawnEffect(boss.x, boss.y, 'impact', {
+      color: order.color,
+      text: order.label,
+      duration: 1150,
+      size: 1.14
+    });
+    pushEvent(`Boss bereitet vor: ${order.label}`, 'danger');
+    showEnhancementNotice(`${bossCommandState.lastBossName}: ${order.label} wird vorbereitet.`);
+  }
+
+  function executeBossOrder(context, now = performance.now()) {
+    if (!context || !context.boss || !context.order) return '';
+    const { boss, currentWave, region, order } = context;
+    const own = getPlayerTowers();
+    const enemy = getEnemyTowers();
+    if (!own.length || !enemy.length) return '';
+
+    let outcome = '';
+    if (order.kind === 'charge') {
+      const target = getWeakPlayerTarget(own, boss);
+      const amount = Math.min(
+        Math.max(1, Math.floor((boss.units || 0) - 1)),
+        Math.max(2, Math.floor((boss.units || 0) * (0.2 + Math.min(0.08, currentWave * 0.006))))
+      );
+      if (target && amount > 0) {
+        safe(() => sendUnitsFromTower(boss, target, amount));
+        spawnEffect(target.x, target.y, 'impact', { color: order.color, text: 'Boss', duration: 1050, size: 1.04 });
+        outcome = `${region.boss} schickt ${amount} Elite gegen ${getTowerTierName(target.level)}.`;
+      }
+    } else if (order.kind === 'bulwark') {
+      let reinforced = 0;
+      enemy
+        .slice()
+        .sort((a, b) => (a.units / Math.max(1, a.maxUnits)) - (b.units / Math.max(1, b.maxUnits)))
+        .slice(0, 3)
+        .forEach((tower) => {
+          const amount = 2 + Math.floor(currentWave / 6) + (tower === boss ? 2 : 0);
+          tower.units = Math.min(tower.maxUnits, tower.units + amount);
+          tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, now + 12000 + currentWave * 260);
+          reinforced += amount;
+          spawnEffect(tower.x, tower.y, 'fortify', { color: order.color, text: `+${amount}`, duration: 900, size: 0.82 });
+        });
+      outcome = `${region.boss} errichtet den Eisenwall: +${reinforced} Wachen.`;
+    } else if (order.kind === 'tribute') {
+      const currentGold = Math.max(0, safe(() => gold, 0));
+      const loss = Math.min(currentGold, 18 + currentWave * 3 + enemy.length * 2);
+      safe(() => {
+        gold = Math.max(0, gold - loss);
+        updateUI();
+      });
+      const target = own
+        .filter((tower) => tower.terrain === 'market' || tower.type === typeFromKey('gold') || tower.mastilRoadHub)
+        .sort((a, b) => a.units - b.units)[0] || getWeakPlayerTarget(own, boss);
+      if (target) {
+        target.mastilMarkedUntil = now + 12000;
+        target.mastilMarkedKind = 'boss';
+        spawnEffect(target.x, target.y, 'impact', { color: order.color, text: `-${loss}G`, duration: 1050, size: 0.92 });
+      }
+      outcome = `${region.boss} fordert Sandtribut: -${loss} Gold.`;
+    } else if (order.kind === 'shadow') {
+      const target = getWeakPlayerTarget(own, boss);
+      if (target) {
+        const loss = Math.min(Math.max(0, target.units - 1), 2 + Math.floor(currentWave / 6));
+        target.units = Math.max(1, target.units - loss);
+        target.flankedUntil = now + 11000;
+        target.siegeWeakness = Math.min(4, (target.siegeWeakness || 0) + 1);
+        spawnEffect(target.x, target.y, 'impact', { color: order.color, text: `-${loss}`, duration: 1150, size: 1 });
+        outcome = `${region.boss} legt Nachtmal auf ${getTowerTierName(target.level)}: -${loss} Truppen.`;
+      }
+    } else {
+      const targets = own
+        .slice()
+        .sort((a, b) => (a.units + Math.hypot(a.x - boss.x, a.y - boss.y) / 120) - (b.units + Math.hypot(b.x - boss.x, b.y - boss.y) / 120))
+        .slice(0, 2);
+      let sentTotal = 0;
+      targets.forEach((target, index) => {
+        const amount = Math.min(
+          Math.max(1, Math.floor((boss.units || 0) - 1)),
+          Math.max(2, Math.floor((boss.units || 0) * (index === 0 ? 0.18 : 0.12)))
+        );
+        if (amount <= 0) return;
+        sentTotal += amount;
+        safe(() => sendUnitsFromTower(boss, target, amount));
+        spawnEffect(target.x, target.y, 'siege', { color: order.color, text: 'Kaiser', duration: 1080, size: 0.98 });
+      });
+      enemy.forEach((tower) => {
+        if (tower !== boss && tower.units < tower.maxUnits) tower.units = Math.min(tower.maxUnits, tower.units + 1);
+      });
+      outcome = `${region.boss} befiehlt Kaiserzug: ${sentTotal} Elite marschiert.`;
+    }
+
+    if (!outcome) return '';
+    matchStats.bossOrders += 1;
+    bossCommandState.activeUntil = now + 8200;
+    bossCommandState.lastWave = currentWave;
+    bossCommandState.lastBossName = boss.bossName || region.boss;
+    bossCommandState.lastKind = region.id;
+    bossCommandState.lastText = outcome;
+    pushEvent(`Bossbefehl: ${outcome}`, 'danger');
+    showEnhancementNotice(outcome);
+    playSound(order.kind === 'bulwark' ? 'upgrade' : 'attack');
+    return outcome;
+  }
+
+  function applyBossCommandPressure() {
+    const context = getBossCommandContext();
+    const now = performance.now();
+    if (!context) {
+      if (bossCommandState.lastBossName && now > (bossCommandState.activeUntil || 0)) resetBossCommandState();
+      return;
+    }
+
+    const { currentWave, boss, order } = context;
+    if (!bossCommandState.nextAt || bossCommandState.lastWave !== currentWave || bossCommandState.lastBossName !== boss.bossName) {
+      bossCommandState.nextAt = now + (isBossWave(currentWave) ? 7600 : 11200);
+      bossCommandState.pendingAt = 0;
+      bossCommandState.warningStartedAt = 0;
+      bossCommandState.warningUntil = 0;
+      bossCommandState.lastWave = currentWave;
+      bossCommandState.lastBossName = boss.bossName || getBossRegionForWave(currentWave).boss;
+      bossCommandState.lastKind = context.region.id;
+      bossCommandState.lastText = `${order.label}: ${order.detail}`;
+      return;
+    }
+
+    if (bossCommandState.pendingAt) {
+      if (now >= bossCommandState.pendingAt) {
+        const outcome = executeBossOrder(context, now);
+        bossCommandState.pendingAt = 0;
+        bossCommandState.warningStartedAt = 0;
+        bossCommandState.warningUntil = 0;
+        bossCommandState.nextAt = now + order.interval + Math.random() * 2600;
+        if (!outcome) bossCommandState.nextAt = now + 5200;
+      }
+      return;
+    }
+
+    if (now >= bossCommandState.nextAt) {
+      scheduleBossCommandWarning(context, now);
+    }
+  }
+
+  function counterBossCommand(label = 'Gegenplan', anchorTower = null) {
+    const context = getBossCommandContext();
+    const now = performance.now();
+    if (!context || !bossCommandState.pendingAt || now >= bossCommandState.pendingAt) return false;
+    if (now - (bossCommandState.counteredAt || 0) < 9000) return false;
+
+    bossCommandState.counteredAt = now;
+    bossCommandState.pendingAt = 0;
+    bossCommandState.warningStartedAt = 0;
+    bossCommandState.warningUntil = 0;
+    bossCommandState.activeUntil = now + 5600;
+    bossCommandState.nextAt = now + 10000 + Math.min(5000, matchStats.sieges * 700 + matchStats.plans * 320);
+    bossCommandState.lastText = `${label} stoppt ${context.order.label}; ${context.region.boss} verliert Zeit.`;
+    matchStats.counters += 1;
+    warMorale = clamp(warMorale + 1.4, 0, 100);
+
+    const focus = anchorTower || context.boss;
+    spawnEffect(focus.x, focus.y, 'counter', {
+      color: '#73d6a1',
+      text: 'Bosskonter',
+      duration: 1250,
+      size: 1.08
+    });
+    spawnEffect(context.boss.x, context.boss.y, 'impact', {
+      color: '#73d6a1',
+      text: 'gestoppt',
+      duration: 980,
+      size: 0.92
+    });
+    pushEvent(`Bosskonter: ${context.region.boss} wird aufgehalten`, 'defense');
+    showEnhancementNotice(`${label}: Bosszug aufgehalten.`);
+    return true;
   }
 
   function getPlayerTowers() {
@@ -6091,6 +6446,7 @@
     enemyCommandState.vigilanceUntil = 0;
     enemyCommandState.vigilanceText = '';
     enemyCommandState.vigilanceCounteredAt = 0;
+    resetBossCommandState();
     applyFactionStartBonus(options);
     safe(() => saveGameState());
     pushEvent(config.mode === 'skirmish' ? `Gefecht: ${scenario.label} | ${difficulty.label} | ${warPlan.label}` : 'Kampagne gestartet', 'wave');
@@ -6477,6 +6833,7 @@
     matchStats.plans += 1;
     recordTacticalCommand(`Schlachtplan: ${getTowerRoleName(target.type)} markiert`, 'site');
     counterEnemyVigilance('Schlachtplan', target);
+    counterBossCommand('Schlachtplan', target);
     unlockAchievement('firstBattlePlan', { tower: target });
     showEnhancementNotice(`Schlachtplan: ${getTowerTierName(target.level)} markiert. Angriff und Belagerung treffen besser.`);
     playSound('select');
@@ -6688,6 +7045,7 @@
     matchStats.sieges += 1;
     recordTacticalCommand(`Belagerung: ${getTowerTierName(target.level)} -${damage}`, 'siege');
     counterEnemyVigilance('Belagerung', target);
+    counterBossCommand('Belagerung', target);
     unlockAchievement('firstSiege', { tower: target });
     if (matchStats.sieges >= 3) unlockAchievement('siegeMaster', { tower: target });
     spawnEffect(source.x, source.y, 'attack', { color: '#f1cf6b', text: 'Belag.', duration: 950, size: 0.92 });
@@ -7106,6 +7464,7 @@
     addTowerRenown(selected, 1, 'Schild');
     pushEvent('Turm befestigt', 'defense');
     counterEnemyVigilance('Befestigung', selected);
+    counterBossCommand('Befestigung', selected);
     unlockAchievement('firstFortify', { tower: selected });
     showEnhancementNotice(`Turm befestigt. -${cost} Gold`);
   }
@@ -7405,6 +7764,7 @@
         safe(() => applyWarIncidentPulse(deltaTime || 0));
         safe(() => towers.forEach((tower) => assignEnemyCommander(tower)));
         safe(() => applyEnemyCommanderPressure());
+        safe(() => applyBossCommandPressure());
         safe(() => annotateRouteNetwork(towers));
         safe(() => towers.forEach((tower) => {
           const previous = before.get(tower);
@@ -7779,6 +8139,11 @@
       </div>
       <div class="mastil-objective-detail" id="mastil-objective-detail">Erobere neutrale Türme.</div>
       <div class="mastil-boss-status" id="mastil-boss-status">Keine Bosswelle</div>
+      <div class="mastil-boss-command" id="mastil-boss-command">
+        <strong id="mastil-boss-command-title">Bossbefehl</strong>
+        <span id="mastil-boss-command-detail">Kein Bosszug aktiv.</span>
+        <em><i id="mastil-boss-command-progress"></i></em>
+      </div>
       <div class="mastil-condition-panel" id="mastil-condition-panel">
         <strong id="mastil-condition-title">Schlachtfeld</strong>
         <span id="mastil-condition-detail">Die Karte ist ruhig.</span>
@@ -7826,7 +8191,7 @@
         <span id="mastil-stat-routes">0 Wege</span>
         <span id="mastil-stat-front">0% Druck</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
-        <span id="mastil-stat-threat">0 Feindbef.</span>
+        <span id="mastil-stat-threat">0 Feind / 0 Boss</span>
         <span id="mastil-stat-veterans">0 Vet.</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
       </div>
@@ -7947,6 +8312,10 @@
     const title = document.getElementById('mastil-objective-title');
     const detail = document.getElementById('mastil-objective-detail');
     const bossStatus = document.getElementById('mastil-boss-status');
+    const bossCommandBox = document.getElementById('mastil-boss-command');
+    const bossCommandTitle = document.getElementById('mastil-boss-command-title');
+    const bossCommandDetail = document.getElementById('mastil-boss-command-detail');
+    const bossCommandProgress = document.getElementById('mastil-boss-command-progress');
     const conditionBox = document.getElementById('mastil-condition-panel');
     const conditionTitle = document.getElementById('mastil-condition-title');
     const conditionDetail = document.getElementById('mastil-condition-detail');
@@ -8004,6 +8373,15 @@
         ? `Boss aktiv: ${bossName}`
         : `Naechster Boss: ${bossName} in Welle ${nextBossWave}`;
       bossStatus.classList.toggle('active', bossActive);
+    }
+    if (bossCommandBox && bossCommandTitle && bossCommandDetail && bossCommandProgress) {
+      const bossCommand = getBossCommandPanelState();
+      bossCommandBox.classList.toggle('active', bossCommand.active);
+      bossCommandBox.classList.toggle('warning', bossCommand.warning);
+      bossCommandBox.style.setProperty('--boss-command-color', bossCommand.color);
+      bossCommandTitle.textContent = bossCommand.title;
+      bossCommandDetail.textContent = bossCommand.detail;
+      bossCommandProgress.style.width = `${Math.round(bossCommand.progress * 100)}%`;
     }
     if (conditionBox && conditionTitle && conditionDetail) {
       const condition = getBattlefieldCondition();
@@ -8072,7 +8450,7 @@
     routeStat.textContent = `${routeState.secured}/${routeState.total} Wege`;
     frontStat.textContent = `${Math.round(frontState.ratio * 100)}% Druck`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
-    threatStat.textContent = `${matchStats.enemyOrders} Feindbef.`;
+    threatStat.textContent = `${matchStats.enemyOrders} Feind / ${matchStats.bossOrders} Boss`;
     veteranStat.textContent = `${matchStats.veterans} Vet.`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
 
@@ -8175,6 +8553,13 @@
       castleSites: currentTowers.filter((tower) => tower.mastilCastleSite).length,
       sideStarts: currentTowers.filter((tower) => tower.mastilSideStart).length,
       activeBosses: currentTowers.filter((tower) => tower.boss).length,
+      bossOrders: matchStats.bossOrders,
+      bossCommand: {
+        nextIn: bossCommandState.nextAt ? Math.max(0, Math.round((bossCommandState.nextAt - performance.now()) / 1000)) : 0,
+        pending: Boolean(bossCommandState.pendingAt),
+        active: performance.now() < (bossCommandState.activeUntil || 0),
+        text: bossCommandState.lastText
+      },
       roadHubs: currentTowers.filter((tower) => tower.mastilRoadHub).length,
       formations: battleFormations.size,
       taggedUnits: currentUnits.filter((unit) => unit.mastilFormationId).length,
@@ -8200,6 +8585,7 @@
     getReservePlan,
     runCommandAction,
     counterEnemyVigilance,
+    counterBossCommand,
     activateFactionAbility,
     upgradeSelectedTower,
     specializeSelectedTower,
@@ -8207,6 +8593,7 @@
     unlockAchievement,
     getAchievementProgress,
     getBattleDebug,
+    getBossCommandPanelState,
     spawnEffect
   };
 

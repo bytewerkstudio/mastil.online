@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.49
+        // Game version information - Update auf 2.6.50
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 49,
+    patch: 50,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.50": [
+        "Bosskaempfe erweitert: aktive Bosse bereiten jetzt eigene Bossbefehle wie Grenzruf, Eisenwall, Nachtmal und Kaiserzug vor",
+        "Neue Bossbefehl-Anzeige im Auftragspanel zeigt Timer, Wirkung und Gegenfenster waehrend Bosswellen",
+        "Schlachtplan, Belagerung und Befestigung koennen vorbereitete Bosszuege nun mit einem Bosskonter verzoegern"
+    ],
     "2.6.49": [
         "Feindplaene sind im Kampf sichtbarer: wachsame Kommandantentuerme zeigen jetzt ein klares Feindblick-Signal",
         "Neuer Gegenplan: Schlachtplan, Belagerung oder Befestigung koennen einen wachsamen KI-Kommandanten ausbremsen",
