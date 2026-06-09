@@ -42,8 +42,8 @@
   };
   const START_MENU_ITEMS = {
     campaign: {
-      label: 'Offline gegen KI',
-      detail: 'Kampagne mit Weltkarte, Bosswellen und Demo-Fortschritt.',
+      label: 'Kampagne gegen KI',
+      detail: 'Weltkarte, Bosswellen und Reichsfortschritt.',
       tone: 'blue',
       rank: 'primary'
     },
@@ -61,7 +61,7 @@
     },
     map: {
       label: 'Weltkarte',
-      detail: 'Regionen, Bosse und Wellenpfad ansehen.',
+      detail: 'Regionen, Bosse und deinen Feldzug ansehen.',
       tone: 'gold',
       rank: 'secondary'
     },
@@ -616,6 +616,11 @@
     }) || WORLD_REGIONS[WORLD_REGIONS.length - 1];
   }
 
+  function parseRegionWaveRange(region) {
+    const parts = String(region.waves || '1-1').split('-').map((value) => Number(value) || 1);
+    return { start: parts[0], end: parts[1] || parts[0] };
+  }
+
   function getBackendStatusText() {
     const webConfig = window.MASTIL_WEB_CONFIG || {};
     const value = String(localStorage.getItem('mastil-backend-url') || webConfig.backendUrl || '').trim();
@@ -649,6 +654,28 @@
     if (footer) footer.textContent = state.licenseActive
       ? 'Vollversion: alle Wellen freigeschaltet'
       : 'Demo aktiv: Kampagne frei bis Welle 5';
+
+    const menu = document.querySelector('#start-screen .menu-container');
+    if (menu) {
+      menu.dataset.currentRegion = region.id;
+      menu.style.setProperty('--menu-current-image', `url("${region.image}")`);
+    }
+
+    document.querySelectorAll('.mastil-menu-region-step').forEach((step) => {
+      const stepRegion = getRegionById(step.dataset.regionId || '');
+      if (!stepRegion) return;
+      const range = parseRegionWaveRange(stepRegion);
+      const unlocked = state.licenseActive || range.start <= 5 || bestWave >= range.start;
+      const cleared = bestWave > range.end;
+      const active = stepRegion.id === region.id && !cleared;
+      step.classList.toggle('active', active);
+      step.classList.toggle('cleared', cleared);
+      step.classList.toggle('locked', !unlocked);
+      const stateLabel = step.querySelector('.mastil-menu-region-state');
+      if (stateLabel) {
+        stateLabel.textContent = cleared ? 'Gesichert' : active ? 'Aktiv' : unlocked ? 'Bereit' : 'Gesperrt';
+      }
+    });
   }
 
   function decorateMenuButton(button, key, handler) {
@@ -692,8 +719,8 @@
         <div class="mastil-menu-titleline">
           <div>
             <span>Kommandozelt</span>
-            <strong>Wähle deinen nächsten Feldzug</strong>
-            <p>Starte die Kampagne, trainiere Gefechte oder öffne das Reichsarchiv. Alles ist als schnelle Spielzentrale aufgebaut.</p>
+            <strong>Hauptquartier von MASTIL</strong>
+            <p>Plane deinen Feldzug, starte ein Gefecht oder öffne Archiv, Weltkarte und Online-Duell direkt aus einer Zentrale.</p>
           </div>
           <div class="mastil-menu-seal" aria-hidden="true">
             <img src="../../assets/branding/mastil-logo.png" alt="">
@@ -743,6 +770,49 @@
       }
     }
 
+    if (!menu.querySelector('.mastil-menu-warpath')) {
+      const warpath = document.createElement('div');
+      warpath.className = 'mastil-menu-warpath';
+      warpath.innerHTML = `
+        <div class="mastil-menu-warpath-head">
+          <span>Weltpfad</span>
+          <strong>5 Reiche, 5 Bossfronten</strong>
+        </div>
+        <div class="mastil-menu-region-list" aria-label="Weltpfad und Bossfronten"></div>
+      `;
+
+      const list = warpath.querySelector('.mastil-menu-region-list');
+      if (list) {
+        WORLD_REGIONS.forEach((region, index) => {
+          const step = document.createElement('button');
+          step.className = 'mastil-menu-region-step';
+          step.type = 'button';
+          step.dataset.regionId = region.id;
+          step.style.setProperty('--region-image', `url("${region.image}")`);
+          step.innerHTML = `
+            <span class="mastil-menu-region-index">${index + 1}</span>
+            <span class="mastil-menu-region-copy">
+              <strong>${region.title}</strong>
+              <small>Wellen ${region.waves} | ${region.boss}</small>
+              <em>${region.terrain}</em>
+            </span>
+            <span class="mastil-menu-region-state">Bereit</span>
+          `;
+          step.addEventListener('click', () => showWorldMap('campaign'));
+          list.appendChild(step);
+        });
+      }
+
+      const dashboard = menu.querySelector('.mastil-menu-dashboard');
+      if (dashboard && dashboard.nextSibling) {
+        menu.insertBefore(warpath, dashboard.nextSibling);
+      } else if (dashboard) {
+        menu.appendChild(warpath);
+      } else {
+        menu.prepend(warpath);
+      }
+    }
+
     if (!menu.querySelector('.mastil-menu-footer')) {
       const footer = document.createElement('div');
       footer.className = 'mastil-menu-footer';
@@ -768,8 +838,8 @@
     }
 
     const insertAfter = firstButton ? firstButton.nextSibling : null;
-    menu.insertBefore(buildMenuButton('online', () => window.MastilOnline.open()), insertAfter);
     menu.insertBefore(buildMenuButton('skirmish', () => showWorldMap('skirmish')), insertAfter);
+    menu.insertBefore(buildMenuButton('online', () => window.MastilOnline.open()), insertAfter);
     menu.insertBefore(buildMenuButton('map', () => showWorldMap('campaign')), insertAfter);
     menu.insertBefore(buildMenuButton('license', () => showLicenseModal('')), insertAfter);
     menu.insertBefore(buildMenuButton('buy', () => showLicenseModal('Zum Kaufen bitte E-Mail eintragen.')), insertAfter);

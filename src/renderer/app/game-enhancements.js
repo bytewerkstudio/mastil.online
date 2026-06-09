@@ -6023,15 +6023,15 @@
     controls.innerHTML = `
       <button type="button" data-action="select" title="Wählt deinen stärksten Turm"><span class="mastil-command-icon mastil-icon-select" aria-hidden="true"></span><span>Stärkster</span></button>
       <button type="button" data-action="plan" data-cooldown-key="plan" title="Markiert das wichtigste Ziel auf der Karte"><span class="mastil-command-icon mastil-icon-plan" aria-hidden="true"></span><span>Plan</span><small></small></button>
-      <button type="button" data-action="attack" title="Sendet 50% zum schwächsten nahen Ziel"><span class="mastil-command-icon mastil-icon-attack" aria-hidden="true"></span><span>Schnell</span></button>
+      <button type="button" data-action="attack" title="Sendet 50% zum schwächsten nahen Ziel"><span class="mastil-command-icon mastil-icon-attack" aria-hidden="true"></span><span>Schnell</span><small></small></button>
       <button type="button" data-action="assault" data-cooldown-key="assault" title="Mehrere eigene Türme greifen koordinierte Ziele an"><span class="mastil-command-icon mastil-icon-assault" aria-hidden="true"></span><span>Front</span><small></small></button>
       <button type="button" data-action="flank" data-cooldown-key="flank" title="Mehrere Türme greifen ein markiertes Ziel von der Seite an"><span class="mastil-command-icon mastil-icon-flank" aria-hidden="true"></span><span>Flanke</span><small></small></button>
       <button type="button" data-action="rally" data-cooldown-key="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span><small></small></button>
       <button type="button" data-action="siege" data-cooldown-key="siege" title="Belagert einen starken nahen Feindposten und schwächt seine Verteidigung"><span class="mastil-command-icon mastil-icon-siege" aria-hidden="true"></span><span>Belagern</span><small></small></button>
       <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span><small></small></button>
-      <button type="button" data-action="specialize" title="Wechselt die Rolle des gewählten Turms"><span class="mastil-command-icon mastil-icon-specialize" aria-hidden="true"></span><span>Gilde</span></button>
+      <button type="button" data-action="specialize" title="Wechselt die Rolle des gewählten Turms"><span class="mastil-command-icon mastil-icon-specialize" aria-hidden="true"></span><span>Gilde</span><small></small></button>
       <button type="button" data-action="ability" data-cooldown-key="ability" title="Aktiviert die besondere Fähigkeit Eures Reiches"><span class="mastil-command-icon mastil-icon-ability" aria-hidden="true"></span><span>Wunder</span><small></small></button>
-      <button type="button" data-action="fortify" title="Befestigt den gewählten Turm kurzzeitig"><span class="mastil-command-icon mastil-icon-fortify" aria-hidden="true"></span><span>Schild</span></button>
+      <button type="button" data-action="fortify" title="Befestigt den gewählten Turm kurzzeitig"><span class="mastil-command-icon mastil-icon-fortify" aria-hidden="true"></span><span>Schild</span><small></small></button>
       <button type="button" data-action="map" title="Mini-Karte ein- oder ausblenden"><span class="mastil-command-icon mastil-icon-map" aria-hidden="true"></span><span>Karte</span></button>
     `;
     document.body.appendChild(controls);
@@ -6062,45 +6062,82 @@
     const controls = document.getElementById('mastil-game-controls');
     if (!controls) return;
     const now = performance.now();
+    const currentGold = Math.floor(safe(() => gold, 0));
+    const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
+    const own = getPlayerTowers();
+    const readySources = own.filter((tower) => tower.units >= Math.max(3, tower.maxUnits * 0.22));
+    const targets = getAttackTargets();
+    const setButtonState = (button, state, text = '') => {
+      if (!button) return;
+      button.classList.toggle('ready', state === 'ready');
+      button.classList.toggle('waiting', state === 'waiting');
+      button.classList.toggle('blocked', state === 'blocked');
+      button.dataset.readyText = text || '';
+      button.setAttribute('aria-disabled', state === 'blocked' ? 'true' : 'false');
+      const small = button.querySelector('small');
+      if (small && !button.dataset.cooldownKey) small.textContent = text || '';
+    };
     const trait = getFactionTrait();
     const abilityButton = controls.querySelector('button[data-action="ability"]');
     if (abilityButton) {
       abilityButton.title = `${trait.ability}: ${trait.passive}`;
       abilityButton.style.setProperty('--faction-accent', trait.color);
+      setButtonState(abilityButton, own.length ? 'ready' : 'blocked', own.length ? 'bereit' : '');
     }
     const recommendation = getRecommendedTargetForSelected();
     const planButton = controls.querySelector('button[data-action="plan"]');
     if (planButton) {
+      setButtonState(planButton, recommendation ? 'ready' : 'blocked', recommendation ? recommendation.evaluation.label : '');
       planButton.title = recommendation
         ? `Markiert empfohlenes Ziel: ${getTowerTierName(recommendation.tower.level)} (${recommendation.evaluation.reason}).`
         : 'Markiert das wichtigste Ziel auf der Karte.';
     }
     const attackButton = controls.querySelector('button[data-action="attack"]');
     if (attackButton) {
-      attackButton.classList.toggle('ready', Boolean(recommendation && recommendation.evaluation.chance >= 0.72));
+      setButtonState(
+        attackButton,
+        recommendation ? (recommendation.evaluation.chance >= 0.72 ? 'ready' : 'waiting') : 'blocked',
+        recommendation ? recommendation.evaluation.label : ''
+      );
       attackButton.title = recommendation
         ? `Schnellangriff auf ${getTowerTierName(recommendation.tower.level)}: ${recommendation.evaluation.label}, ${recommendation.evaluation.reason}.`
         : 'Sendet 50% zum besten nahen Ziel.';
     }
+    const assaultButton = controls.querySelector('button[data-action="assault"]');
+    if (assaultButton) {
+      const ready = readySources.length >= 2 && targets.length > 0;
+      setButtonState(assaultButton, ready ? 'ready' : 'blocked', ready ? `${readySources.length}` : '');
+      assaultButton.title = ready
+        ? `${readySources.length} Türme sind für einen Frontangriff bereit.`
+        : 'Frontangriff braucht mindestens zwei eigene Türme mit Reserven und ein Ziel.';
+    }
     const siegeButton = controls.querySelector('button[data-action="siege"]');
     if (siegeButton) {
-      const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
       const cost = getSiegeCost(selected || getPlayerTowers()[0]);
+      const ready = Boolean(targets.length && readySources.length && currentGold >= cost);
+      setButtonState(siegeButton, ready ? 'ready' : targets.length ? 'waiting' : 'blocked', ready ? `${cost}` : currentGold < cost ? `-${cost - currentGold}` : '');
       siegeButton.title = `Belagerung: schwächt einen starken Feindposten. Kosten: ${cost} Gold.`;
     }
     const flankButton = controls.querySelector('button[data-action="flank"]');
     if (flankButton) {
-      const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
       const cost = getFlankCost(selected || getPlayerTowers()[0]);
+      const ready = Boolean(own.length >= 2 && targets.length && currentGold >= cost);
+      setButtonState(flankButton, ready ? 'ready' : targets.length ? 'waiting' : 'blocked', ready ? `${cost}` : currentGold < cost ? `-${cost - currentGold}` : '');
       flankButton.title = `Flankenangriff: mehrere Türme setzen ein markiertes Ziel unter Druck. Kosten: ${cost} Gold.`;
+    }
+    const rallyButton = controls.querySelector('button[data-action="rally"]');
+    if (rallyButton) {
+      const ready = own.length >= 2 && own.some((tower) => tower.units < tower.maxUnits);
+      setButtonState(rallyButton, ready ? 'ready' : 'blocked', ready ? 'bereit' : '');
+      rallyButton.title = ready
+        ? 'Sammelt Reserven am gewählten oder schwächsten eigenen Turm.'
+        : 'Sammeln braucht mindestens zwei eigene Türme und einen Turm mit Platz.';
     }
     const upgradeButton = controls.querySelector('button[data-action="upgrade"]');
     if (upgradeButton) {
-      const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
       const preview = getUpgradePreview(selected);
       const small = upgradeButton.querySelector('small');
-      upgradeButton.classList.toggle('ready', Boolean(preview.available && preview.enoughGold));
-      upgradeButton.classList.toggle('waiting', Boolean(preview.available && !preview.enoughGold));
+      setButtonState(upgradeButton, preview.available ? preview.enoughGold ? 'ready' : 'waiting' : 'blocked');
       upgradeButton.title = preview.available
         ? `${preview.nextTier}: ${preview.detail}. Kosten: ${preview.cost} Gold.`
         : 'Wähle einen eigenen Turm, um den Ausbaupfad zu sehen.';
@@ -6110,6 +6147,24 @@
           : '';
       }
     }
+    const specializeButton = controls.querySelector('button[data-action="specialize"]');
+    if (specializeButton) {
+      const cost = selected ? getSpecializationCost(selected) : 0;
+      const ready = Boolean(selected && currentGold >= cost);
+      setButtonState(specializeButton, selected ? ready ? 'ready' : 'waiting' : 'blocked', selected ? ready ? `${cost}` : `-${cost - currentGold}` : '');
+      specializeButton.title = selected
+        ? `Gilde: wechselt die Rolle des Turms. Kosten: ${cost} Gold.`
+        : 'Wähle einen eigenen Turm, um die Gilde zu nutzen.';
+    }
+    const fortifyButton = controls.querySelector('button[data-action="fortify"]');
+    if (fortifyButton) {
+      const cost = selected ? getFortifyCost(selected) : 0;
+      const ready = Boolean(selected && currentGold >= cost);
+      setButtonState(fortifyButton, selected ? ready ? 'ready' : 'waiting' : 'blocked', selected ? ready ? `${cost}` : `-${cost - currentGold}` : '');
+      fortifyButton.title = selected
+        ? `Schild: befestigt diesen Turm kurzzeitig. Kosten: ${cost} Gold.`
+        : 'Wähle einen eigenen Turm, um ihn zu befestigen.';
+    }
     controls.querySelectorAll('button[data-cooldown-key]').forEach((button) => {
       const key = button.dataset.cooldownKey;
       const readyAt = commandCooldowns.get(key) || 0;
@@ -6117,7 +6172,7 @@
       const small = button.querySelector('small');
       button.classList.toggle('cooling', remaining > 0);
       button.style.setProperty('--cooldown-progress', remaining > 0 ? String(Math.min(1, remaining / getCommandCooldownMs(key))) : '0');
-      if (small) small.textContent = remaining > 0 ? `${Math.ceil(remaining / 1000)}s` : '';
+      if (small) small.textContent = remaining > 0 ? `${Math.ceil(remaining / 1000)}s` : button.dataset.readyText || '';
     });
   }
 

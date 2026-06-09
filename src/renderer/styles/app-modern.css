@@ -396,7 +396,7 @@
 }
 
 #start-screen .menu-container {
-  position: static !important;
+  position: relative !important;
   z-index: 3;
   display: grid !important;
   grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
@@ -411,7 +411,7 @@
   background:
     radial-gradient(circle at 14% 12%, rgba(115, 183, 220, 0.16), transparent 22rem),
     radial-gradient(circle at 84% 18%, rgba(225, 122, 92, 0.14), transparent 21rem),
-    linear-gradient(145deg, rgba(17, 11, 8, 0.9), rgba(7, 6, 6, 0.84)),
+    linear-gradient(145deg, rgba(18, 13, 10, 0.93), rgba(6, 6, 6, 0.88)),
     url("../../../assets/backgrounds/panel-bg.png") center/cover no-repeat;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.52), inset 0 0 44px rgba(226, 189, 90, 0.08);
   backdrop-filter: none;
@@ -419,6 +419,25 @@
   transform: none !important;
   scrollbar-width: thin;
   scrollbar-color: rgba(226, 189, 90, 0.68) rgba(12, 8, 6, 0.48);
+}
+
+#start-screen .menu-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(8, 6, 5, 0.88), rgba(8, 6, 5, 0.56) 46%, rgba(8, 6, 5, 0.88)),
+    var(--menu-current-image, url("../../../assets/backgrounds/worlds/world-01-startgebiet.png")) right center / min(58%, 680px) auto no-repeat;
+  opacity: 0.26;
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+
+#start-screen .menu-container > * {
+  position: relative;
+  z-index: 1;
 }
 
 #start-screen .menu-container::-webkit-scrollbar {
@@ -445,12 +464,14 @@
 }
 
 .mastil-menu-header {
-  padding: 12px;
+  order: 1;
+  padding: 14px;
   border: 1px solid rgba(226, 189, 90, 0.2);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(226, 189, 90, 0.11), rgba(115, 183, 220, 0.08)),
-    rgba(10, 7, 5, 0.48);
+    linear-gradient(135deg, rgba(226, 189, 90, 0.13), rgba(115, 183, 220, 0.08)),
+    rgba(10, 7, 5, 0.62);
+  box-shadow: inset 0 0 32px rgba(255, 242, 191, 0.035);
 }
 
 .mastil-menu-titleline {
@@ -489,7 +510,7 @@
 
 .mastil-menu-header strong {
   color: #fff2bf;
-  font: 950 clamp(1.25rem, 2.5vw, 1.9rem)/1.05 Cinzel, Georgia, serif;
+  font: 950 clamp(1.4rem, 2.7vw, 2.18rem)/1.02 Cinzel, Georgia, serif;
 }
 
 .mastil-menu-header p {
@@ -507,6 +528,7 @@
 }
 
 .mastil-menu-dashboard {
+  order: 3;
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -514,7 +536,7 @@
 }
 
 .mastil-menu-dashboard article {
-  min-height: 86px;
+  min-height: 82px;
   display: grid;
   align-content: center;
   gap: 6px;
@@ -551,6 +573,131 @@
   overflow-wrap: anywhere;
 }
 
+.mastil-menu-warpath {
+  order: 4;
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid rgba(226, 189, 90, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(7, 8, 8, 0.76), rgba(18, 12, 8, 0.64)),
+    radial-gradient(circle at 30% 18%, rgba(226, 189, 90, 0.1), transparent 42%);
+}
+
+.mastil-menu-warpath-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mastil-menu-warpath-head span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-menu-warpath-head strong {
+  color: rgba(244, 230, 191, 0.9);
+  font: 900 12px/1.1 "Segoe UI", sans-serif;
+  text-align: right;
+}
+
+.mastil-menu-region-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mastil-menu-region-step {
+  --region-state: rgba(226, 189, 90, 0.74);
+  min-width: 0;
+  min-height: 112px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 9px;
+  color: #f4e6bf;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--region-state) 48%, rgba(244, 230, 191, 0.12));
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(8, 7, 6, 0.62), rgba(8, 7, 6, 0.84)),
+    var(--region-image) center/cover no-repeat;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.mastil-menu-region-step:hover,
+.mastil-menu-region-step:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--region-state) 76%, white);
+}
+
+.mastil-menu-region-step.active {
+  --region-state: #8ec3f0;
+}
+
+.mastil-menu-region-step.cleared {
+  --region-state: #82d6a0;
+}
+
+.mastil-menu-region-step.locked {
+  --region-state: #a17873;
+  filter: saturate(0.72);
+}
+
+.mastil-menu-region-index {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: #160d08;
+  border-radius: 50%;
+  background: var(--region-state);
+  font: 950 12px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-region-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mastil-menu-region-copy strong {
+  color: #fff2bf;
+  font: 950 13px/1.05 Cinzel, Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-region-copy small,
+.mastil-menu-region-copy em {
+  color: rgba(244, 230, 191, 0.76);
+  font: 750 10px/1.22 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-region-copy em {
+  color: rgba(244, 230, 191, 0.58);
+  font-style: normal;
+}
+
+.mastil-menu-region-state {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 4px 7px;
+  color: #160d08;
+  border-radius: 999px;
+  background: var(--region-state);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+}
+
 .mastil-menu-badges small,
 .mastil-menu-footer strong {
   color: rgba(244, 230, 191, 0.82);
@@ -562,6 +709,7 @@
 }
 
 .mastil-menu-footer {
+  order: 7;
   padding: 7px 10px 1px;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -593,8 +741,9 @@
   border: 1px solid rgba(226, 189, 90, 0.28) !important;
   border-radius: 8px !important;
   background:
+    linear-gradient(90deg, color-mix(in srgb, var(--menu-tone-a) 18%, transparent), transparent 46%),
     radial-gradient(circle at 12% 12%, color-mix(in srgb, var(--menu-tone-a) 18%, transparent), transparent 46%),
-    linear-gradient(145deg, color-mix(in srgb, var(--menu-tone-b) 24%, rgba(255, 255, 255, 0.06)), rgba(0, 0, 0, 0.22)) !important;
+    linear-gradient(145deg, color-mix(in srgb, var(--menu-tone-b) 28%, rgba(255, 255, 255, 0.07)), rgba(0, 0, 0, 0.3)) !important;
   box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.035), 0 12px 28px rgba(0, 0, 0, 0.28) !important;
   overflow: hidden;
   position: relative;
@@ -630,18 +779,23 @@
 }
 
 #start-screen .menu-button.mastil-menu-primary {
+  order: 2;
   grid-column: span 4;
-  min-height: 132px !important;
+  min-height: 124px !important;
   grid-template-columns: 52px minmax(0, 1fr);
   padding: 14px !important;
+  border-color: color-mix(in srgb, var(--menu-tone-a) 46%, rgba(244, 230, 191, 0.26)) !important;
 }
 
 #start-screen .menu-button.mastil-menu-secondary {
+  order: 5;
   min-height: 96px !important;
 }
 
 #start-screen .menu-button.mastil-menu-utility {
-  min-height: 80px !important;
+  order: 6;
+  min-height: 74px !important;
+  grid-column: span 2;
 }
 
 .mastil-menu-copy {
@@ -2620,6 +2774,34 @@ body:has(#game-container[style*="block"]) #info-panel {
   background: linear-gradient(180deg, rgba(114, 86, 38, 0.9), rgba(47, 32, 15, 0.92));
 }
 
+#mastil-game-controls button.ready:not(.cooling) {
+  border-color: rgba(255, 235, 156, 0.86);
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 242, 191, 0.3), transparent 45%),
+    linear-gradient(180deg, #efcc6d, #9b6f25);
+  box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.5), 0 0 18px rgba(255, 225, 138, 0.22);
+}
+
+#mastil-game-controls button.waiting:not(.cooling) {
+  border-color: rgba(255, 177, 126, 0.62);
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 177, 126, 0.22), transparent 46%),
+    linear-gradient(180deg, #c7a152, #6f4520);
+}
+
+#mastil-game-controls button.blocked:not(.cooling) {
+  color: rgba(244, 230, 191, 0.62);
+  border-color: rgba(244, 230, 191, 0.22);
+  background:
+    linear-gradient(180deg, rgba(84, 66, 42, 0.72), rgba(35, 25, 18, 0.82));
+  filter: saturate(0.72);
+}
+
+#mastil-game-controls button.blocked:not(.cooling):hover {
+  transform: none;
+  filter: saturate(0.72);
+}
+
 #mastil-game-controls button[data-action="ability"] {
   border-color: color-mix(in srgb, var(--faction-accent, #e2bd5a) 68%, rgba(28, 16, 7, 0.7));
   background:
@@ -3338,6 +3520,35 @@ body:has(#game-container[style*="block"]) #info-panel {
 
   .mastil-menu-dashboard strong {
     font-size: 14px;
+  }
+
+  .mastil-menu-warpath {
+    padding: 9px;
+  }
+
+  .mastil-menu-warpath-head {
+    display: grid;
+    gap: 5px;
+  }
+
+  .mastil-menu-warpath-head strong {
+    text-align: left;
+  }
+
+  .mastil-menu-region-list {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-menu-region-step {
+    min-height: 84px;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: center;
+  }
+
+  .mastil-menu-region-state {
+    grid-column: auto;
+    white-space: nowrap;
   }
 
   .mastil-menu-footer {
