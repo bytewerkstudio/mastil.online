@@ -22,6 +22,6 @@
   window.MASTIL_WEB_CONFIG = {
     backendUrl: storedBackend || configuredBackend || localBackend || liveBackend,
     websiteMode: !window.mastilNative,
-    offlineMessage: 'Website-Version: Offline gegen KI spielbar. Online 1v1 nutzt später den MASTIL-Server unter api.mastil.online.'
+    offlineMessage: 'Windows-Version: Offline gegen KI spielbar. Online 1v1 nutzt spaeter den MASTIL-Server unter api.mastil.online.'
   };
 })();

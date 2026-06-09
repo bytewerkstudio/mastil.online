@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.39
+        // Game version information - Update auf 2.6.40
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 39,
+    patch: 40,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.40": [
+        "Website-Ausrichtung umgestellt: mastil.online ist jetzt die offizielle Windows-Download-Seite statt Browser-Spielportal",
+        "Alte Browser-Spielaufrufe fuehren im Web-Build auf einen sauberen Windows-Download-Hinweis",
+        "Spieltexte und Statushinweise wurden auf Windows-Version, Installer und lokalen Offline-Modus angepasst"
+    ],
     "2.6.39": [
         "Gefechtsgrößen wirken stärker im echten Spiel: Standard, Groß und Kriegskarte enthalten mehr Orte",
         "Kriegskarte und Reichskrieg starten mit passenden seitlichen Vorburgen, die an das Straßennetz angebunden sind",
@@ -1031,7 +1036,7 @@ const VERSION_HISTORY = {
         html += `<div class="mastil-credits-publisher">
             <span>Publisher</span>
             <strong>Bytewerk Studio</strong>
-            <small>Windows-EXE, Website-Version und lokale Offline-KI für MASTIL.</small>
+            <small>Windows-EXE, Download-Website und lokale Offline-KI für MASTIL.</small>
         </div>`;
         html += `<div class='accordion-credits'>`;
         mainVersions.forEach((main, idx) => {
@@ -2355,7 +2360,7 @@ const VERSION_HISTORY = {
             ['Gefecht', 'Kartenwahl, Größe, Gegnerzahl, Reichsfarbe, Schwierigkeit und KI-Kriegsplan.'],
             ['Spielsteuerung', 'Taktische Befehle mit Kosten, Bereitschaft, Risikoanzeige und klaren Symbolen.'],
             ['Weltkarte', 'Fünf Regionen mit Bossfronten, wechselnden Hintergründen und Fortschrittspfad.'],
-            ['Web & Windows', 'Spielbar als Website über mastil.online und als Windows/Electron-Projekt vorbereitet.'],
+            ['Windows-Download', 'mastil.online fuehrt zum Setup-Installer; gespielt wird als Windows-Version.'],
             ['Lizenz', 'Demo bis Welle 5, Vollversion 10,99 EUR und Aktivierungsfluss im Spiel.']
         ];
 
@@ -2505,11 +2510,11 @@ const VERSION_HISTORY = {
 
         function buildCreditHighlights() {
             return [
-                ['Studio', 'Bytewerk Studio', 'Offizielle Website, Windows-Version, Web-Version und Spielausbau.'],
+                ['Studio', 'Bytewerk Studio', 'Offizielle Website, Windows-Version, Installer und Spielausbau.'],
                 ['Spielsystem', 'Tower Conquest', 'Kampagne, Gefecht, KI, Wellen, Bosskämpfe, Moral und Kriegsereignisse.'],
-                ['Online', 'mastil.online', 'Website über GitHub Pages; Echtzeit-Mehrspieler über den separaten MASTIL-Server.'],
+                ['Online', 'mastil.online', 'Download ueber GitHub Pages; Echtzeit-Mehrspieler ueber den separaten MASTIL-Server.'],
                 ['Design', 'MASTIL Welt', 'Weltkarte, Fraktionen, Hintergründe, Icons, Fenster, Menüs und Kartenstimmung.'],
-                ['Qualität', 'Getestete Builds', 'Lokale Prüfungen, Browser-Test und regelmäßige Veröffentlichung auf GitHub.'],
+                ['Qualität', 'Getestete Builds', 'Lokale Prüfungen, Windows-Fokus und regelmäßige Veröffentlichung auf GitHub.'],
                 ['Entwicklung', 'H. Haqmal', 'Spielidee, Richtung, offizielle Veröffentlichung und Projektleitung.']
             ].map(([label, title, text]) => `
                 <article class="mastil-credit-card">
@@ -2582,7 +2587,7 @@ const VERSION_HISTORY = {
                 <section class="mastil-credit-hero">
                     <span class="mastil-kicker">Offizielle Credits</span>
                     <h2>MASTIL</h2>
-                    <p>Ein mittelalterliches Tower-Conquest-Spiel für Web und Windows, gebaut als offizielle Spielwelt von mastil.online.</p>
+                    <p>Ein mittelalterliches Tower-Conquest-Spiel fuer Windows, veroeffentlicht ueber die offizielle Download-Seite mastil.online.</p>
                     <div class="mastil-credit-meta">
                         <span>Live-Version ${latestVersion}</span>
                         <span>Preisplan: Demo bis Welle 5, Vollversion 10,99 EUR</span>

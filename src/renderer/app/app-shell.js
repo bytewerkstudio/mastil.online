@@ -320,7 +320,7 @@
       <div class="mastil-dialog mastil-progress-dialog" role="dialog" aria-modal="true" aria-labelledby="mastil-progress-title">
         <button class="mastil-action secondary mastil-close-x" id="mastil-progress-x-btn" type="button" aria-label="Schließen">×</button>
         <h2 id="mastil-progress-title">Auszeichnungen</h2>
-        <p>Dein Ruhm bleibt lokal gespeichert und erscheint in Web-Version und EXE auf diesem Gerät.</p>
+        <p>Dein Ruhm bleibt lokal gespeichert und erscheint in der Windows-Version auf diesem Gerät.</p>
         <div class="mastil-progress-overview">
           <span id="mastil-progress-count">0/0 freigeschaltet</span>
           <div class="mastil-progress-track" aria-hidden="true"><span id="mastil-progress-fill"></span></div>
@@ -1045,7 +1045,7 @@
         <div class="mastil-menu-badges" aria-label="Spielstatus">
           <small>Offline spielbar</small>
           <small id="mastil-menu-footer-state">Demo aktiv</small>
-          <small>Web und Windows</small>
+          <small>Windows-Download</small>
         </div>
       `;
       menu.prepend(header);
@@ -1127,7 +1127,7 @@
         <article>
           <span>Online-Basis</span>
           <strong id="mastil-menu-online-state">Offline bereit</strong>
-          <small>GitHub hostet die Seite, der MASTIL-Server die Duelle.</small>
+          <small>mastil.online hostet den Download, der MASTIL-Server spaeter die Duelle.</small>
         </article>
         <article>
           <span>Gefechtsplan</span>
@@ -1193,7 +1193,7 @@
       footer.className = 'mastil-menu-footer';
       footer.innerHTML = `
         <span>MASTIL Weltstatus</span>
-        <strong>GitHub Pages für Website, MASTIL-Server für Online-Spiel</strong>
+        <strong>mastil.online fuer Download, MASTIL-Server spaeter fuer Online-Spiel</strong>
       `;
       menu.appendChild(footer);
     }

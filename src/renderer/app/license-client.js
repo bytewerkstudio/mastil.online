@@ -42,7 +42,7 @@
   function getBackendUrl(config) {
     const backendUrl = String(config.backendUrl || '').trim().replace(/\/+$/, '');
     if (!backendUrl) {
-      throw new Error('Diese Website ist offline spielbar. Für Kauf, Aktivierung und Online 1v1 muss später eine MASTIL-Server-Adresse hinterlegt werden.');
+      throw new Error('MASTIL laeuft offline in der Windows-Version. Fuer Kauf, Aktivierung und Online 1v1 muss spaeter eine MASTIL-Server-Adresse hinterlegt werden.');
     }
     return backendUrl;
   }

@@ -30,13 +30,14 @@ MASTIL is now structured as a Windows desktop game project instead of one long H
 
 Stripe can stay empty during local development. The Admin window can create test licenses without Stripe.
 
-## Website Version
+## Website
 
-Run `npm run build:web` to create `dist-web`. This folder is the browser version and can be uploaded to GitHub Pages or a normal webspace.
+Run `npm run build:web` to create `dist-web`. This folder is the official `mastil.online` website for the Windows download.
 
-- Offline gegen KI works directly in the browser.
-- Online 1v1, buying and license activation need a public MASTIL backend later.
-- Set that backend URL in `src/renderer/app/web-config.js` before publishing.
+- The website no longer offers the browser game as the public play mode.
+- The primary button points to the GitHub Releases download for `MASTIL-Setup-3.0.0.exe`.
+- Old browser-game URLs under `src/renderer/index.html` show a clean Windows-download notice.
+- Online 1v1, buying and license activation still need a public MASTIL backend later.
 
 The included GitHub Pages workflow builds `dist-web` automatically when the project is pushed to `main` or `master`.
 In GitHub, set Pages to deploy through GitHub Actions.

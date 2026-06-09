@@ -23,7 +23,7 @@
     const config = await window.MastilLicense.getConfig();
     const backendUrl = String(config.backendUrl || '').trim().replace(/\/+$/, '');
     if (!backendUrl) {
-      throw new Error('Der Online-Modus braucht später eine MASTIL-Server-Adresse. Offline gegen KI funktioniert bereits im Browser.');
+      throw new Error('Der Online-Modus braucht spaeter eine MASTIL-Server-Adresse. Offline gegen KI funktioniert lokal in der Windows-Version.');
     }
     return backendUrl;
   }
