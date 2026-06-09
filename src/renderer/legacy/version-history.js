@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.44
+        // Game version information - Update auf 2.6.45
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 44,
+    patch: 45,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.45": [
+        "Neue Befehlsketten-Mechanik: passende Folgen aus Plan, Reserve, Flanke, Belagerung und Frontangriff geben taktischen Rhythmus",
+        "Erfolgreiche Befehlsketten erhöhen leicht die Moral, verkürzen Cooldowns und erscheinen als eigener Kampfeffekt",
+        "Ruhmwertung, Spielzusammenfassung, Manöverstatistik und Auszeichnungen berücksichtigen Befehlsketten"
+    ],
     "2.6.44": [
         "Turm- und Burgdesign verbessert: Rollenbanner, Ausbaupunkte und Kronenzeichen machen wichtige Standorte klarer lesbar",
         "Neue Garnisonsanzeige direkt am Turm zeigt schneller, ob eine Stellung voll, stabil oder gefährdet ist",

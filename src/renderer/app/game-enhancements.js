@@ -502,6 +502,14 @@
       title: 'Kriegsrat',
       detail: 'Drei taktische Befehle in einer Partie geführt.'
     },
+    firstCommandChain: {
+      title: 'Befehlskette',
+      detail: 'Erste taktische Befehlsfolge im richtigen Moment ausgelöst.'
+    },
+    battleComposer: {
+      title: 'Schlachtkomponist',
+      detail: 'Drei Befehlsketten in einer Partie geführt.'
+    },
     firstReserve: {
       title: 'Marschbefehl',
       detail: 'Erste Reserve an die Front geschickt.'
@@ -722,6 +730,11 @@
     lastHeldCount: 0,
     lastSignature: ''
   };
+  const commandChainState = {
+    kind: '',
+    label: '',
+    at: 0
+  };
   const convoyState = {
     timer: 0,
     lastSignature: '',
@@ -759,7 +772,8 @@
     veterans: 0,
     contracts: 0,
     convoys: 0,
-    reserves: 0
+    reserves: 0,
+    commandChains: 0
   };
   const enemyCommandState = {
     readyAt: new Map(),
@@ -3535,6 +3549,7 @@
       matchStats.contracts * 190 +
       matchStats.convoys * 130 +
       matchStats.reserves * 105 +
+      matchStats.commandChains * 145 +
       Math.round(matchStats.maxMorale * 8) +
       Math.round(computeSupplyState().ratio * 220) +
       matchAchievements.size * 420 +
@@ -3600,6 +3615,7 @@
         <span><strong>${matchStats.contracts}</strong> Aufträge</span>
         <span><strong>${matchStats.convoys}</strong> Konvois</span>
         <span><strong>${matchStats.reserves}</strong> Reserven</span>
+        <span><strong>${matchStats.commandChains}</strong> Ketten</span>
         <span><strong>${matchStats.veterans}</strong> Veteranenrang</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
         <span><strong>${unlockedAchievements.size}/${TOTAL_ACHIEVEMENTS}</strong> Auszeichnungen</span>
@@ -3738,6 +3754,10 @@
     matchStats.contracts = 0;
     matchStats.convoys = 0;
     matchStats.reserves = 0;
+    matchStats.commandChains = 0;
+    commandChainState.kind = '';
+    commandChainState.label = '';
+    commandChainState.at = 0;
     commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
@@ -6075,12 +6095,73 @@
   function recordTacticalCommand(text, kind = 'info') {
     matchStats.commands += 1;
     pushEvent(text, kind);
+    updateCommandChain(kind);
     if (matchStats.commands >= 3) {
       unlockAchievement('tacticalCommander');
     }
     if ((matchStats.plans || 0) + (matchStats.flanks || 0) + (matchStats.reserves || 0) + matchStats.sieges >= 5) {
       unlockAchievement('masterTactician');
     }
+  }
+
+  function getCommandChainLabel(kind) {
+    const labels = {
+      site: 'Plan',
+      assault: 'Flanke',
+      danger: 'Front',
+      siege: 'Belagerung',
+      defense: 'Sammeln',
+      supply: 'Reserve'
+    };
+    return labels[kind] || '';
+  }
+
+  function isCommandChainPair(previous, current) {
+    const pairs = {
+      site: ['assault', 'siege', 'danger'],
+      assault: ['siege', 'danger'],
+      siege: ['danger', 'assault'],
+      supply: ['defense', 'danger', 'assault'],
+      defense: ['danger', 'assault']
+    };
+    return Boolean(previous && current && pairs[previous] && pairs[previous].includes(current));
+  }
+
+  function updateCommandChain(kind) {
+    const label = getCommandChainLabel(kind);
+    if (!label) return;
+
+    const now = performance.now();
+    const previousKind = commandChainState.kind;
+    const previousLabel = commandChainState.label;
+    const inWindow = previousKind && now - commandChainState.at <= 16000;
+    if (inWindow && isCommandChainPair(previousKind, kind)) {
+      matchStats.commandChains += 1;
+      warMorale = Math.min(100, warMorale + 1.8);
+      reduceCommandCooldowns(850 + Math.min(950, matchStats.commandChains * 120));
+      const marked = getMarkedBattleTarget();
+      const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
+      const target = marked || selected || getPlayerTowers()[0];
+      if (target) {
+        spawnEffect(target.x, target.y, 'achievement', {
+          color: '#ffe18a',
+          text: 'Kette',
+          duration: 1250,
+          size: 0.96
+        });
+      }
+      pushEvent(`Befehlskette: ${previousLabel} -> ${label}`, 'command');
+      unlockAchievement('firstCommandChain', { tower: target });
+      if (matchStats.commandChains >= 3) unlockAchievement('battleComposer', { tower: target });
+      commandChainState.kind = '';
+      commandChainState.label = '';
+      commandChainState.at = 0;
+      return;
+    }
+
+    commandChainState.kind = kind;
+    commandChainState.label = label;
+    commandChainState.at = now;
   }
 
   function getReservePlan() {
@@ -7811,7 +7892,7 @@
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
-    maneuvers.textContent = `${matchStats.plans + matchStats.flanks + matchStats.reserves} Manöver`;
+    maneuvers.textContent = `${matchStats.plans + matchStats.flanks + matchStats.reserves + matchStats.commandChains} Manöver`;
     moraleStat.textContent = `${Math.round(warMorale)} Moral`;
     eventStat.textContent = `${matchStats.warEvents} Ereign.`;
     spoils.textContent = `${matchStats.spoils} Beute`;
