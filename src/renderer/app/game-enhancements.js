@@ -5277,7 +5277,7 @@
     else if (tower.type === typeFromKey('troop')) reason = 'Truppenstandort sichern';
     else if (distance < getConnectionThreshold() * 0.76) reason = 'kurzer Angriffspfad';
 
-    const label = chance >= 1.1 ? 'Sturmbar' : chance >= 0.72 ? 'Riskant' : 'Stark';
+    const label = chance >= 1.1 ? 'Sturmbar' : chance >= 0.72 ? 'Riskant' : 'Schwer';
     return {
       score,
       reason,
@@ -5307,6 +5307,107 @@
     const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
     const source = selected || getBestSourceTower();
     return getRecommendedTargetFor(source);
+  }
+
+  function getAttackPreviewColor(evaluation) {
+    if (!evaluation) return '#f1cf6b';
+    if (evaluation.chance >= 1.1) return '#ffe18a';
+    if (evaluation.chance >= 0.72) return '#8fc3f0';
+    return '#ffb17e';
+  }
+
+  function formatAttackChance(evaluation) {
+    if (!evaluation) return '';
+    return `${Math.round(Math.min(1.6, evaluation.chance) * 100)}%`;
+  }
+
+  function drawAttackPreviewOverlay() {
+    const source = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
+    if (!source || source.units < 2) return;
+
+    const recommendation = getRecommendedTargetFor(source);
+    if (!recommendation || !recommendation.tower || !recommendation.evaluation) return;
+
+    const target = recommendation.tower;
+    const evaluation = recommendation.evaluation;
+    const color = getAttackPreviewColor(evaluation);
+    const dx = target.x - source.x;
+    const dy = target.y - source.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const ux = dx / distance;
+    const uy = dy / distance;
+    const startX = source.x + ux * (source.radius + 10);
+    const startY = source.y + uy * (source.radius + 10);
+    const endX = target.x - ux * (target.radius + 14);
+    const endY = target.y - uy * (target.radius + 14);
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+    const bend = Math.max(-54, Math.min(54, distance * 0.09));
+    const controlX = midX - uy * bend;
+    const controlY = midY + ux * bend - 20;
+    const chanceText = formatAttackChance(evaluation);
+    const targetName = getTowerTierName(target.level);
+    const pillWidth = Math.min(226, Math.max(172, targetName.length * 8 + 104));
+    const pillHeight = 62;
+    const panelX = Math.max(pillWidth / 2 + 10, Math.min(safe(() => gameWidth, 1280) - pillWidth / 2 - 10, controlX));
+    const panelY = Math.max(44, Math.min(safe(() => gameHeight, 720) - pillHeight - 20, controlY - pillHeight / 2));
+    const arrowAngle = Math.atan2(endY - controlY, endX - controlX);
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = 'rgba(12, 8, 5, 0.72)';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+    ctx.stroke();
+
+    ctx.strokeStyle = rgba(color, 0.82);
+    ctx.lineWidth = evaluation.chance >= 1.1 ? 4 : 3;
+    ctx.setLineDash(evaluation.chance >= 1.1 ? [] : [10, 7]);
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = rgba(color, 0.96);
+    ctx.beginPath();
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(endX - Math.cos(arrowAngle - 0.48) * 18, endY - Math.sin(arrowAngle - 0.48) * 18);
+    ctx.lineTo(endX - Math.cos(arrowAngle + 0.48) * 18, endY - Math.sin(arrowAngle + 0.48) * 18);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(18, 11, 7, 0.9)';
+    ctx.strokeStyle = rgba(color, 0.84);
+    ctx.lineWidth = 1.4;
+    roundRect(ctx, panelX - pillWidth / 2, panelY, pillWidth, pillHeight, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    ctx.font = '950 10px "Segoe UI", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('ANGRIFFSPROGNOSE', panelX - pillWidth / 2 + 12, panelY + 8);
+
+    ctx.fillStyle = '#fff2bf';
+    ctx.font = '950 13px "Segoe UI", sans-serif';
+    ctx.fillText(`${evaluation.label} · ${chanceText}`, panelX - pillWidth / 2 + 12, panelY + 24);
+
+    ctx.fillStyle = 'rgba(244, 230, 191, 0.78)';
+    ctx.font = '800 11px "Segoe UI", sans-serif';
+    ctx.fillText(`${evaluation.attackAmount} Truppen | ${evaluation.reason}`, panelX - pillWidth / 2 + 12, panelY + 43);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = rgba(color, 0.94);
+    ctx.font = '950 10px "Segoe UI", sans-serif';
+    ctx.fillText(targetName, target.x, target.y - target.radius - 34);
+    ctx.restore();
   }
 
   function getEnemyFaction(index, opponentCount) {
@@ -6578,7 +6679,7 @@
     if (planButton) {
       setButtonState(planButton, recommendation ? 'ready' : 'blocked', recommendation ? recommendation.evaluation.label : '');
       planButton.title = recommendation
-        ? `Markiert empfohlenes Ziel: ${getTowerTierName(recommendation.tower.level)} (${recommendation.evaluation.reason}).`
+        ? `Markiert empfohlenes Ziel: ${getTowerTierName(recommendation.tower.level)} (${recommendation.evaluation.reason}, ${formatAttackChance(recommendation.evaluation)}).`
         : 'Markiert das wichtigste Ziel auf der Karte.';
     }
     const attackButton = controls.querySelector('button[data-action="attack"]');
@@ -6586,10 +6687,10 @@
       setButtonState(
         attackButton,
         recommendation ? (recommendation.evaluation.chance >= 0.72 ? 'ready' : 'waiting') : 'blocked',
-        recommendation ? recommendation.evaluation.label : ''
+        recommendation ? formatAttackChance(recommendation.evaluation) : ''
       );
       attackButton.title = recommendation
-        ? `Schnellangriff auf ${getTowerTierName(recommendation.tower.level)}: ${recommendation.evaluation.label}, ${recommendation.evaluation.reason}.`
+        ? `Schnellangriff auf ${getTowerTierName(recommendation.tower.level)}: ${recommendation.evaluation.label}, ${formatAttackChance(recommendation.evaluation)}, ${recommendation.evaluation.attackAmount} Truppen, ${recommendation.evaluation.reason}.`
         : 'Sendet 50% zum besten nahen Ziel.';
     }
     const assaultButton = controls.querySelector('button[data-action="assault"]');
@@ -7099,6 +7200,7 @@
       const originalRenderUI = renderUI;
       renderUI = function enhancedRenderUI() {
         originalRenderUI();
+        drawAttackPreviewOverlay();
         updateStrategyPanel();
         updateObjectivePanel();
         updateCommandButtons();

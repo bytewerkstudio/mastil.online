@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.33
+        // Game version information - Update auf 2.6.34
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 33,
+    patch: 34,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,10 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.34": [
+        "Neue Angriffsprognose auf der Karte: empfohlene Route, Zielbewertung, Chance, Truppenmenge und taktischer Grund werden direkt am Schlachtfeld angezeigt",
+        "Angriffs- und Plan-Befehle zeigen jetzt klarere Zielinformationen, damit Entscheidungen schneller und verständlicher werden"
+    ],
     "2.6.33": [
         "Hauptmenü als MASTIL-Kriegszentrale überarbeitet: Einsatzbriefing, stärkere Startbefehle und klarere Statusanzeige",
         "Legendenarchiv erweitert: Weltprolog, Spiellehren, Reichsbriefings und bessere Scrollbereiche",
