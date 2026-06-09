@@ -6,6 +6,8 @@ const outDir = path.join(root, 'dist-web');
 const installerName = 'MASTIL-Setup-3.0.0.exe';
 const releasePageUrl = 'https://github.com/bytewerkstudio/mastil.online/releases/latest';
 const downloadUrl = `${releasePageUrl}/download/${installerName}`;
+const installerSize = '199 MB';
+const installerSha256 = '6DB8D867006592D684CBE8C9FCC361E7488E06219224000809934036F63245A8';
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -145,6 +147,24 @@ const siteCss = `
     text-transform: uppercase;
   }
 
+  .download-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .download-meta code {
+    display: block;
+    min-width: 0;
+    padding: 9px 10px;
+    color: rgba(244, 230, 191, 0.86);
+    border: 1px solid rgba(226, 189, 90, 0.24);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.22);
+    font: 800 11px/1.28 Consolas, "Segoe UI", monospace;
+    overflow-wrap: anywhere;
+  }
+
   h1 {
     max-width: 820px;
     margin: 0;
@@ -247,6 +267,7 @@ const siteCss = `
     .page { min-height: auto; }
     nav, footer { align-items: flex-start; flex-direction: column; }
     .cards { grid-template-columns: 1fr; }
+    .download-meta { grid-template-columns: 1fr; }
     .button { width: 100%; text-align: center; }
   }
 `;
@@ -291,6 +312,10 @@ function pageHtml({ legacy = false } = {}) {
         <span>Download</span>
         <strong>MASTIL fuer Windows 10/11</strong>
         <p>Empfohlen ist der Setup-Installer. Er installiert MASTIL sauber mit Startmenue-Eintrag, Desktop-Verknuepfung und Deinstaller.</p>
+        <div class="download-meta" aria-label="Download Details">
+          <code>Datei: ${installerName}<br>Groesse: ${installerSize}</code>
+          <code>SHA-256:<br>${installerSha256}</code>
+        </div>
         <div class="actions">
           <a class="button" href="${downloadUrl}">Windows Setup herunterladen</a>
           <a class="button secondary" href="${releasePageUrl}">Release-Seite oeffnen</a>
@@ -307,7 +332,7 @@ function pageHtml({ legacy = false } = {}) {
 
     <footer>
       <span>2026 Bytewerk Studio | MASTIL</span>
-      <span>${installerName}</span>
+      <span>${installerName} | SHA-256 ${installerSha256.slice(0, 12)}...</span>
     </footer>
   </div>
 </body>
@@ -330,6 +355,15 @@ Das Browser-Spiel wird nicht mehr als oeffentlicher Spielmodus ausgeliefert.
 
 Primaerer Download:
 ${downloadUrl}
+
+Datei:
+${installerName}
+
+Groesse:
+${installerSize}
+
+SHA-256:
+${installerSha256}
 
 Release-Seite:
 ${releasePageUrl}

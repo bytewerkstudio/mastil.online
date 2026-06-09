@@ -36,6 +36,7 @@ Run `npm run build:web` to create `dist-web`. This folder is the official `masti
 
 - The website no longer offers the browser game as the public play mode.
 - The primary button points to the GitHub Releases download for `MASTIL-Setup-3.0.0.exe`.
+- Large installer files are published as GitHub Release assets, not committed to the repository.
 - Old browser-game URLs under `src/renderer/index.html` show a clean Windows-download notice.
 - Online 1v1, buying and license activation still need a public MASTIL backend later.
 

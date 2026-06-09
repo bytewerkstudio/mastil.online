@@ -1,10 +1,15 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
 const exeName = path.basename(process.execPath || '').toLowerCase();
 const isAdmin = process.argv.includes('--admin') || exeName.includes('admin');
+let powerSaveBlockerId = null;
+
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -54,10 +59,13 @@ function createWindow() {
     title: isAdmin ? 'MASTIL Lizenz-Admin' : 'MASTIL',
     icon: path.join(__dirname, '../../assets/branding/mastil-icon.ico'),
     backgroundColor: '#120c08',
+    show: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
       sandbox: false
     }
   });
@@ -67,10 +75,24 @@ function createWindow() {
     : path.join(__dirname, '../renderer/index.html');
 
   win.loadFile(page);
+
+  win.once('ready-to-show', () => {
+    win.show();
+    if (!isAdmin) win.focus();
+  });
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
 }
 
 app.whenReady().then(() => {
   app.setAppUserModelId('de.mastil.game');
+  Menu.setApplicationMenu(null);
+  if (!isAdmin && powerSaveBlockerId === null) {
+    powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+  }
   createWindow();
 
   app.on('activate', () => {
@@ -79,6 +101,10 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  if (powerSaveBlockerId !== null && powerSaveBlocker.isStarted(powerSaveBlockerId)) {
+    powerSaveBlocker.stop(powerSaveBlockerId);
+    powerSaveBlockerId = null;
+  }
   if (process.platform !== 'darwin') app.quit();
 });
 
