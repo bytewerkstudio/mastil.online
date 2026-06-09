@@ -953,6 +953,16 @@
       ? 'Vollversion: alle Wellen freigeschaltet'
       : 'Demo aktiv: Kampagne frei bis Welle 5';
 
+    const setMenuDetail = (key, value) => {
+      const detail = document.querySelector(`#start-screen [data-menu-detail="${key}"]`);
+      if (detail) detail.textContent = value;
+    };
+    setMenuDetail('campaign', `Nächste Front: ${region.title}, Wellen ${region.waves}. Boss: ${region.boss}.`);
+    setMenuDetail('skirmish', `${savedScenario.label}: ${savedRegion.title}, ${savedSize.label}, ${saved.opponents} KI, ${savedDifficulty.label}.`);
+    setMenuDetail('online', `${getBackendStatusText()}: Duellräume über den MASTIL-Server.`);
+    setMenuDetail('map', `Weltpfad: ${progress}. ${region.title} ist dein aktueller Einsatz.`);
+    setMenuDetail('legends', `Story, Reiche und Bossfronten aus ${region.title} nachlesen.`);
+
     const menu = document.querySelector('#start-screen .menu-container');
     if (menu) {
       menu.dataset.currentRegion = region.id;
@@ -991,8 +1001,8 @@
       <span class="mastil-menu-icon mastil-menu-icon-${key}" aria-hidden="true"></span>
       <span class="mastil-menu-copy">
         <span class="mastil-menu-command">${item.command || 'Öffnen'}</span>
-        <span class="button-text">${item.label}</span>
-        <small>${item.detail}</small>
+        <span class="button-text" data-menu-label="${key}">${item.label}</span>
+        <small data-menu-detail="${key}">${item.detail}</small>
       </span>
     `;
 

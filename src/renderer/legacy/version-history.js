@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.37
+        // Game version information - Update auf 2.6.38
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 37,
+    patch: 38,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.38": [
+        "Hauptmenü ergonomisch verbessert: die drei wichtigsten Aktionen erscheinen früher und sind im Kriegstisch schneller erreichbar",
+        "Menü-Karten zeigen jetzt dynamische Feldzug- und Gefechtsdaten direkt am Button",
+        "Startbildschirm kompakter abgestimmt, damit weniger Inhalt abgeschnitten wird und der Kommandotisch ruhiger wirkt"
+    ],
     "2.6.37": [
         "Neue Nachschubkonvois im laufenden Spiel: Märkte, Straßen und stabile Versorgungslinien schicken periodisch Truppen und Gold an schwache Fronttürme",
         "Strategiepanel zeigt jetzt den Konvoi-Status direkt neben der Versorgung, damit Spieler sehen, ob Markt oder Straße fehlen",
