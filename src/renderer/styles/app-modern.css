@@ -4026,10 +4026,20 @@ body:has(#game-container[style*="block"]) #info-panel {
 .mastil-world-lore,
 .mastil-lore-playbook,
 .mastil-status-grid,
-.mastil-doctrine-grid {
+.mastil-doctrine-grid,
+.mastil-archive-command-strip,
+.mastil-lore-steps {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 9px;
+}
+
+.mastil-archive-command-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mastil-lore-steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .mastil-doctrine-grid {
@@ -4043,7 +4053,9 @@ body:has(#game-container[style*="block"]) #info-panel {
 .mastil-world-lore-card,
 .mastil-lore-playbook article,
 .mastil-status-card,
-.mastil-doctrine-grid article {
+.mastil-doctrine-grid article,
+.mastil-archive-command-strip article,
+.mastil-lore-step {
   display: grid;
   gap: 5px;
   padding: 11px;
@@ -4055,14 +4067,26 @@ body:has(#game-container[style*="block"]) #info-panel {
 
 .mastil-world-lore-card span,
 .mastil-lore-playbook span,
-.mastil-doctrine-grid span {
+.mastil-doctrine-grid span,
+.mastil-archive-command-strip span,
+.mastil-lore-step span {
   color: rgba(226, 189, 90, 0.86);
   font: 950 10px/1 "Segoe UI", sans-serif;
   text-transform: uppercase;
 }
 
+.mastil-archive-command-strip strong {
+  width: fit-content;
+  padding: 5px 8px;
+  color: #171009;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe18a, #b9842e);
+  font: 950 12px/1 "Segoe UI", sans-serif;
+}
+
 .mastil-world-lore-card strong,
-.mastil-status-card strong {
+.mastil-status-card strong,
+.mastil-lore-step strong {
   color: #fff2bf;
   font: 950 13px/1.16 "Segoe UI", sans-serif;
 }
@@ -4074,7 +4098,9 @@ body:has(#game-container[style*="block"]) #info-panel {
 
 .mastil-world-lore-card p,
 .mastil-status-card p,
-.mastil-doctrine-grid p {
+.mastil-doctrine-grid p,
+.mastil-archive-command-strip p,
+.mastil-lore-step p {
   margin: 0;
   color: rgba(244, 230, 191, 0.72);
   font: 750 11px/1.42 "Segoe UI", sans-serif;
@@ -4097,6 +4123,12 @@ body:has(#game-container[style*="block"]) #info-panel {
 
 .mastil-lore-command {
   margin-bottom: 12px;
+}
+
+.mastil-lore-tactic-flow {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
 }
 
 .mastil-lore-command span {
@@ -4818,7 +4850,9 @@ body:has(#game-container[style*="block"]) #info-panel {
   .mastil-lore-routes,
   .mastil-world-lore,
   .mastil-doctrine-grid,
+  .mastil-archive-command-strip,
   .mastil-lore-playbook,
+  .mastil-lore-steps,
   .mastil-lore-stats,
   .mastil-lore-grid,
   .mastil-status-grid,

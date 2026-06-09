@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.45
+        // Game version information - Update auf 2.6.46
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 45,
+    patch: 46,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.46": [
+        "Reichsarchiv ausgebaut: neue Kriegslehren, Tastatur-Befehlsfolgen und spielnahe Hinweise direkt in den Legenden",
+        "Jedes Reich besitzt jetzt einen kompakten dreistufigen Feldzugplan passend zu Spielstil, Risiko und Bossziel",
+        "Legenden- und Credits-Fenster schließen jetzt ergonomisch mit Escape und bleiben auf kleinen Fenstern besser lesbar"
+    ],
     "2.6.45": [
         "Neue Befehlsketten-Mechanik: passende Folgen aus Plan, Reserve, Flanke, Belagerung und Frontangriff geben taktischen Rhythmus",
         "Erfolgreiche Befehlsketten erhöhen leicht die Moral, verkürzen Cooldowns und erscheinen als eigener Kampfeffekt",
@@ -2395,6 +2400,41 @@ const VERSION_HISTORY = {
             ['Bosswellen brechen Linien', 'Alle fünf Wellen prüft ein Boss dein Reich. Reserven und Upgrades zählen dann mehr als blinde Masse.']
         ];
 
+        const MASTIL_ARCHIVE_COMMANDS = [
+            ['Space', 'Kriegsrat', 'Lässt die aktuelle Lage auswerten und wählt den sinnvollsten Befehl.'],
+            ['2 → 5', 'Plan + Flanke', 'Markiere ein Ziel und setze es danach von der Seite unter Druck.'],
+            ['7 → 4', 'Reserve + Front', 'Ziehe Truppen an den Brennpunkt und brich anschließend die Linie.'],
+            ['8 → 3', 'Belagerung + Schnellangriff', 'Schwäche starke Burgen und nutze das kurze Zeitfenster.']
+        ];
+
+        const MASTIL_FACTION_TACTICS = {
+            england: [
+                ['Früh halten', 'Wachturm oder Hügel sichern, dann schwache Fronten befestigen.'],
+                ['Reserve führen', 'Sammeln und Reserve nutzen, bevor der Gegner die Linie zerreißt.'],
+                ['Boss brechen', 'Belagerung vorbereiten und erst nach Schildwall angreifen.']
+            ],
+            spain: [
+                ['Märkte nehmen', 'Goldorte früh sichern und offene Wege schließen.'],
+                ['Tempo kaufen', 'Mit Einkommen Ausbau, Flanke und Belagerung schneller abwechseln.'],
+                ['Druck halten', 'Konvois schützen, damit jede Welle mit Vorrat beginnt.']
+            ],
+            maya: [
+                ['Wald lesen', 'Wachtürme und Hinterhalte nutzen, bevor große Angriffe starten.'],
+                ['Feind schwächen', 'Plan und Flanke kombinieren, dann die verwundete Stellung nehmen.'],
+                ['Boss ausbluten', 'Nicht blind stürmen: Druck sammeln und mit Befehlsketten brechen.']
+            ],
+            abbasid: [
+                ['Wissen sichern', 'Gold- und Wachtürme verbinden, damit Befehle häufiger bereit sind.'],
+                ['Belagern lernen', 'Starke Festungen erst schwächen, dann mit Reserve nachsetzen.'],
+                ['Rechnen statt raten', 'Kriegsrat nutzen, wenn mehrere Ziele gleichzeitig locken.']
+            ],
+            hre: [
+                ['Mitte bauen', 'Kreuzungen und Burgen verbinden, statt nur außen zu expandieren.'],
+                ['Ordnung halten', 'Isolierte Türme schließen und Feinddruck früh parieren.'],
+                ['Reichsschlag', 'Plan, Belagerung und Frontangriff als saubere Kette spielen.']
+            ]
+        };
+
         function compareVersionsDesc(a, b) {
             const pa = a.split('.').map(Number);
             const pb = b.split('.').map(Number);
@@ -2444,6 +2484,13 @@ const VERSION_HISTORY = {
                     <p>${text}</p>
                 </article>
             `).join('');
+            const commandCards = MASTIL_ARCHIVE_COMMANDS.map(([key, title, text]) => `
+                <article>
+                    <strong>${key}</strong>
+                    <span>${title}</span>
+                    <p>${text}</p>
+                </article>
+            `).join('');
 
             return `
                 <section class="mastil-lore-home">
@@ -2455,6 +2502,7 @@ const VERSION_HISTORY = {
                         <p>Fünf Reiche erheben Anspruch auf dieselben alten Straßen. Unter jeder Karte liegen vergessene Banner, zerstörte Handelsringe und Bossfestungen, die nur auf einen schwachen Herrscher warten. Jede Partie ist ein neuer Feldzug durch diese Welt.</p>
                     </div>
                     <div class="mastil-doctrine-grid">${doctrines}</div>
+                    <div class="mastil-archive-command-strip">${commandCards}</div>
                     <div class="mastil-world-lore">${chapters}</div>
                     <div class="mastil-lore-section-head">
                         <span>Reiche wählen</span>
@@ -2496,6 +2544,13 @@ const VERSION_HISTORY = {
                     <strong>${text}</strong>
                 </article>
             `).join('');
+            const tactics = (MASTIL_FACTION_TACTICS[id] || []).map(([title, text], index) => `
+                <article class="mastil-lore-step">
+                    <span>${String(index + 1).padStart(2, '0')}</span>
+                    <strong>${title}</strong>
+                    <p>${text}</p>
+                </article>
+            `).join('');
             const commandBriefing = `
                 <section class="mastil-lore-command">
                     <span>Kommandantenbriefing</span>
@@ -2522,6 +2577,13 @@ const VERSION_HISTORY = {
                 </div>
                 ${commandBriefing}
                 <div class="mastil-lore-playbook">${playbook}</div>
+                <section class="mastil-lore-tactic-flow">
+                    <div class="mastil-lore-section-head">
+                        <span>Feldzugplan</span>
+                        <strong>Drei Schritte fuer dieses Reich</strong>
+                    </div>
+                    <div class="mastil-lore-steps">${tactics}</div>
+                </section>
                 <div class="mastil-lore-grid">${chapters}</div>
                 <section class="mastil-lore-chronicle">
                     <div class="mastil-lore-section-head">
@@ -2678,6 +2740,18 @@ const VERSION_HISTORY = {
         window.closeLegends = function closeLegendsModern() {
             closeArchiveModal(document.getElementById('legends-modal'));
         };
+
+        document.addEventListener('keydown', function closeArchiveWithKeyboard(event) {
+            if (!event || event.key !== 'Escape') return;
+            const legends = document.getElementById('legends-modal');
+            const credits = document.getElementById('credits-modal');
+            const legendsOpen = legends && window.getComputedStyle(legends).display !== 'none';
+            const creditsOpen = credits && window.getComputedStyle(credits).display !== 'none';
+            if (!legendsOpen && !creditsOpen) return;
+            event.preventDefault();
+            if (creditsOpen) closeArchiveModal(credits);
+            if (legendsOpen) closeArchiveModal(legends);
+        });
 
         window.showCivilizationLegend = function showCivilizationLegendModern(civId) {
             const lore = MASTIL_LORE[civId];
