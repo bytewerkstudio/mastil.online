@@ -646,6 +646,7 @@
   ];
 
   let controlsReady = false;
+  let commandHotkeysReady = false;
   let strategyPanelReady = false;
   let objectivePanelReady = false;
   let achievementToastReady = false;
@@ -678,6 +679,36 @@
   const matchAchievements = new Set();
   const unlockedAchievements = new Set(loadAchievementIds());
   const completedContracts = new Set();
+  const COMMAND_HOTKEYS = {
+    '1': 'select',
+    '2': 'plan',
+    '3': 'attack',
+    '4': 'assault',
+    '5': 'flank',
+    '6': 'rally',
+    '7': 'reserve',
+    '8': 'siege',
+    q: 'upgrade',
+    w: 'specialize',
+    e: 'ability',
+    r: 'fortify',
+    m: 'map'
+  };
+  const COMMAND_HOTKEY_LABELS = {
+    select: '1',
+    plan: '2',
+    attack: '3',
+    assault: '4',
+    flank: '5',
+    rally: '6',
+    reserve: '7',
+    siege: '8',
+    upgrade: 'Q',
+    specialize: 'W',
+    ability: 'E',
+    fortify: 'R',
+    map: 'M'
+  };
   const edictState = {
     pending: false,
     nextWave: 0,
@@ -6394,6 +6425,89 @@
     playSound('select');
   }
 
+  function pulseCommandButton(action) {
+    const button = document.querySelector(`#mastil-game-controls button[data-action="${action}"]`);
+    if (!button) return;
+    button.classList.remove('mastil-key-pressed');
+    void button.offsetWidth;
+    button.classList.add('mastil-key-pressed');
+    window.setTimeout(() => button.classList.remove('mastil-key-pressed'), 180);
+  }
+
+  function runCommandAction(action, source = 'button') {
+    if (!action) return;
+    if (source === 'keyboard') pulseCommandButton(action);
+    if (action === 'select') selectStrongestTower();
+    if (action === 'plan') markPriorityTarget();
+    if (action === 'attack') quickAttackWeakest();
+    if (action === 'assault') coordinatedAssault();
+    if (action === 'flank') flankingStrike();
+    if (action === 'rally') rallyToSelectedTower();
+    if (action === 'reserve') sendReserveColumn();
+    if (action === 'siege') launchSiegeStrike();
+    if (action === 'upgrade') upgradeSelectedTower();
+    if (action === 'specialize') specializeSelectedTower();
+    if (action === 'ability') activateFactionAbility();
+    if (action === 'fortify') fortifySelectedTower();
+    if (action === 'map') {
+      minimapEnabled = !minimapEnabled;
+      const button = document.querySelector('#mastil-game-controls button[data-action="map"]');
+      if (button) button.classList.toggle('off', !minimapEnabled);
+      showEnhancementNotice(minimapEnabled ? 'Mini-Karte sichtbar.' : 'Mini-Karte ausgeblendet.');
+    }
+  }
+
+  function isCommandHotkeyContext() {
+    const game = document.getElementById('game-container');
+    if (!game || window.getComputedStyle(game).display === 'none') return false;
+    const active = document.activeElement;
+    if (active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) return false;
+    if (active && active.isContentEditable) return false;
+    const blockingSelectors = [
+      '#playername-modal',
+      '#options-modal',
+      '#highscore-modal',
+      '#credits-modal',
+      '#legends-modal',
+      '#mastil-edict-modal',
+      '#mastil-world-modal',
+      '#mastil-skirmish-modal',
+      '#mastil-license-modal'
+    ];
+    return !blockingSelectors.some((selector) => {
+      const node = document.querySelector(selector);
+      if (!node) return false;
+      const style = window.getComputedStyle(node);
+      return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) !== 0;
+    });
+  }
+
+  function installCommandHotkeys() {
+    if (commandHotkeysReady) return;
+    commandHotkeysReady = true;
+    document.addEventListener('keydown', (event) => {
+      if (!event || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
+      if (!isCommandHotkeyContext()) return;
+      const key = String(event.key || '').toLowerCase();
+      const action = COMMAND_HOTKEYS[key];
+      if (!action) return;
+      event.preventDefault();
+      event.stopPropagation();
+      runCommandAction(action, 'keyboard');
+    }, true);
+  }
+
+  function syncCommandHotkeyTitles(controls) {
+    if (!controls) return;
+    controls.querySelectorAll('button[data-action]').forEach((button) => {
+      const key = COMMAND_HOTKEY_LABELS[button.dataset.action];
+      if (!key) return;
+      button.dataset.hotkey = key;
+      const cleanTitle = String(button.title || '').replace(/\s+\|\s+Taste\s+\S+$/u, '');
+      button.title = `${cleanTitle} | Taste ${key}`;
+    });
+  }
+
   function activateFactionAbility() {
     const factionId = getPlayerFactionId();
     const trait = getFactionTrait();
@@ -7009,27 +7123,12 @@
       <button type="button" data-action="map" title="Mini-Karte ein- oder ausblenden"><span class="mastil-command-icon mastil-icon-map" aria-hidden="true"></span><span>Karte</span></button>
     `;
     document.body.appendChild(controls);
+    syncCommandHotkeyTitles(controls);
 
     controls.addEventListener('click', (event) => {
       const button = event.target && event.target.closest ? event.target.closest('button[data-action]') : null;
       const action = button && button.dataset ? button.dataset.action : '';
-      if (action === 'select') selectStrongestTower();
-      if (action === 'plan') markPriorityTarget();
-      if (action === 'attack') quickAttackWeakest();
-      if (action === 'assault') coordinatedAssault();
-      if (action === 'flank') flankingStrike();
-      if (action === 'rally') rallyToSelectedTower();
-      if (action === 'reserve') sendReserveColumn();
-      if (action === 'siege') launchSiegeStrike();
-      if (action === 'upgrade') upgradeSelectedTower();
-      if (action === 'specialize') specializeSelectedTower();
-      if (action === 'ability') activateFactionAbility();
-      if (action === 'fortify') fortifySelectedTower();
-      if (action === 'map') {
-        minimapEnabled = !minimapEnabled;
-        button.classList.toggle('off', !minimapEnabled);
-        showEnhancementNotice(minimapEnabled ? 'Mini-Karte sichtbar.' : 'Mini-Karte ausgeblendet.');
-      }
+      runCommandAction(action);
     });
   }
 
@@ -7157,6 +7256,7 @@
       button.style.setProperty('--cooldown-progress', remaining > 0 ? String(Math.min(1, remaining / getCommandCooldownMs(key))) : '0');
       if (small) small.textContent = remaining > 0 ? `${Math.ceil(remaining / 1000)}s` : button.dataset.readyText || '';
     });
+    syncCommandHotkeyTitles(controls);
   }
 
   function createStrategyPanel() {
@@ -7615,6 +7715,7 @@
     createObjectivePanel();
     createAchievementToast();
     createEdictModal();
+    installCommandHotkeys();
   }
 
   function getBattleDebug() {
@@ -7661,6 +7762,7 @@
     rallyToSelectedTower,
     sendReserveColumn,
     getReservePlan,
+    runCommandAction,
     activateFactionAbility,
     upgradeSelectedTower,
     specializeSelectedTower,

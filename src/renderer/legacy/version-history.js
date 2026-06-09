@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.41
+        // Game version information - Update auf 2.6.42
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 41,
+    patch: 42,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.42": [
+        "Windows-Steuerung erweitert: wichtige Kampfbefehle reagieren jetzt direkt auf Tastaturbefehle",
+        "Mausklick und Tastatur nutzen dieselbe Befehlslogik, damit Angriffe, Reserve, Ausbau und Karte gleich zuverlässig bleiben",
+        "Gedrückte Befehle erhalten einen kurzen visuellen Puls und Tooltips zeigen die passende Taste"
+    ],
     "2.6.41": [
         "Neuer Reservebefehl im Windows-Spiel: hintere Türme schicken gezielt Truppen an bedrohte Frontposten",
         "Reserve nutzt Frontdruck, Versorgung und gesicherte Wege, statt Truppen zufällig zu verschieben",

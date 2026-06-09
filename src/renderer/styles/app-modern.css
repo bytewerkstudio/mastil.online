@@ -3432,6 +3432,27 @@ body:has(#game-container[style*="block"]) #info-panel {
   filter: brightness(1.08);
 }
 
+#mastil-game-controls button.mastil-key-pressed {
+  animation: mastil-command-key-pulse 180ms ease-out;
+}
+
+@keyframes mastil-command-key-pulse {
+  0% {
+    transform: translateY(0) scale(0.96);
+    box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.5), 0 0 0 rgba(142, 195, 240, 0);
+  }
+
+  70% {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.58), 0 0 24px rgba(142, 195, 240, 0.38);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.42), 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+}
+
 #mastil-game-controls button::after {
   content: "";
   position: absolute;
