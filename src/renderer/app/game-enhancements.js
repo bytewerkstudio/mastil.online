@@ -589,6 +589,14 @@
     breakCommander: {
       title: 'Kommandantur gebrochen',
       detail: 'Einen feindlichen Kommandantenposten erobert.'
+    },
+    skirmishVictor: {
+      title: 'Gefechtsfürst',
+      detail: 'Ein Gefecht gegen die KI vollständig gewonnen.'
+    },
+    citadelBreaker: {
+      title: 'Zitadellenbrecher',
+      detail: 'Die Endboss-Schlacht im Gefechtsmodus gewonnen.'
     }
   };
   const TOTAL_ACHIEVEMENTS = Object.keys(ACHIEVEMENTS).length;
@@ -633,6 +641,7 @@
   let minimapEnabled = true;
   let effectsReady = false;
   let matchSummarySaved = false;
+  let skirmishVictoryShown = false;
   let lastImpactSoundAt = 0;
   let lastStrategyUpdate = 0;
   let lastObjectiveUpdate = 0;
@@ -3289,6 +3298,64 @@
     `;
   }
 
+  function getEnemyUnitTransitCount() {
+    return safe(() => units.filter((unit) => isEnemyFaction(unit.faction || unit.sourceFaction)).length, 0);
+  }
+
+  function showSkirmishVictory() {
+    if (skirmishVictoryShown) return true;
+    const config = getMatchConfig();
+    if (config.mode !== 'skirmish') return false;
+
+    const own = getPlayerTowers();
+    const enemy = getEnemyTowers();
+    if (!own.length || enemy.length || getEnemyUnitTransitCount() > 0) return false;
+
+    skirmishVictoryShown = true;
+    safe(() => {
+      gameActive = false;
+      window.isCheckingWaveTransition = false;
+      window.isWaveTransitioning = false;
+      window.currentWaveToTransition = null;
+      if (window.fallbackWaveTimeout) {
+        clearTimeout(window.fallbackWaveTimeout);
+        window.fallbackWaveTimeout = null;
+      }
+      if (window.waveTransitionTimeout) {
+        clearTimeout(window.waveTransitionTimeout);
+        window.waveTransitionTimeout = null;
+      }
+      if (typeof hideWaveTransitionScreen === 'function') hideWaveTransitionScreen();
+    });
+
+    const screen = document.getElementById('game-over');
+    if (!screen) return true;
+    const title = screen.querySelector('h2.medieval-title');
+    const message = screen.querySelector('.royal-message');
+    const waveText = document.getElementById('gameover-wave');
+    const scenario = getSkirmishScenario(config);
+    const region = getActiveRegion();
+
+    screen.classList.add('mastil-victory-screen');
+    screen.style.display = 'flex';
+    if (title) title.textContent = 'Sieg errungen!';
+    if (message) message.textContent = `${scenario.label}: ${region.title} ist gesichert.`;
+    if (waveText) {
+      waveText.textContent = `${own.length} eigene Burgen stehen. ${matchStats.captured} Orte wurden erobert.`;
+    }
+
+    unlockAchievement('skirmishVictor', { tower: own[0] });
+    if (scenario.id === 'boss') unlockAchievement('citadelBreaker', { tower: own[0] });
+    renderMatchSummary();
+    pushEvent(`Gefecht gewonnen: ${scenario.label}`, 'achievement');
+    playSound('achievement');
+
+    const controls = document.getElementById('mastil-game-controls');
+    if (controls) controls.style.display = 'none';
+    showEnhancementNotice('Gefecht gewonnen. Das Reich hält die Karte.');
+    return true;
+  }
+
   function resetMatchProgress() {
     eventLog.length = 0;
     impactThrottle.clear();
@@ -3299,6 +3366,16 @@
     enemyCommandState.warningUntil = 0;
     matchAchievements.clear();
     matchSummarySaved = false;
+    skirmishVictoryShown = false;
+    safe(() => {
+      const screen = document.getElementById('game-over');
+      if (!screen) return;
+      screen.classList.remove('mastil-victory-screen');
+      const title = screen.querySelector('h2.medieval-title');
+      const message = screen.querySelector('.royal-message');
+      if (title) title.textContent = 'Spiel Vorbei!';
+      if (message) message.textContent = 'Euer Reich ist gefallen, edler Herrscher!';
+    });
     lastLowUnitWarningAt = 0;
     lastSupplyWarningAt = 0;
     lastFrontWarningAt = 0;
@@ -6244,6 +6321,7 @@
       const originalCheckGameState = checkGameState;
       checkGameState = function enhancedCheckGameState() {
         if (edictState.pending) return undefined;
+        if (showSkirmishVictory()) return undefined;
         return originalCheckGameState.apply(this, arguments);
       };
       checkGameState.__mastilEdictWrapped = true;
