@@ -1688,11 +1688,12 @@
   z-index: 2;
   display: grid;
   justify-items: center;
-  width: min(640px, calc(100vw - 38px));
-  padding: 26px 28px 24px;
+  width: min(700px, calc(100vw - 38px));
+  padding: 28px 30px 26px;
   color: var(--mastil-cream);
   background:
-    linear-gradient(145deg, rgba(32, 20, 12, 0.9), rgba(8, 6, 5, 0.84));
+    linear-gradient(145deg, rgba(30, 21, 16, 0.92), rgba(8, 8, 8, 0.86)),
+    linear-gradient(90deg, rgba(48, 94, 115, 0.22), transparent 42%, rgba(126, 44, 36, 0.18));
   border: 1px solid rgba(226, 189, 90, 0.62);
   border-radius: 8px;
   box-shadow:
@@ -1756,20 +1757,70 @@
   color: rgba(244, 230, 191, 0.78);
   font: 700 14px/1.4 "Segoe UI", sans-serif;
   text-align: center;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
+}
+
+.mastil-loading-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: min(560px, 82vw);
+  margin: 2px 0 14px;
+}
+
+.mastil-loading-step {
+  position: relative;
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 6px 8px;
+  color: rgba(244, 230, 191, 0.68);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  border: 1px solid rgba(226, 189, 90, 0.26);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(244, 230, 191, 0.08), rgba(0, 0, 0, 0.14)),
+    rgba(10, 8, 7, 0.56);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.mastil-loading-step::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  margin-bottom: 5px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: radial-gradient(circle, currentColor 0 2px, transparent 3px);
+  opacity: 0.72;
+}
+
+.mastil-loading-step.is-active {
+  color: #ffe7a0;
+  border-color: rgba(255, 220, 126, 0.76);
+  background:
+    linear-gradient(180deg, rgba(226, 189, 90, 0.22), rgba(48, 94, 115, 0.14)),
+    rgba(18, 13, 10, 0.7);
+  box-shadow: 0 0 22px rgba(226, 189, 90, 0.16), inset 0 0 0 1px rgba(255, 240, 180, 0.08);
+}
+
+.mastil-loading-step.is-complete {
+  color: rgba(142, 215, 191, 0.9);
+  border-color: rgba(142, 215, 191, 0.36);
 }
 
 #loading-bar-container {
-  width: min(520px, 74vw) !important;
-  height: 18px !important;
+  width: min(520px, 76vw) !important;
+  height: 7px !important;
   margin: 0 !important;
   transform: none !important;
   overflow: hidden !important;
   border-radius: 999px !important;
-  border: 1px solid rgba(226, 189, 90, 0.62) !important;
-  background: rgba(7, 5, 4, 0.72) !important;
+  border: 1px solid rgba(226, 189, 90, 0.32) !important;
+  background: rgba(7, 5, 4, 0.58) !important;
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.38),
+    0 10px 24px rgba(0, 0, 0, 0.28),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
 }
 
@@ -1784,9 +1835,9 @@
   width: 0%;
   border-radius: 999px !important;
   background:
-    linear-gradient(90deg, #7d2e26 0%, #d5a33e 42%, #fff2b4 55%, #d5a33e 72%, #2f6fa5 100%) !important;
+    linear-gradient(90deg, #2f6fa5 0%, #d5a33e 48%, #8ed7bf 100%) !important;
   background-size: 100% 100% !important;
-  box-shadow: 0 0 20px rgba(226, 189, 90, 0.45) !important;
+  box-shadow: 0 0 16px rgba(226, 189, 90, 0.24) !important;
   animation: none !important;
 }
 
@@ -1881,27 +1932,30 @@
 
 #playername-modal {
   background:
-    radial-gradient(circle at 50% 45%, rgba(246, 211, 131, 0.08), transparent 22rem),
-    linear-gradient(180deg, rgba(6, 4, 3, 0.24), rgba(6, 4, 3, 0.48)),
+    radial-gradient(circle at 34% 28%, rgba(48, 94, 115, 0.18), transparent 20rem),
+    radial-gradient(circle at 72% 62%, rgba(126, 44, 36, 0.14), transparent 22rem),
+    linear-gradient(180deg, rgba(6, 4, 3, 0.18), rgba(6, 4, 3, 0.54)),
     url("../../../assets/backgrounds/name-screen-bg.png") center/cover no-repeat !important;
-  background-repeat: no-repeat, no-repeat, no-repeat !important;
-  background-size: 100% 100%, 100% 100%, cover !important;
-  background-position: center, center, center !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat !important;
+  background-size: 100% 100%, 100% 100%, 100% 100%, cover !important;
+  background-position: center, center, center, center !important;
   padding: 18px;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 #playername-modal .modal-content {
-  width: min(780px, 94vw);
+  width: min(820px, 94vw);
   min-width: 0 !important;
-  max-height: min(88vh, 720px);
-  overflow: visible !important;
+  max-height: min(90vh, 760px);
+  overflow: auto !important;
   color: var(--mastil-cream);
   background:
-    linear-gradient(145deg, rgba(41, 25, 15, 0.9), rgba(11, 8, 6, 0.88)) !important;
+    linear-gradient(145deg, rgba(37, 27, 22, 0.92), rgba(9, 9, 9, 0.89)),
+    linear-gradient(90deg, rgba(48, 94, 115, 0.18), transparent 45%, rgba(126, 44, 36, 0.12)) !important;
   border: 1px solid rgba(226, 189, 90, 0.7) !important;
   border-radius: 8px !important;
+  padding: 38px 28px 24px !important;
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.66), inset 0 0 50px rgba(226, 189, 90, 0.1) !important;
   backdrop-filter: none;
 }
@@ -1918,16 +1972,46 @@
   border: 2px solid rgba(244, 230, 191, 0.86) !important;
 }
 
+.mastil-name-head {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  max-width: 620px;
+  margin: 0 auto 18px;
+  text-align: center;
+}
+
+.mastil-name-kicker {
+  color: rgba(142, 215, 191, 0.9);
+  font: 900 11px/1.2 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-name-head h2 {
+  margin: 0;
+  color: #f4d77a;
+  font: 900 2rem/1.05 Cinzel, Georgia, serif;
+  letter-spacing: 0;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.8);
+}
+
+.mastil-name-head p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.76);
+  font: 700 13px/1.45 "Segoe UI", sans-serif;
+}
+
 #playername-modal label,
 #playername-modal .faction-selection-title {
   color: #f2cf69 !important;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.82) !important;
   letter-spacing: 0 !important;
+  font-weight: 900 !important;
 }
 
 #playername-modal input[type="text"] {
-  width: min(340px, 86vw) !important;
-  max-width: 340px !important;
+  width: min(420px, 86vw) !important;
+  max-width: 420px !important;
   color: #fff7dc !important;
   background: rgba(10, 7, 5, 0.78) !important;
   border: 1px solid rgba(226, 189, 90, 0.66) !important;
@@ -1943,14 +2027,17 @@
 }
 
 #playername-modal .faction-button {
+  position: relative;
   min-width: 0 !important;
   max-width: none !important;
   border-radius: 8px !important;
   border: 1px solid rgba(226, 189, 90, 0.34) !important;
-  background: rgba(244, 230, 191, 0.82) !important;
-  color: #24160d !important;
-  min-height: 116px;
+  background:
+    linear-gradient(180deg, rgba(244, 230, 191, 0.9), rgba(190, 157, 92, 0.88)) !important;
+  color: #231810 !important;
+  min-height: 122px;
   padding: 10px 8px !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255, 252, 220, 0.18) !important;
 }
 
 #playername-modal .faction-icon {
@@ -1968,17 +2055,62 @@
   display: block;
   width: 100%;
   margin-top: 5px;
-  color: rgba(38, 24, 14, 0.72);
+  color: rgba(38, 24, 14, 0.76);
   font: 800 10px/1.15 "Segoe UI", sans-serif;
   text-align: center;
   overflow-wrap: anywhere;
 }
 
 #playername-modal .faction-button:hover,
-#playername-modal .faction-button.nation-selected {
-  background: linear-gradient(180deg, #fff1bd, #d7ad48) !important;
+#playername-modal .faction-button.active {
+  background:
+    linear-gradient(180deg, #fff4c6, #d4af37) !important;
   border-color: rgba(255, 229, 142, 0.95) !important;
   transform: translateY(-3px) !important;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28), 0 0 22px rgba(226, 189, 90, 0.22) !important;
+}
+
+#playername-modal .faction-button.active::after {
+  content: "Bereit";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 7px;
+  color: #0d201c;
+  font: 900 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: #8ed7bf;
+}
+
+.mastil-name-note {
+  width: min(560px, 86vw);
+  margin: 4px auto 10px;
+  color: rgba(244, 230, 191, 0.72);
+  font: 700 12px/1.45 "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+#playername-modal .mastil-name-submit {
+  min-width: min(280px, 84vw) !important;
+  margin-top: 4px !important;
+  padding: 13px 24px !important;
+  color: #27190d !important;
+  background:
+    linear-gradient(180deg, #ffe69a, #c99731) !important;
+  border: 1px solid rgba(255, 237, 176, 0.9) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.34), 0 0 22px rgba(226, 189, 90, 0.18) !important;
+}
+
+#playername-modal .mastil-name-submit.nation-selected {
+  background:
+    linear-gradient(180deg, #fff0b6, #d7ad48 55%, #9fcfbf) !important;
+}
+
+#playername-modal .mastil-name-submit.submitting {
+  transform: translateY(1px) scale(0.99) !important;
+  opacity: 0.82;
 }
 
 #mastil-game-controls {
@@ -3836,6 +3968,16 @@ body:has(#game-container[style*="block"]) #info-panel {
     font-size: 12px;
   }
 
+  .mastil-loading-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(380px, 82vw);
+  }
+
+  .mastil-loading-step {
+    min-height: 36px;
+    font-size: 10px;
+  }
+
   #loading-bar-container {
     width: min(420px, 82vw) !important;
   }
@@ -3849,6 +3991,14 @@ body:has(#game-container[style*="block"]) #info-panel {
     padding: 36px 16px 22px !important;
     max-height: 90vh;
     overflow: auto !important;
+  }
+
+  .mastil-name-head h2 {
+    font-size: 1.55rem;
+  }
+
+  .mastil-name-head p {
+    font-size: 12px;
   }
 
   #playername-modal .modal-content::after {

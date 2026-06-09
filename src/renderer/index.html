@@ -10,8 +10,8 @@
   <title>MASTIL</title>
   <link rel="icon" href="../../assets/branding/mastil-icon.ico">
   <link rel="stylesheet" href="./legacy/legacy-styles.css?v=3.2.0">
-  <link rel="stylesheet" href="./styles/app-modern.css?v=4.23.1">
-  <script src="./legacy/version-history.js?v=3.9.0"></script>
+  <link rel="stylesheet" href="./styles/app-modern.css?v=4.24.0">
+  <script src="./legacy/version-history.js?v=3.9.1"></script>
 </head>
 <body>
   <audio id="background-music" loop preload="auto">
@@ -45,10 +45,16 @@
     <div id="loading-screen">
         <div class="mastil-loading-panel">
             <img class="mastil-loading-mark" src="../../assets/branding/mastil-logo.png" alt="MASTIL">
-            <div class="mastil-loading-kicker">MASTIL</div>
-            <div class="loading-text">Die Welt wird vorbereitet...</div>
-            <div class="mastil-loading-subtext">Banner, Türme und Karten werden geladen</div>
-            <div id="loading-bar-container">
+            <div class="mastil-loading-kicker">MASTIL wird vorbereitet</div>
+            <div class="loading-text">Der Feldzug wird eröffnet</div>
+            <div class="mastil-loading-subtext">Kartenwege, Banner und Burgen werden ausgerichtet</div>
+            <div class="mastil-loading-steps" aria-hidden="true">
+                <span class="mastil-loading-step is-active">Karte</span>
+                <span class="mastil-loading-step">Reich</span>
+                <span class="mastil-loading-step">Wege</span>
+                <span class="mastil-loading-step">Front</span>
+            </div>
+            <div id="loading-bar-container" aria-hidden="true">
                 <div id="loading-bar"></div>
                 <div id="loading-bar-glow"></div>
             </div>
@@ -69,41 +75,47 @@
     </div>
     <div id="playername-modal">
         <div class="modal-content">
+            <div class="mastil-name-head">
+                <span class="mastil-name-kicker">Königlicher Eintrag</span>
+                <h2>Wählt Name und Reich</h2>
+                <p>Dein Banner führt die erste Armee durch die Startlande von MASTIL.</p>
+            </div>
 
-            <label for="playername-input">Euer Hoheit, wie lautet euer Name?</label>
-            <input type="text" id="playername-input" maxlength="18" autocomplete="off" placeholder="Euer königlicher Name..." />
+            <label for="playername-input">Name des Herrschers</label>
+            <input type="text" id="playername-input" maxlength="18" autocomplete="off" placeholder="Euer Name..." />
             
-            <div class="faction-selection-title">Wählt Euer Reich:</div>
+            <div class="faction-selection-title">Wählt Euer Reich</div>
             <div class="faction-selection">
-                <button class="faction-button" data-faction="england" onclick="selectFaction('england')" style="background: #b5a68a;">
+                <button type="button" class="faction-button" data-faction="england" onclick="selectFaction('england')" style="background: #b5a68a;">
                     <span class="faction-icon mastil-faction-icon mastil-icon-england" aria-hidden="true"></span>
                     <span class="faction-name">Die Engländer</span>
                 </button>
-                <button class="faction-button" data-faction="spain" onclick="selectFaction('spain')" style="background: #b5a68a;">
+                <button type="button" class="faction-button" data-faction="spain" onclick="selectFaction('spain')" style="background: #b5a68a;">
                     <span class="faction-icon mastil-faction-icon mastil-icon-spain" aria-hidden="true"></span>
                     <span class="faction-name">Die Solterraner</span>
                 </button>
-                <button class="faction-button" data-faction="maya" onclick="selectFaction('maya')" style="background: #b5a68a;">
+                <button type="button" class="faction-button" data-faction="maya" onclick="selectFaction('maya')" style="background: #b5a68a;">
                     <span class="faction-icon mastil-faction-icon mastil-icon-maya" aria-hidden="true"></span>
                     <span class="faction-name">Die Sternenleser</span>
                 </button>
-                <button class="faction-button" data-faction="abbasid" onclick="selectFaction('abbasid')" style="background: #b5a68a;">
+                <button type="button" class="faction-button" data-faction="abbasid" onclick="selectFaction('abbasid')" style="background: #b5a68a;">
                     <span class="faction-icon mastil-faction-icon mastil-icon-abbasid" aria-hidden="true"></span>
                     <span class="faction-name">Das Kalifat von Al-Kimiya</span>
                 </button>
-                <button class="faction-button" data-faction="hre" onclick="selectFaction('hre')" style="background: #b5a68a;">
+                <button type="button" class="faction-button" data-faction="hre" onclick="selectFaction('hre')" style="background: #b5a68a;">
                     <span class="faction-icon mastil-faction-icon mastil-icon-hre" aria-hidden="true"></span>
                     <span class="faction-name">Das Aethelgardische Reich</span>
                 </button>
             </div>
+            <p class="mastil-name-note">Jedes Reich startet mit einem eigenen Vorteil. Die Auswahl bleibt für diese Kampagne aktiv.</p>
             
             <div class="royal-scroll-decoration">
                 <svg width="180" height="15" viewBox="0 0 180 15" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10 7.5 Q45 0 90 7.5 Q135 15 170 7.5" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.6"/>
                 </svg>
             </div>
-            <button onclick="submitPlayerName()">
-                <span class="btn-text">Bestätigen</span>
+            <button type="button" class="mastil-name-submit" onclick="submitPlayerName()">
+                <span class="btn-text">Feldzug beginnen</span>
             </button>
         </div>
     </div>

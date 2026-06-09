@@ -466,19 +466,36 @@ const VERSION_HISTORY = {
         
         // Variable ist bereits global definiert, keine erneute Zuweisung hier notwendig
 
-        // Ladebalken animieren (3 Sekunden)
+        // Ladezustand als ruhige Feldzug-Vorbereitung anzeigen.
         let progress = 0;
         const loadingBar = document.getElementById('loading-bar');
         const loadingBarGlow = document.getElementById('loading-bar-glow');
-        loadingBar.style.width = '0%';
-        loadingBarGlow.style.display = 'block';
+        const loadingSteps = Array.from(document.querySelectorAll('.mastil-loading-step'));
+        if (loadingBar) {
+            loadingBar.style.width = '0%';
+        }
+        if (loadingBarGlow) {
+            loadingBarGlow.style.display = 'block';
+        }
+        loadingSteps.forEach((step, index) => {
+            step.classList.toggle('is-active', index === 0);
+            step.classList.remove('is-complete');
+        });
         const interval = setInterval(() => {
             progress += 1;
-            loadingBar.style.width = progress + '%';
+            if (loadingBar) {
+                loadingBar.style.width = progress + '%';
+            }
+            const activeStep = Math.min(loadingSteps.length - 1, Math.floor(progress / 25));
+            loadingSteps.forEach((step, index) => {
+                step.classList.toggle('is-complete', index < activeStep);
+                step.classList.toggle('is-active', index === activeStep);
+            });
             if (progress >= 100) {
                 clearInterval(interval);
-                loadingBarGlow.style.display = 'none';
-                // Nach 3 Sekunden: Spielername-Popup anzeigen
+                if (loadingBarGlow) {
+                    loadingBarGlow.style.display = 'none';
+                }
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('playername-modal').style.display = 'flex';
                 document.getElementById('playername-input').focus();
@@ -489,7 +506,7 @@ const VERSION_HISTORY = {
                     selectFaction('england');
                 }, 100);
             }
-        }, 30); // 30ms Intervall für 3 Sekunden Gesamtdauer (100 Schritte * 30ms = 3000ms = 3s)
+        }, 30);
     }
 
     // Speichern der ausgewählten Fraktion - als globale Variable deklariert
@@ -534,8 +551,10 @@ const VERSION_HISTORY = {
         console.log(`Fraktion gesetzt auf: ${window.selectedFaction}`);
         
         // Zeige einen Hinweis, dass eine Nation gewählt wurde
-        const confirmButton = document.querySelector('#playername-modal button');
-        confirmButton.classList.add('nation-selected');
+        const confirmButton = document.querySelector('#playername-modal .mastil-name-submit');
+        if (confirmButton) {
+            confirmButton.classList.add('nation-selected');
+        }
     }
 
     function submitPlayerName() {
@@ -548,7 +567,7 @@ const VERSION_HISTORY = {
         window.mastilSubmittingPlayerName = true;
         
         // Add brief animation effect to button on submit
-        const submitBtn = document.querySelector('#playername-modal button.submitting');
+        const submitBtn = document.querySelector('#playername-modal .mastil-name-submit');
         if (submitBtn) {
             submitBtn.classList.add('submitting');
         }
@@ -572,6 +591,9 @@ const VERSION_HISTORY = {
             
             if (typeof initGame === 'function') {
                 initGame();
+            }
+            if (submitBtn) {
+                submitBtn.classList.remove('submitting');
             }
             window.mastilSubmittingPlayerName = false;
         }, 300);
