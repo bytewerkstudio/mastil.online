@@ -580,6 +580,8 @@
   let lastFormationEventAt = 0;
   let lastMoraleEventAt = 0;
   let lastMoraleAidAt = 0;
+  let lastBreachEventAt = 0;
+  let lastCounterEventAt = 0;
   let formationCounter = 0;
   let warMorale = 54;
   let moralePulseTimer = 0;
@@ -624,6 +626,8 @@
     sieges: 0,
     plans: 0,
     flanks: 0,
+    breaches: 0,
+    counters: 0,
     moraleSurges: 0,
     moraleAids: 0,
     maxMorale: 54,
@@ -993,7 +997,7 @@
       targetY: options.targetY,
       count: options.count || 0
     });
-    if (visualEffects.length > 80) visualEffects.splice(0, visualEffects.length - 80);
+    if (visualEffects.length > 110) visualEffects.splice(0, visualEffects.length - 110);
   }
 
   function seededFraction(seed) {
@@ -1380,6 +1384,64 @@
     ctx.restore();
   }
 
+  function drawBattleHotspots(ownTowers, enemyTowers) {
+    const detail = safe(() => getQualitySetting('animationDetail'), 'medium');
+    if (detail === 'low') return;
+    const now = performance.now();
+    const hotspots = ownTowers
+      .filter((tower) => tower.frontPressure >= 0.36 && tower.frontNearest)
+      .sort((a, b) => b.frontPressure - a.frontPressure)
+      .slice(0, 4);
+    if (!hotspots.length) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    hotspots.forEach((tower, index) => {
+      const enemy = tower.frontNearest;
+      if (!enemy || !enemyTowers.includes(enemy)) return;
+      const pressure = Math.min(1, tower.frontPressure / 1.25);
+      const pulse = 0.68 + Math.sin(now * 0.004 + index) * 0.18;
+      const cx = (tower.x + enemy.x) / 2;
+      const cy = (tower.y + enemy.y) / 2;
+      const dx = enemy.x - tower.x;
+      const dy = enemy.y - tower.y;
+      const angle = Math.atan2(dy, dx);
+      const radius = 24 + pressure * 34;
+
+      ctx.globalAlpha = 0.12 + pressure * 0.18;
+      ctx.fillStyle = rgba(pressure >= 0.76 ? '#ff5b5b' : '#ffb17e', 0.72);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, radius * 1.6, radius * 0.72, angle, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha = 0.28 + pressure * 0.36;
+      ctx.strokeStyle = pressure >= 0.76 ? 'rgba(255, 91, 91, 0.84)' : 'rgba(255, 177, 126, 0.68)';
+      ctx.lineWidth = pressure >= 0.76 ? 4.4 : 3;
+      ctx.setLineDash(pressure >= 0.76 ? [10, 6] : [6, 7]);
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, radius * (1.3 + pulse * 0.1), radius * (0.52 + pulse * 0.05), angle, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (pressure >= 0.62) {
+        ctx.globalAlpha = 0.74;
+        ctx.fillStyle = 'rgba(18, 11, 7, 0.82)';
+        ctx.strokeStyle = 'rgba(255, 226, 138, 0.42)';
+        ctx.lineWidth = 1.2;
+        roundRect(ctx, cx - 32, cy - radius - 18, 64, 18, 6);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = pressure >= 0.76 ? '#ffb17e' : '#ffe18a';
+        ctx.font = '950 10px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pressure >= 0.76 ? 'Brennpunkt' : 'Front', cx, cy - radius - 9);
+      }
+    });
+    ctx.restore();
+  }
+
   function drawEnhancedConnections() {
     const currentTowers = safe(() => towers, []);
     if (!currentTowers || currentTowers.length < 2) return;
@@ -1390,6 +1452,7 @@
     const enemyTowers = currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction);
     computeSupplyState(ownTowers);
     computeFrontPressure(ownTowers, enemyTowers);
+    drawBattleHotspots(ownTowers, enemyTowers);
     drawPlannedRouteNetwork(currentTowers, playerFaction, neutralFaction);
     const threshold = getConnectionThreshold();
     let drawn = 0;
@@ -1750,7 +1813,8 @@
     const sieged = tower.siegedUntil && tower.siegedUntil > now;
     const incident = tower.mastilIncidentUntil && tower.mastilIncidentUntil > now;
     const weak = Number(tower.siegeWeakness || 0) > 0;
-    if (!marked && !flanked && !sieged && !incident && !weak) return;
+    const breached = tower.mastilBreachUntil && tower.mastilBreachUntil > now;
+    if (!marked && !flanked && !sieged && !incident && !weak && !breached) return;
 
     ctx.save();
     ctx.shadowBlur = 0;
@@ -1759,16 +1823,17 @@
       ? tower.mastilIncidentKind === 'sabotage' ? '#ff8a6d' : tower.mastilIncidentKind === 'convoy' ? '#f6d873' : '#ffbe67'
       : marked
       ? tower.mastilMarkedKind === 'flank' ? '#8fc3f0' : '#f1cf6b'
+      : breached ? '#ffe18a'
       : flanked ? '#8fc3f0' : '#ffbe67';
-    ctx.strokeStyle = rgba(color, marked || flanked || incident ? pulse : 0.46);
-    ctx.lineWidth = marked || flanked || incident ? 3.2 : 2;
-    ctx.setLineDash(incident ? [4, 6] : marked ? [12, 7] : flanked ? [5, 7] : [3, 8]);
+    ctx.strokeStyle = rgba(color, marked || flanked || incident || breached ? pulse : 0.46);
+    ctx.lineWidth = marked || flanked || incident || breached ? 3.2 : 2;
+    ctx.setLineDash(incident ? [4, 6] : marked ? [12, 7] : flanked ? [5, 7] : breached ? [10, 5] : [3, 8]);
     ctx.beginPath();
     ctx.ellipse(0, 0, width * (marked || incident ? 1.14 : 1.04), height * (marked || incident ? 0.86 : 0.78), 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    if (marked || flanked || incident) {
+    if (marked || flanked || incident || breached) {
       ctx.fillStyle = 'rgba(18, 11, 7, 0.82)';
       ctx.strokeStyle = rgba(color, 0.82);
       ctx.lineWidth = 1.4;
@@ -1779,10 +1844,10 @@
       ctx.font = '950 10px Segoe UI';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(incident ? tower.mastilIncidentTitle || 'Ereignis' : flanked ? 'Flanke' : 'Ziel', 0, -height * 0.98 + 9);
+      ctx.fillText(incident ? tower.mastilIncidentTitle || 'Ereignis' : breached ? 'Bruch' : flanked ? 'Flanke' : 'Ziel', 0, -height * 0.98 + 9);
     }
 
-    if (weak || sieged) {
+    if (weak || sieged || breached) {
       ctx.strokeStyle = rgba('#ffbe67', 0.74);
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -2625,6 +2690,46 @@
         drawClashBurst(effect, ease);
       }
 
+      if (effect.type === 'breach') {
+        const radius = 18 + ease * 46 * effect.size;
+        ctx.strokeStyle = rgba(effect.color, 0.9);
+        ctx.lineWidth = 4;
+        ctx.setLineDash([14, 8]);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, Math.PI * 0.1, Math.PI * 1.9);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = rgba(effect.color, 0.18);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.58, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 242, 190, 0.86)';
+        ctx.lineWidth = 2.2;
+        for (let i = 0; i < 8; i += 1) {
+          const angle = (Math.PI * 2 * i) / 8 + 0.25;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * radius * 0.24, Math.sin(angle) * radius * 0.24);
+          ctx.lineTo(Math.cos(angle) * radius * 0.88, Math.sin(angle) * radius * 0.88);
+          ctx.stroke();
+        }
+      }
+
+      if (effect.type === 'counter') {
+        const radius = 17 + ease * 28 * effect.size;
+        ctx.strokeStyle = rgba(effect.color, 0.86);
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radius * 1.1, radius * 0.78, -0.15, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(244, 230, 191, 0.82)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.54, radius * 0.1);
+        ctx.lineTo(-radius * 0.12, radius * 0.42);
+        ctx.lineTo(radius * 0.58, -radius * 0.42);
+        ctx.stroke();
+      }
+
       if (effect.type === 'attack') {
         ctx.strokeStyle = rgba(effect.color, 0.8);
         ctx.lineWidth = 3;
@@ -2866,6 +2971,8 @@
       matchStats.fortified * 95 +
       matchStats.spoils * 180 +
       matchStats.sieges * 150 +
+      matchStats.breaches * 90 +
+      matchStats.counters * 55 +
       matchStats.moraleSurges * 160 +
       matchStats.moraleAids * 85 +
       matchStats.warEvents * 210 -
@@ -2926,6 +3033,8 @@
         <span><strong>${matchStats.fortified}</strong> befestigt</span>
         <span><strong>${matchStats.spoils}</strong> Beute</span>
         <span><strong>${matchStats.sieges}</strong> Belagerungen</span>
+        <span><strong>${matchStats.breaches}</strong> Durchbrüche</span>
+        <span><strong>${matchStats.counters}</strong> Paraden</span>
         <span><strong>${matchStats.edicts}</strong> Edikte</span>
         <span><strong>${Math.round(matchStats.maxMorale)}</strong> beste Moral</span>
         <span><strong>${matchStats.warEvents}</strong> Ereignisse</span>
@@ -2957,6 +3066,8 @@
     lastFormationEventAt = 0;
     lastMoraleEventAt = 0;
     lastMoraleAidAt = 0;
+    lastBreachEventAt = 0;
+    lastCounterEventAt = 0;
     formationCounter = 0;
     warMorale = 54;
     moralePulseTimer = 0;
@@ -2982,6 +3093,8 @@
     matchStats.sieges = 0;
     matchStats.plans = 0;
     matchStats.flanks = 0;
+    matchStats.breaches = 0;
+    matchStats.counters = 0;
     matchStats.moraleSurges = 0;
     matchStats.moraleAids = 0;
     matchStats.maxMorale = 54;
@@ -5486,6 +5599,82 @@
     showEnhancementNotice(`Turm befestigt. -${cost} Gold`);
   }
 
+  function getCombatAdvantage(unit, targetTower) {
+    const now = performance.now();
+    let advantage = 0;
+    if (unit && unit.mastilTactic === 'marked') advantage += 0.08;
+    if (unit && unit.mastilTactic === 'flank') advantage += 0.11;
+    if (targetTower && targetTower.mastilMarkedUntil && targetTower.mastilMarkedUntil > now) advantage += 0.07;
+    if (targetTower && targetTower.flankedUntil && targetTower.flankedUntil > now) advantage += 0.08;
+    if (targetTower && targetTower.siegedUntil && targetTower.siegedUntil > now) advantage += 0.1 + Math.min(0.08, (targetTower.siegeWeakness || 0) * 0.02);
+    if (unit && unit.mastilFormationSize >= 10) advantage += 0.06;
+    if (unit && unit.mastilFormationSize >= 18) advantage += 0.05;
+    if (targetTower && targetTower.commander) advantage += 0.04;
+    if (targetTower && targetTower.boss) advantage += 0.05;
+    return advantage;
+  }
+
+  function maybeApplyPlayerBreakthrough(unit, targetTower, beforeUnits, afterUnits) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    if (!unit || !targetTower || unit.faction !== playerFaction || targetTower.faction === playerFaction) return;
+    if (afterUnits >= beforeUnits || afterUnits <= 1) return;
+
+    const advantage = getCombatAdvantage(unit, targetTower);
+    if (advantage <= 0 && (unit.mastilFormationSize || 0) < 12) return;
+    const chance = Math.min(0.34, 0.07 + advantage);
+    if (Math.random() > chance) return;
+
+    const damage = Math.min(afterUnits - 1, unit.mastilFormationSize >= 18 ? 2 : 1);
+    if (damage <= 0) return;
+    targetTower.units = Math.max(1, targetTower.units - damage);
+    targetTower.mastilBreachUntil = performance.now() + 9000;
+    matchStats.breaches += 1;
+    warMorale = clamp(warMorale + 1.4 + damage * 0.7, 0, 100);
+    spawnEffect(targetTower.x, targetTower.y, 'breach', {
+      color: '#ffe18a',
+      text: damage >= 2 ? 'Durchbruch!' : 'Durchbruch',
+      duration: 900,
+      size: damage >= 2 ? 1.12 : 0.92
+    });
+    if (performance.now() - lastBreachEventAt > 6800) {
+      lastBreachEventAt = performance.now();
+      pushEvent(`Durchbruch: ${getTowerTierName(targetTower.level)} wankt`, 'assault');
+    }
+  }
+
+  function maybeApplyDefensiveCounter(unit, targetTower, beforeUnits, afterUnits) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    if (!unit || !targetTower || targetTower.faction !== playerFaction || unit.faction === playerFaction) return;
+    if (afterUnits >= beforeUnits || afterUnits <= 0) return;
+
+    const terrainGuard = {
+      keep: 0.12,
+      hill: 0.09,
+      forest: 0.07,
+      ford: 0.07
+    }[targetTower.terrain] || 0.03;
+    const watchBonus = targetTower.type === typeFromKey('watch') ? 0.07 : 0;
+    const fortBonus = targetTower.fortifiedUntil && targetTower.fortifiedUntil > performance.now() ? 0.09 : 0;
+    const veteranBonus = getTowerVeteranRank(targetTower) * 0.025;
+    const chance = Math.min(0.32, terrainGuard + watchBonus + fortBonus + veteranBonus);
+    if (Math.random() > chance) return;
+
+    targetTower.units = Math.min(targetTower.maxUnits, targetTower.units + 1);
+    matchStats.counters += 1;
+    warMorale = clamp(warMorale + 0.9, 0, 100);
+    addTowerRenown(targetTower, 1, 'Konter');
+    spawnEffect(targetTower.x, targetTower.y, 'counter', {
+      color: '#8fc3f0',
+      text: 'Parade',
+      duration: 760,
+      size: 0.92
+    });
+    if (performance.now() - lastCounterEventAt > 7200) {
+      lastCounterEventAt = performance.now();
+      pushEvent(`Parade: ${getTowerTierName(targetTower.level)} hält die Linie`, 'defense');
+    }
+  }
+
   function installMechanicFeedback() {
     if (effectsReady) return;
     effectsReady = true;
@@ -5657,6 +5846,9 @@
             size: 0.64
           });
         }
+        const afterUnits = targetTower ? targetTower.units : beforeUnits;
+        maybeApplyPlayerBreakthrough(unit, targetTower, beforeUnits, afterUnits);
+        maybeApplyDefensiveCounter(unit, targetTower, beforeUnits, afterUnits);
         if (unit && targetTower && unit.faction !== beforeFaction) {
           const key = `${Math.round(targetTower.x)}:${Math.round(targetTower.y)}`;
           const now = performance.now();
@@ -6050,6 +6242,8 @@
         <span id="mastil-stat-events">0 Ereign.</span>
         <span id="mastil-stat-spoils">0 Beute</span>
         <span id="mastil-stat-sieges">0 Belag.</span>
+        <span id="mastil-stat-breaches">0 Durchbr.</span>
+        <span id="mastil-stat-counters">0 Parade</span>
         <span id="mastil-stat-supply">0% Vers.</span>
         <span id="mastil-stat-front">0% Druck</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
@@ -6199,13 +6393,15 @@
     const eventStat = document.getElementById('mastil-stat-events');
     const spoils = document.getElementById('mastil-stat-spoils');
     const sieges = document.getElementById('mastil-stat-sieges');
+    const breaches = document.getElementById('mastil-stat-breaches');
+    const counters = document.getElementById('mastil-stat-counters');
     const supplyStat = document.getElementById('mastil-stat-supply');
     const frontStat = document.getElementById('mastil-stat-front');
     const edicts = document.getElementById('mastil-stat-edicts');
     const threatStat = document.getElementById('mastil-stat-threat');
     const veteranStat = document.getElementById('mastil-stat-veterans');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !eventStat || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !eventStat || !spoils || !sieges || !breaches || !counters || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -6280,6 +6476,8 @@
     eventStat.textContent = `${matchStats.warEvents} Ereign.`;
     spoils.textContent = `${matchStats.spoils} Beute`;
     sieges.textContent = `${matchStats.sieges} Belag.`;
+    breaches.textContent = `${matchStats.breaches} Durchbr.`;
+    counters.textContent = `${matchStats.counters} Parade`;
     supplyStat.textContent = `${Math.round(supply.ratio * 100)}% Vers.`;
     frontStat.textContent = `${Math.round(frontState.ratio * 100)}% Druck`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
