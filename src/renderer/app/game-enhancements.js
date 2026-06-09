@@ -602,6 +602,10 @@
       title: 'Feindkontakt',
       detail: 'Ersten KI-Kommandantenbefehl überstanden.'
     },
+    firstCounterPlan: {
+      title: 'Gegenplan',
+      detail: 'Einen wachsamen Feindkommandanten rechtzeitig ausgebremst.'
+    },
     breakCommander: {
       title: 'Kommandantur gebrochen',
       detail: 'Einen feindlichen Kommandantenposten erobert.'
@@ -782,7 +786,8 @@
     globalReadyAt: 0,
     warningUntil: 0,
     vigilanceUntil: 0,
-    vigilanceText: ''
+    vigilanceText: '',
+    vigilanceCounteredAt: 0
   };
 
   function safe(fn, fallback) {
@@ -2044,6 +2049,7 @@
     drawTowerHeraldry(tower, width, height, base, faction, level, visualTier);
     drawTowerReadinessBar(tower, width, height);
     drawTowerBadges(tower, width, height, level);
+    drawEnemyIntentMarker(tower, width, height);
     ctx.restore();
   }
 
@@ -2307,6 +2313,65 @@
       ctx.stroke();
     }
 
+    ctx.restore();
+  }
+
+  function isEnemyVigilanceActive(now = performance.now()) {
+    return now < (enemyCommandState.warningUntil || 0) || now < (enemyCommandState.vigilanceUntil || 0);
+  }
+
+  function drawEnemyIntentMarker(tower, width, height) {
+    if (!tower || !isEnemyFaction(tower.faction) || !tower.commander) return;
+
+    const now = performance.now();
+    const focused = enemyCommandState.lastCommanderId === tower.faction;
+    const vigilant = now < (enemyCommandState.vigilanceUntil || 0);
+    const warning = now < (enemyCommandState.warningUntil || 0);
+    const countered = focused && now - (enemyCommandState.vigilanceCounteredAt || 0) < 5200;
+    if (!focused && !vigilant) return;
+    if (!warning && !vigilant && !countered) return;
+
+    const pulse = 0.72 + Math.sin(now * 0.008) * 0.16;
+    const color = countered ? '#73d6a1' : tower.commander.color || '#ffbe67';
+    const badgeX = width * 0.56;
+    const badgeY = -height * 0.88;
+    const badgeW = countered ? 58 : 42;
+    const badgeH = 22;
+
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = rgba(color, countered ? 0.86 : pulse);
+    ctx.lineWidth = countered ? 2.6 : 3.2;
+    ctx.setLineDash(countered ? [4, 7] : [10, 6]);
+    ctx.beginPath();
+    ctx.ellipse(0, -height * 0.08, width * (countered ? 1.1 : 1.22), height * (countered ? 0.82 : 0.92), 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = countered ? 'rgba(7, 28, 20, 0.9)' : 'rgba(24, 10, 8, 0.9)';
+    ctx.strokeStyle = rgba(color, 0.9);
+    ctx.lineWidth = 1.4;
+    roundRect(ctx, badgeX - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    if (!countered) {
+      ctx.strokeStyle = rgba('#fff2bf', 0.92);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(badgeX - 6, badgeY, 8, 5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(badgeX - 6, badgeY, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = countered ? '#d9fff0' : '#fff2bf';
+    ctx.font = '950 9px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(countered ? 'Konter' : tower.commander.short || 'Auge', countered ? badgeX : badgeX + 10, badgeY);
     ctx.restore();
   }
 
@@ -3697,6 +3762,7 @@
     enemyCommandState.warningUntil = 0;
     enemyCommandState.vigilanceUntil = 0;
     enemyCommandState.vigilanceText = '';
+    enemyCommandState.vigilanceCounteredAt = 0;
     matchAchievements.clear();
     completedContracts.clear();
     matchSummarySaved = false;
@@ -6024,6 +6090,7 @@
     enemyCommandState.warningUntil = 0;
     enemyCommandState.vigilanceUntil = 0;
     enemyCommandState.vigilanceText = '';
+    enemyCommandState.vigilanceCounteredAt = 0;
     applyFactionStartBonus(options);
     safe(() => saveGameState());
     pushEvent(config.mode === 'skirmish' ? `Gefecht: ${scenario.label} | ${difficulty.label} | ${warPlan.label}` : 'Kampagne gestartet', 'wave');
@@ -6209,6 +6276,60 @@
     pushEvent(`Feind wachsam: ${enemyCommandState.vigilanceText}`, 'threat');
   }
 
+  function counterEnemyVigilance(label = 'Gegenplan', anchorTower = null) {
+    const now = performance.now();
+    if (!isEnemyVigilanceActive(now)) return false;
+    if (now - (enemyCommandState.vigilanceCounteredAt || 0) < 8500) return false;
+
+    const groups = getCommanderGroups();
+    if (!groups.length) return false;
+
+    const chosen = groups.find((group) => group.faction === enemyCommandState.lastCommanderId)
+      || groups.sort((a, b) => b.score - a.score)[0];
+    if (!chosen) return false;
+
+    const ownLine = getPlayerTowers().length;
+    const delay = 4400 + Math.min(2600, ownLine * 280 + Math.max(0, matchStats.commandChains) * 180);
+    enemyCommandState.vigilanceCounteredAt = now;
+    enemyCommandState.globalReadyAt = Math.max(enemyCommandState.globalReadyAt || 0, now + delay);
+    groups.forEach((group) => {
+      const current = enemyCommandState.readyAt.get(group.faction) || now;
+      enemyCommandState.readyAt.set(group.faction, Math.max(current, now + delay + group.commander.stagger * 0.12));
+    });
+    enemyCommandState.warningUntil = Math.max(now + 3600, Math.min(enemyCommandState.warningUntil || 0, now + 5200));
+    enemyCommandState.vigilanceUntil = Math.max(now + 4200, Math.min(enemyCommandState.vigilanceUntil || 0, now + 6000));
+    enemyCommandState.lastCommanderId = chosen.faction;
+    enemyCommandState.vigilanceText = `${label} stoert ${chosen.commander.name}; Feindbefehl verzoegert.`;
+    enemyCommandState.lastOrderText = enemyCommandState.vigilanceText;
+
+    matchStats.counters += 1;
+    warMorale = clamp(warMorale + 1.2, 0, 100);
+    unlockAchievement('firstCounterPlan', { tower: anchorTower || chosen.towers[0] });
+
+    const focus = anchorTower || chosen.towers[0];
+    if (focus) {
+      spawnEffect(focus.x, focus.y, 'counter', {
+        color: '#73d6a1',
+        text: 'Gegenplan',
+        duration: 1150,
+        size: 1.02
+      });
+    }
+    const commanderTower = chosen.towers[0];
+    if (commanderTower && commanderTower !== focus) {
+      spawnEffect(commanderTower.x, commanderTower.y, 'impact', {
+        color: '#73d6a1',
+        text: 'gestoert',
+        duration: 980,
+        size: 0.86
+      });
+    }
+
+    pushEvent(`Gegenplan: ${chosen.commander.name} verliert Tempo`, 'defense');
+    showEnhancementNotice(`${label}: ${chosen.commander.name} wird ausgebremst.`);
+    return true;
+  }
+
   function getReservePlan() {
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
     const own = getPlayerTowers().filter((tower) => tower && tower.faction === playerFaction);
@@ -6355,6 +6476,7 @@
     target.reconWeakness = Math.min(2, (target.reconWeakness || 0) + 1);
     matchStats.plans += 1;
     recordTacticalCommand(`Schlachtplan: ${getTowerRoleName(target.type)} markiert`, 'site');
+    counterEnemyVigilance('Schlachtplan', target);
     unlockAchievement('firstBattlePlan', { tower: target });
     showEnhancementNotice(`Schlachtplan: ${getTowerTierName(target.level)} markiert. Angriff und Belagerung treffen besser.`);
     playSound('select');
@@ -6565,6 +6687,7 @@
 
     matchStats.sieges += 1;
     recordTacticalCommand(`Belagerung: ${getTowerTierName(target.level)} -${damage}`, 'siege');
+    counterEnemyVigilance('Belagerung', target);
     unlockAchievement('firstSiege', { tower: target });
     if (matchStats.sieges >= 3) unlockAchievement('siegeMaster', { tower: target });
     spawnEffect(source.x, source.y, 'attack', { color: '#f1cf6b', text: 'Belag.', duration: 950, size: 0.92 });
@@ -6982,6 +7105,7 @@
     matchStats.fortified += 1;
     addTowerRenown(selected, 1, 'Schild');
     pushEvent('Turm befestigt', 'defense');
+    counterEnemyVigilance('Befestigung', selected);
     unlockAchievement('firstFortify', { tower: selected });
     showEnhancementNotice(`Turm befestigt. -${cost} Gold`);
   }
@@ -8075,6 +8199,7 @@
     sendReserveColumn,
     getReservePlan,
     runCommandAction,
+    counterEnemyVigilance,
     activateFactionAbility,
     upgradeSelectedTower,
     specializeSelectedTower,

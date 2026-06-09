@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.48
+        // Game version information - Update auf 2.6.49
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 48,
+    patch: 49,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.49": [
+        "Feindplaene sind im Kampf sichtbarer: wachsame Kommandantentuerme zeigen jetzt ein klares Feindblick-Signal",
+        "Neuer Gegenplan: Schlachtplan, Belagerung oder Befestigung koennen einen wachsamen KI-Kommandanten ausbremsen",
+        "Konterfenster geben Rueckmeldung, Moral und eine eigene Auszeichnung, damit KI-Druck fairer und spielbarer wirkt"
+    ],
     "2.6.48": [
         "mastil.online wurde weiter auf Windows-Download ausgerichtet: kein oeffentliches Browser-Spiel, sondern klare Setup-Seite",
         "Alte Web-Spieladressen zeigen jetzt deutlicher, dass MASTIL als Windows-App installiert werden soll",
