@@ -597,6 +597,10 @@
     citadelBreaker: {
       title: 'Zitadellenbrecher',
       detail: 'Die Endboss-Schlacht im Gefechtsmodus gewonnen.'
+    },
+    contractMaster: {
+      title: 'Auftragsherr',
+      detail: 'Drei Kriegsaufträge in einer Partie erfüllt.'
     }
   };
   const TOTAL_ACHIEVEMENTS = Object.keys(ACHIEVEMENTS).length;
@@ -665,6 +669,7 @@
   const eventLog = [];
   const matchAchievements = new Set();
   const unlockedAchievements = new Set(loadAchievementIds());
+  const completedContracts = new Set();
   const edictState = {
     pending: false,
     nextWave: 0,
@@ -705,7 +710,8 @@
     warEvents: 0,
     incidentFailures: 0,
     enemyOrders: 0,
-    veterans: 0
+    veterans: 0,
+    contracts: 0
   };
   const enemyCommandState = {
     readyAt: new Map(),
@@ -3225,6 +3231,7 @@
       matchStats.moraleAids * 85 +
       matchStats.warEvents * 210 -
       matchStats.incidentFailures * 120 +
+      matchStats.contracts * 190 +
       Math.round(matchStats.maxMorale * 8) +
       Math.round(computeSupplyState().ratio * 220) +
       matchAchievements.size * 420 +
@@ -3287,6 +3294,7 @@
         <span><strong>${Math.round(matchStats.maxMorale)}</strong> beste Moral</span>
         <span><strong>${matchStats.warEvents}</strong> Ereignisse</span>
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
+        <span><strong>${matchStats.contracts}</strong> Aufträge</span>
         <span><strong>${matchStats.veterans}</strong> Veteranenrang</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
         <span><strong>${unlockedAchievements.size}/${TOTAL_ACHIEVEMENTS}</strong> Auszeichnungen</span>
@@ -3365,6 +3373,7 @@
     enemyCommandState.globalReadyAt = 0;
     enemyCommandState.warningUntil = 0;
     matchAchievements.clear();
+    completedContracts.clear();
     matchSummarySaved = false;
     skirmishVictoryShown = false;
     safe(() => {
@@ -3418,6 +3427,7 @@
     matchStats.incidentFailures = 0;
     matchStats.enemyOrders = 0;
     matchStats.veterans = 0;
+    matchStats.contracts = 0;
     commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
@@ -4903,6 +4913,103 @@
       detail: 'Ausbauen, sammeln und Edikt wählen.',
       progress: 1
     };
+  }
+
+  function collectCompletedWarContracts(own, enemy, neutral) {
+    const currentTowers = safe(() => towers, []);
+    const config = getMatchConfig();
+    const plan = getWarPlan(config);
+    const strategic = computeStrategicSiteState(currentTowers);
+    const supply = computeSupplyState(own);
+    const routes = computeRouteControlState(currentTowers);
+    const terrainCount = getHeldTerrainTypes(own).size;
+    const hasMarket = own.some((tower) => tower.terrain === 'market');
+    const hasPlayerAction = matchStats.captured + matchStats.sieges + matchStats.spoils + matchStats.upgrades + matchStats.commands > 0;
+    const completions = [];
+
+    if (!hasPlayerAction) return completions;
+
+    if (routes.total > 0 && routes.secured >= Math.min(5, routes.total)) {
+      completions.push({ id: 'roads', title: 'Königswege gesichert', type: 'command' });
+    }
+    if (hasMarket) {
+      completions.push({ id: 'market', title: 'Markt gesichert', type: 'gold' });
+    }
+    if (strategic.total > 0 && strategic.heldCount >= Math.min(3, strategic.total)) {
+      completions.push({ id: 'strategic', title: 'Kartenmacht errungen', type: 'troops' });
+    }
+    if (terrainCount >= 3) {
+      completions.push({ id: 'terrain', title: 'Drei Geländearten gehalten', type: 'morale' });
+    }
+    if (matchStats.spoils >= 3) {
+      completions.push({ id: 'spoils', title: 'Beutezug erfüllt', type: 'gold' });
+    }
+    if (config.mode === 'skirmish' && plan === WAR_PLANS.raiders && supply.ratio >= 0.82 && own.length >= 3) {
+      completions.push({ id: 'raider-lines', title: 'Linien gegen Plünderer gehalten', type: 'command' });
+    }
+    if (config.mode === 'skirmish' && plan === WAR_PLANS.fortress && matchStats.sieges >= 2) {
+      completions.push({ id: 'siege-contract', title: 'Festungskrieg vorbereitet', type: 'siege' });
+    }
+    if (config.mode === 'skirmish' && plan === WAR_PLANS.economy && hasMarket) {
+      completions.push({ id: 'trade-contract', title: 'Handelsroute eröffnet', type: 'gold' });
+    }
+    if (config.mode === 'skirmish' && plan === WAR_PLANS.conquest && strategic.total > 0 && strategic.heldCount >= Math.min(5, strategic.total)) {
+      completions.push({ id: 'conquest-contract', title: 'Reichskrieg-Schlüsselorte gehalten', type: 'troops' });
+    }
+    if (enemy.length === 0 && own.length > 0) {
+      completions.push({ id: 'front-break', title: 'Front gebrochen', type: 'victory' });
+    }
+
+    return completions.filter((contract) => !completedContracts.has(contract.id) && contract.id !== 'front-break');
+  }
+
+  function grantWarContractReward(contract, own) {
+    if (!contract || completedContracts.has(contract.id)) return;
+    completedContracts.add(contract.id);
+    matchStats.contracts += 1;
+
+    let message = contract.title;
+    if (contract.type === 'gold') {
+      const bonus = 54 + Math.max(0, safe(() => wave, 1) - 1) * 6;
+      safe(() => {
+        gold += bonus;
+        updateUI();
+      });
+      message += `: +${bonus} Gold`;
+    } else if (contract.type === 'troops') {
+      own.slice(0, 5).forEach((tower) => {
+        const amount = 3 + Math.min(3, Math.floor((tower.level || 1) / 2));
+        tower.units = Math.min(tower.maxUnits, tower.units + amount);
+        spawnEffect(tower.x, tower.y, 'achievement', { color: '#8fc3f0', text: `+${amount}`, duration: 900, size: 0.78 });
+      });
+      message += ': Reserven verteilt';
+    } else if (contract.type === 'siege') {
+      reduceCommandCooldowns(6500);
+      safe(() => {
+        gold += 34;
+        updateUI();
+      });
+      message += ': Belagerungen schneller bereit';
+    } else if (contract.type === 'morale') {
+      warMorale = clamp(warMorale + 7, 0, 100);
+      matchStats.maxMorale = Math.max(matchStats.maxMorale, warMorale);
+      own.forEach((tower) => spawnEffect(tower.x, tower.y, 'morale', { color: '#9ed6a2', text: '+Moral', duration: 820, size: 0.72 }));
+      message += ': Kriegslaune steigt';
+    } else {
+      reduceCommandCooldowns(5200);
+      message += ': Befehle schneller bereit';
+    }
+
+    pushEvent(`Auftrag erfüllt: ${message}`, 'achievement');
+    showEnhancementNotice(`Auftrag erfüllt: ${message}`);
+    playSound('achievement');
+    if (matchStats.contracts >= 3) unlockAchievement('contractMaster', { tower: own[0] });
+  }
+
+  function applyWarContractRewards(own, enemy, neutral) {
+    collectCompletedWarContracts(own, enemy, neutral).forEach((contract) => {
+      grantWarContractReward(contract, own);
+    });
   }
 
   function getCommanderGroups(enemy = getEnemyTowers()) {
@@ -6805,6 +6912,7 @@
     const neutral = currentTowers.filter((tower) => tower.faction === neutralFaction);
     const objective = getObjectiveState(own, enemy, neutral);
     const contract = getWarContractState(own, enemy, neutral);
+    applyWarContractRewards(own, enemy, neutral);
 
     const title = document.getElementById('mastil-objective-title');
     const detail = document.getElementById('mastil-objective-detail');
