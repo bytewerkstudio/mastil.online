@@ -546,6 +546,10 @@
       title: 'Versorgungsnetz',
       detail: 'Vier eigene Türme gleichzeitig über sichere Wege versorgt.'
     },
+    firstConvoy: {
+      title: 'Nachschubmeister',
+      detail: 'Ersten Nachschubkonvoi über sichere Wege erhalten.'
+    },
     bossBreaker: {
       title: 'Bossbrecher',
       detail: 'Ersten Boss-Turm gebrochen.'
@@ -681,6 +685,11 @@
     lastHeldCount: 0,
     lastSignature: ''
   };
+  const convoyState = {
+    timer: 0,
+    lastSignature: '',
+    readyAt: 0
+  };
   const warIncidentState = {
     active: null,
     nextAt: 0,
@@ -711,7 +720,8 @@
     incidentFailures: 0,
     enemyOrders: 0,
     veterans: 0,
-    contracts: 0
+    contracts: 0,
+    convoys: 0
   };
   const enemyCommandState = {
     readyAt: new Map(),
@@ -3367,6 +3377,7 @@
       matchStats.warEvents * 210 -
       matchStats.incidentFailures * 120 +
       matchStats.contracts * 190 +
+      matchStats.convoys * 130 +
       Math.round(matchStats.maxMorale * 8) +
       Math.round(computeSupplyState().ratio * 220) +
       matchAchievements.size * 420 +
@@ -3430,6 +3441,7 @@
         <span><strong>${matchStats.warEvents}</strong> Ereignisse</span>
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
         <span><strong>${matchStats.contracts}</strong> Aufträge</span>
+        <span><strong>${matchStats.convoys}</strong> Konvois</span>
         <span><strong>${matchStats.veterans}</strong> Veteranenrang</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
         <span><strong>${unlockedAchievements.size}/${TOTAL_ACHIEVEMENTS}</strong> Auszeichnungen</span>
@@ -3535,6 +3547,9 @@
     strategicState.pulseTimer = 0;
     strategicState.lastHeldCount = 0;
     strategicState.lastSignature = '';
+    convoyState.timer = 0;
+    convoyState.lastSignature = '';
+    convoyState.readyAt = 0;
     warIncidentState.active = null;
     warIncidentState.nextAt = 0;
     warIncidentState.counter = 0;
@@ -3563,6 +3578,7 @@
     matchStats.enemyOrders = 0;
     matchStats.veterans = 0;
     matchStats.contracts = 0;
+    matchStats.convoys = 0;
     commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
@@ -4427,6 +4443,90 @@
     } else if (!tower.supplyLinked) {
       tower.mastilSupplyTimer = 0;
     }
+  }
+
+  function applySupplyConvoyPulse(deltaTime = 0) {
+    const own = getPlayerTowers();
+    if (own.length < 2) {
+      convoyState.timer = 0;
+      return;
+    }
+
+    const supply = computeSupplyState(own);
+    const routes = computeRouteControlState(safe(() => towers, []));
+    const markets = own.filter((tower) => tower.terrain === 'market' || tower.type === typeFromKey('gold'));
+    const roadPosts = own.filter((tower) => tower.terrain === 'road' || tower.mastilRoadHub || tower.supplyRoot);
+    const hasRouteNetwork = supply.linked >= Math.min(3, own.length) && routes.secured >= Math.min(2, routes.total || 2);
+    const hasEconomy = markets.length > 0 || hasStrategicSite('trade');
+
+    if (!hasRouteNetwork || !hasEconomy) {
+      convoyState.timer = Math.max(0, convoyState.timer - (deltaTime || 0) * 0.45);
+      convoyState.lastSignature = '';
+      return;
+    }
+
+    const signature = `${supply.linked}/${own.length}|${markets.length}|${roadPosts.length}|${routes.secured}`;
+    if (signature !== convoyState.lastSignature) {
+      convoyState.lastSignature = signature;
+      convoyState.timer = Math.min(convoyState.timer, 4);
+    }
+
+    const interval = Math.max(9.5, 18 - markets.length * 1.25 - roadPosts.length * 0.55 - supply.ratio * 2.4);
+    convoyState.timer += deltaTime || 0;
+    const now = performance.now();
+    if (now < convoyState.readyAt || convoyState.timer < interval) return;
+    convoyState.timer = 0;
+    convoyState.readyAt = now + 5200;
+
+    const target = own
+      .filter((tower) => tower.supplyLinked && tower.units < tower.maxUnits)
+      .map((tower) => ({
+        tower,
+        score:
+          (tower.units / Math.max(1, tower.maxUnits)) * 24 -
+          (tower.frontPressure || 0) * 10 -
+          (tower.mastilCastleSite ? 2 : 0) -
+          (tower.terrain === 'keep' ? 2 : 0)
+      }))
+      .sort((a, b) => a.score - b.score)[0]?.tower || own
+      .filter((tower) => tower.units < tower.maxUnits)
+      .sort((a, b) => a.units - b.units)[0];
+
+    if (!target) return;
+
+    const troopBonus = Math.min(
+      Math.max(1, target.maxUnits - target.units),
+      2 + Math.min(3, markets.length) + (routes.secured >= 5 ? 1 : 0)
+    );
+    const goldBonus = 4 + markets.length * 2 + Math.floor(Math.max(0, routes.secured) / 3);
+    target.units = Math.min(target.maxUnits, target.units + troopBonus);
+    safe(() => {
+      gold += goldBonus;
+      updateUI();
+    });
+
+    matchStats.convoys += 1;
+    unlockAchievement('firstConvoy', { tower: target });
+    if (supply.linked >= 4) unlockAchievement('supplyNetwork', { tower: target });
+    spawnEffect(target.x, target.y, 'achievement', {
+      color: '#8fc3f0',
+      text: `Konvoi +${troopBonus}`,
+      duration: 1200,
+      size: 0.94
+    });
+    pushEvent(`Nachschubkonvoi: +${troopBonus} Truppen, +${goldBonus} Gold`, 'supply');
+  }
+
+  function getSupplyConvoyStatus(own, supply, routes) {
+    if (!own.length || own.length < 2) return 'Konvoi: nicht bereit';
+    const markets = own.filter((tower) => tower.terrain === 'market' || tower.type === typeFromKey('gold'));
+    const roadPosts = own.filter((tower) => tower.terrain === 'road' || tower.mastilRoadHub || tower.supplyRoot);
+    const hasRouteNetwork = supply.linked >= Math.min(3, own.length) && routes.secured >= Math.min(2, routes.total || 2);
+    const hasEconomy = markets.length > 0 || hasStrategicSite('trade');
+    if (!hasEconomy) return 'Konvoi: Markt fehlt';
+    if (!hasRouteNetwork) return 'Konvoi: Straße fehlt';
+    const interval = Math.max(9.5, 18 - markets.length * 1.25 - roadPosts.length * 0.55 - supply.ratio * 2.4);
+    return `Konvoi: ${Math.min(99, Math.round((convoyState.timer / interval) * 100))}%`;
   }
 
   function applyStrategicSitePulse(deltaTime) {
@@ -6612,6 +6712,7 @@
         const result = originalUpdateTowers.apply(this, arguments);
         safe(() => towers.forEach((tower) => applyTerrainEconomy(tower, deltaTime || 0)));
         safe(() => applyStrategicSitePulse(deltaTime || 0));
+        safe(() => applySupplyConvoyPulse(deltaTime || 0));
         safe(() => applyMoralePulse(deltaTime || 0));
         safe(() => applyWarIncidentPulse(deltaTime || 0));
         safe(() => towers.forEach((tower) => assignEnemyCommander(tower)));
@@ -7096,7 +7197,7 @@
     const frontState = computeFrontPressure(own, enemy);
     const siteState = computeStrategicSiteState(currentTowers);
     const routeState = computeRouteControlState(currentTowers);
-    supplyNode.textContent = supply.detail;
+    supplyNode.textContent = `${supply.detail} | ${getSupplyConvoyStatus(own, supply, routeState)}`;
     routeNode.textContent = routeState.next
       ? `${routeState.detail} | nächstes Ziel: ${getTowerTierName(routeState.next.tower.level)}`
       : routeState.detail;

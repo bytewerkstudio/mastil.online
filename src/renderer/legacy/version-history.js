@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.36
+        // Game version information - Update auf 2.6.37
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 36,
+    patch: 37,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.37": [
+        "Neue Nachschubkonvois im laufenden Spiel: Märkte, Straßen und stabile Versorgungslinien schicken periodisch Truppen und Gold an schwache Fronttürme",
+        "Strategiepanel zeigt jetzt den Konvoi-Status direkt neben der Versorgung, damit Spieler sehen, ob Markt oder Straße fehlen",
+        "Matchwertung und Spielzusammenfassung zählen erfolgreiche Konvois mit"
+    ],
     "2.6.36": [
         "Gefechtsmodus erweitert: neue Kriegskarten-Vorschau mit sichtbaren Wegen, Startburgen, neutralen Orten, Feindburgen und Bossfront",
         "Kartenwahl reagiert jetzt klarer auf Größe, Gegnerzahl, Schwierigkeit, KI-Plan und Reichsfarbe",
