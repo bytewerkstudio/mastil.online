@@ -2025,6 +2025,8 @@
     }
 
     drawTowerRoleDetails(tower, width, height, base);
+    drawTowerHeraldry(tower, width, height, base, faction, level, visualTier);
+    drawTowerReadinessBar(tower, width, height);
     drawTowerBadges(tower, width, height, level);
     ctx.restore();
   }
@@ -2619,6 +2621,113 @@
       ctx.arc(0, -height * 0.74, 18, 0, Math.PI * 2);
       ctx.stroke();
     }
+  }
+
+  function getTowerRoleAccent(type) {
+    if (type === 'gold') return '#f1cf6b';
+    if (type === 'troop') return '#8fc3f0';
+    if (type === 'watch') return '#9ed6a2';
+    return '#f4e6bf';
+  }
+
+  function drawTowerHeraldry(tower, width, height, base, faction, level, visualTier) {
+    const type = tower.type || 'normal';
+    const accent = getTowerRoleAccent(type);
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const enemy = isEnemyFaction(faction);
+    const bannerX = faction === playerFaction ? -width * 0.58 : width * 0.58;
+    const bannerY = -height * 0.52;
+    const bannerW = 22 + Math.min(10, level * 1.6);
+    const bannerH = 28 + Math.min(10, visualTier * 2.4);
+
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(23, 16, 9, 0.86)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bannerX, bannerY - 11);
+    ctx.lineTo(bannerX, bannerY + bannerH * 0.82);
+    ctx.stroke();
+
+    const bannerGradient = ctx.createLinearGradient(bannerX - bannerW * 0.5, bannerY, bannerX + bannerW * 0.5, bannerY + bannerH);
+    bannerGradient.addColorStop(0, rgba(accent, enemy ? 0.62 : 0.92));
+    bannerGradient.addColorStop(1, enemy ? shade(base, -34) : shade(base, 30));
+    ctx.fillStyle = bannerGradient;
+    ctx.strokeStyle = 'rgba(23, 16, 9, 0.78)';
+    ctx.beginPath();
+    ctx.moveTo(bannerX, bannerY);
+    ctx.lineTo(bannerX + (faction === playerFaction ? -bannerW : bannerW), bannerY + 5);
+    ctx.lineTo(bannerX + (faction === playerFaction ? -bannerW * 0.78 : bannerW * 0.78), bannerY + bannerH);
+    ctx.lineTo(bannerX, bannerY + bannerH * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    const iconX = bannerX + (faction === playerFaction ? -bannerW * 0.5 : bannerW * 0.5);
+    drawTowerRoleIcon(type, iconX, bannerY + bannerH * 0.44, accent);
+
+    const tierPips = Math.min(5, visualTier);
+    ctx.fillStyle = faction === playerFaction ? '#fff2bf' : enemy ? '#ffb17e' : '#d8c49a';
+    for (let i = 0; i < tierPips; i += 1) {
+      const px = iconX - (tierPips - 1) * 3 + i * 6;
+      ctx.beginPath();
+      ctx.arc(px, bannerY + bannerH + 5, 2.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (tower.mastilCastleSite || level >= 5) {
+      const crownY = -height * 0.82;
+      ctx.fillStyle = rgba('#ffe18a', tower.mastilCastleSite ? 0.92 : 0.72);
+      ctx.strokeStyle = 'rgba(23, 16, 9, 0.78)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-14, crownY + 8);
+      ctx.lineTo(-9, crownY - 4);
+      ctx.lineTo(-3, crownY + 5);
+      ctx.lineTo(0, crownY - 8);
+      ctx.lineTo(3, crownY + 5);
+      ctx.lineTo(9, crownY - 4);
+      ctx.lineTo(14, crownY + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawTowerReadinessBar(tower, width, height) {
+    const maxUnits = Math.max(1, Number(tower.maxUnits) || 1);
+    const units = Math.max(0, Number(tower.units) || 0);
+    const ratio = Math.max(0, Math.min(1, units / maxUnits));
+    const barW = width * 0.82;
+    const barH = 6;
+    const x = -barW / 2;
+    const y = height * 0.66;
+    const color = ratio <= 0.28 ? '#ff8a6d' : ratio >= 0.78 ? '#9ed6a2' : '#8fc3f0';
+
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(18, 11, 7, 0.78)';
+    roundRect(ctx, x - 3, y - 3, barW + 6, barH + 6, 5);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(244, 230, 191, 0.12)';
+    roundRect(ctx, x, y, barW, barH, 4);
+    ctx.fill();
+    ctx.fillStyle = rgba(color, 0.94);
+    roundRect(ctx, x, y, Math.max(4, barW * ratio), barH, 4);
+    ctx.fill();
+
+    if (tower.frontPressure >= 0.42) {
+      ctx.strokeStyle = 'rgba(255, 138, 109, 0.82)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x, y + barH + 5);
+      ctx.lineTo(x + barW, y + barH + 5);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
   }
 
   function drawTowerRoleIcon(type, centerX, centerY, color) {

@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.43
+        // Game version information - Update auf 2.6.44
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 43,
+    patch: 44,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.44": [
+        "Turm- und Burgdesign verbessert: Rollenbanner, Ausbaupunkte und Kronenzeichen machen wichtige Standorte klarer lesbar",
+        "Neue Garnisonsanzeige direkt am Turm zeigt schneller, ob eine Stellung voll, stabil oder gefährdet ist",
+        "Gold-, Truppen- und Wachtürme erhalten stärkere visuelle Identität passend zur jeweiligen Rolle"
+    ],
     "2.6.43": [
         "Neuer Kriegsrat-Befehl: bewertet die aktuelle Frontlage und löst automatisch die sinnvollste Aktion aus",
         "Der Kriegsrat berücksichtigt Frontdruck, Reserve, Belagerung, Angriffschance, Ausbau und Sammelbefehl",
