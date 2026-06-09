@@ -3065,17 +3065,19 @@ body:has(#game-container[style*="block"]) #info-panel {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px !important;
   margin: 0 0 16px !important;
+  align-items: stretch;
 }
 
 .legend-button {
-  min-height: 104px;
+  min-height: 50px;
   display: grid !important;
-  justify-items: center;
-  align-content: center;
+  grid-template-columns: 30px minmax(0, 1fr);
+  justify-items: start;
+  align-items: center;
   gap: 8px;
-  padding: 12px 8px !important;
+  padding: 8px 9px !important;
   color: #24160d !important;
-  text-align: center !important;
+  text-align: left !important;
   background: linear-gradient(180deg, rgba(244, 230, 191, 0.9), rgba(197, 174, 126, 0.86)) !important;
   border: 1px solid rgba(226, 189, 90, 0.48) !important;
   border-radius: 8px !important;
@@ -3091,8 +3093,8 @@ body:has(#game-container[style*="block"]) #info-panel {
 
 .legend-button .legend-icon {
   margin: 0 !important;
-  width: 38px;
-  height: 38px;
+  width: 28px;
+  height: 28px;
 }
 
 .legend-name {
@@ -3228,6 +3230,55 @@ body:has(#game-container[style*="block"]) #info-panel {
   margin-top: 4px;
 }
 
+.mastil-world-lore,
+.mastil-lore-playbook,
+.mastil-status-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.mastil-world-lore {
+  margin-top: 4px;
+}
+
+.mastil-world-lore-card,
+.mastil-lore-playbook article,
+.mastil-status-card {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(0, 0, 0, 0.2));
+}
+
+.mastil-world-lore-card span,
+.mastil-lore-playbook span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-world-lore-card strong,
+.mastil-status-card strong {
+  color: #fff2bf;
+  font: 950 13px/1.16 "Segoe UI", sans-serif;
+}
+
+.mastil-world-lore-card small {
+  color: rgba(255, 225, 138, 0.78);
+  font: 850 10px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-world-lore-card p,
+.mastil-status-card p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.72);
+  font: 750 11px/1.42 "Segoe UI", sans-serif;
+}
+
 .mastil-lore-route {
   min-height: 120px;
   display: grid;
@@ -3314,6 +3365,23 @@ body:has(#game-container[style*="block"]) #info-panel {
   margin-bottom: 12px;
 }
 
+.mastil-lore-back {
+  width: fit-content;
+  min-height: 36px;
+  margin-bottom: 10px;
+  padding: 8px 11px;
+  color: #fff2bf !important;
+  border: 1px solid rgba(226, 189, 90, 0.32) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  font: 900 12px/1 "Segoe UI", sans-serif !important;
+}
+
+.mastil-lore-back:hover,
+.mastil-lore-back:focus-visible {
+  background: rgba(226, 189, 90, 0.16) !important;
+}
+
 .mastil-lore-stats div,
 .mastil-credit-card,
 .mastil-credit-note {
@@ -3326,7 +3394,8 @@ body:has(#game-container[style*="block"]) #info-panel {
 }
 
 .mastil-lore-stats strong,
-.mastil-credit-card strong {
+.mastil-credit-card strong,
+.mastil-lore-playbook strong {
   color: #fff2bf;
   font: 900 12px/1.28 "Segoe UI", sans-serif;
 }
@@ -3412,6 +3481,29 @@ body:has(#game-container[style*="block"]) #info-panel {
   margin: 0;
   color: rgba(244, 230, 191, 0.76);
   font: 750 12px/1.45 "Segoe UI", sans-serif;
+}
+
+#credits-modal .mastil-credit-hero p,
+#credits-modal .mastil-credit-note p {
+  font: 750 14px/1.55 "Segoe UI", sans-serif !important;
+}
+
+#credits-modal .mastil-credit-card strong {
+  font: 900 13px/1.25 "Segoe UI", sans-serif !important;
+}
+
+#credits-modal .mastil-credit-card p,
+#credits-modal .mastil-status-card p {
+  font: 750 12px/1.42 "Segoe UI", sans-serif !important;
+}
+
+#credits-modal .mastil-status-card strong {
+  font: 950 13px/1.18 "Segoe UI", sans-serif !important;
+}
+
+.mastil-current-section {
+  display: grid;
+  gap: 8px;
 }
 
 .mastil-version-log {
@@ -3786,7 +3878,7 @@ body:has(#game-container[style*="block"]) #info-panel {
   }
 
   .legend-button {
-    min-height: 86px;
+    min-height: 54px;
   }
 
   .civilization-legend {
@@ -3794,8 +3886,11 @@ body:has(#game-container[style*="block"]) #info-panel {
   }
 
   .mastil-lore-routes,
+  .mastil-world-lore,
+  .mastil-lore-playbook,
   .mastil-lore-stats,
   .mastil-lore-grid,
+  .mastil-status-grid,
   .mastil-credit-grid {
     grid-template-columns: 1fr;
   }

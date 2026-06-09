@@ -2260,6 +2260,48 @@ const VERSION_HISTORY = {
             }
         };
 
+        const MASTIL_WORLD_CHAPTERS = [
+            {
+                name: 'Startgebiet',
+                waves: 'Wellen 1-5',
+                boss: 'Grenzwacht Roderich',
+                text: 'Erste Wege, Märkte und Burgen. Hier lernt der Spieler, Linien zu schließen und neutrale Türme sinnvoll zu nehmen.'
+            },
+            {
+                name: 'Grenzlande',
+                waves: 'Wellen 6-10',
+                boss: 'Der Eisenvogt',
+                text: 'Engpässe und Frontdruck. Versorgung und befestigte Kreuzungen werden wichtiger als reine Masse.'
+            },
+            {
+                name: 'Wüstenreich',
+                waves: 'Wellen 11-15',
+                boss: 'Sultan der Sandkrone',
+                text: 'Weite Wege, Märkte und Steinbrüche. Wer Einkommen nicht schützt, verliert den langen Krieg.'
+            },
+            {
+                name: 'Nachtfestung',
+                waves: 'Wellen 16-20',
+                boss: 'Nachtgraf Malrec',
+                text: 'Waldwege, Hinterhalte und riskante Fronten. Gute Planung verhindert, dass die KI die Karte zerreißt.'
+            },
+            {
+                name: 'Endboss-Zitadelle',
+                waves: 'Wellen 21-25',
+                boss: 'Kaiser Veyron',
+                text: 'Aschefelder und Zitadellen. Jede Straße, jede Belagerung und jeder Ausbau zählt.'
+            }
+        ];
+
+        const MASTIL_CURRENT_STATUS = [
+            ['Kartenwege', 'Sichtbare Straßen, Wegpunkte, Frontwege, Wege-Aufträge und Kreuzungsboni.'],
+            ['Gefecht', 'Kartenwahl, Größe, Gegnerzahl, Reichsfarbe, Schwierigkeit und KI-Kriegsplan.'],
+            ['Spielsteuerung', 'Taktische Befehle mit Kosten, Bereitschaft, Risikoanzeige und klaren Symbolen.'],
+            ['Weltkarte', 'Fünf Regionen mit Bossfronten, wechselnden Hintergründen und Fortschrittspfad.'],
+            ['Web & Windows', 'Spielbar als Website über mastil.online und als Windows/Electron-Projekt vorbereitet.'],
+            ['Lizenz', 'Demo bis Welle 5, Vollversion 10,99 EUR und Aktivierungsfluss im Spiel.']
+        ];
+
         function compareVersionsDesc(a, b) {
             const pa = a.split('.').map(Number);
             const pb = b.split('.').map(Number);
@@ -2295,14 +2337,27 @@ const VERSION_HISTORY = {
                     <small>${lore.region}</small>
                 </button>
             `).join('');
+            const chapters = MASTIL_WORLD_CHAPTERS.map((chapter, index) => `
+                <article class="mastil-world-lore-card">
+                    <span>${String(index + 1).padStart(2, '0')} · ${chapter.waves}</span>
+                    <strong>${chapter.name}</strong>
+                    <small>Boss: ${chapter.boss}</small>
+                    <p>${chapter.text}</p>
+                </article>
+            `).join('');
 
             return `
                 <section class="mastil-lore-home">
                     <span class="mastil-kicker">Reichsarchiv</span>
                     <h3>Die Welt hinter den Wellen</h3>
                     <p>MASTIL ist ein Krieg um Wege, Vorräte und alte Schwüre. Jede Fraktion betritt dieselbe Welt mit einer anderen Art zu denken: Albion hält Linien, Solterra drückt nach vorne, Yaxtun liest Muster, Al-Kimiya baut Überlegenheit und Aethelgard verbindet das Reich.</p>
+                    <div class="mastil-world-lore">${chapters}</div>
+                    <div class="mastil-lore-section-head">
+                        <span>Reiche wählen</span>
+                        <strong>Spielweise, Helden und Wunder</strong>
+                    </div>
                     <div class="mastil-lore-routes">${factions}</div>
-                    <p class="mastil-scroll-hint">Wähle ein Reich, um seine Geschichte, Spielweise und Helden zu sehen.</p>
+                    <p class="mastil-scroll-hint">Wähle ein Reich, um seine Geschichte, Spielweise und Helden zu sehen. Dieses Fenster scrollt getrennt vom Spiel.</p>
                 </section>
             `;
         }
@@ -2326,8 +2381,20 @@ const VERSION_HISTORY = {
                     </div>
                 </div>
             `).join('');
+            const playbook = [
+                ['Spielweise', lore.style],
+                ['Stärke', lore.power],
+                ['Risiko', lore.risk],
+                ['Bossziel', `${lore.boss}: Linien halten, dann mit klarer Übermacht brechen.`]
+            ].map(([label, text]) => `
+                <article>
+                    <span>${label}</span>
+                    <strong>${text}</strong>
+                </article>
+            `).join('');
 
             return `
+                <button class="mastil-lore-back" onclick="showLoreHome()">Zurück zum Reichsarchiv</button>
                 <section class="mastil-lore-hero" style="--lore-color:${lore.color}">
                     <div class="mastil-lore-emblem mastil-faction-icon ${factionIconClasses[id]}" aria-hidden="true"></div>
                     <div>
@@ -2343,6 +2410,7 @@ const VERSION_HISTORY = {
                     <div><span>Risiko</span><strong>${lore.risk}</strong></div>
                     <div><span>Boss</span><strong>${lore.boss}</strong></div>
                 </div>
+                <div class="mastil-lore-playbook">${playbook}</div>
                 <div class="mastil-lore-grid">${chapters}</div>
                 <section class="mastil-lore-chronicle">
                     <div class="mastil-lore-section-head">
@@ -2365,6 +2433,15 @@ const VERSION_HISTORY = {
             ].map(([label, title, text]) => `
                 <article class="mastil-credit-card">
                     <span>${label}</span>
+                    <strong>${title}</strong>
+                    <p>${text}</p>
+                </article>
+            `).join('');
+        }
+
+        function buildCurrentStatus() {
+            return MASTIL_CURRENT_STATUS.map(([title, text]) => `
+                <article class="mastil-status-card">
                     <strong>${title}</strong>
                     <p>${text}</p>
                 </article>
@@ -2435,6 +2512,13 @@ const VERSION_HISTORY = {
                     <strong>Was ist MASTIL?</strong>
                     <p>MASTIL verbindet Kartenkontrolle, Burgen, Türme, Wege, Bosswellen und taktische Befehle. Das Spiel wächst Schritt für Schritt zu einer größeren Welt mit Kampagne, Gefecht, Offline-KI und Online-Modus.</p>
                 </section>
+                <section class="mastil-current-section">
+                    <div class="mastil-lore-section-head">
+                        <span>Aktueller Spielstand</span>
+                        <strong>Was bereits spielbar ist</strong>
+                    </div>
+                    <div class="mastil-status-grid">${buildCurrentStatus()}</div>
+                </section>
                 <section class="mastil-version-section">
                     <div class="mastil-lore-section-head">
                         <span>Versionsarchiv</span>
@@ -2468,6 +2552,16 @@ const VERSION_HISTORY = {
             }
             openArchiveModal(modal);
             if (content) content.scrollTop = 0;
+        };
+
+        window.showLoreHome = function showLoreHomeModern() {
+            const content = document.getElementById('legend-content');
+            if (!content) return;
+            content.innerHTML = buildLoreHome();
+            content.dataset.modernLoreReady = 'home';
+            content.style.display = 'block';
+            content.scrollTop = 0;
+            document.querySelectorAll('.legend-button').forEach(btn => btn.classList.remove('active'));
         };
 
         window.closeLegends = function closeLegendsModern() {
