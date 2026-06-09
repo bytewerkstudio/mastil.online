@@ -2347,10 +2347,23 @@
 }
 
 .mastil-strategy-selected,
+.mastil-strategy-upgrade,
 .mastil-strategy-advice {
   margin-top: 4px;
   padding-top: 6px;
   border-top: 1px solid rgba(226, 189, 90, 0.22);
+}
+
+.mastil-strategy-upgrade {
+  color: rgba(216, 233, 255, 0.92);
+}
+
+.mastil-strategy-upgrade.ready {
+  color: #ffe18a;
+}
+
+.mastil-strategy-upgrade.waiting {
+  color: rgba(142, 195, 240, 0.86);
 }
 
 .mastil-strategy-advice {
@@ -2465,6 +2478,18 @@ body:has(#game-container[style*="block"]) #info-panel {
   background:
     radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--faction-accent, #e2bd5a) 36%, transparent), transparent 48%),
     linear-gradient(180deg, #e8ca72, #8d5f1c);
+}
+
+#mastil-game-controls button[data-action="upgrade"].ready {
+  border-color: rgba(255, 235, 156, 0.92);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 242, 191, 0.35), transparent 45%),
+    linear-gradient(180deg, #f3d878, #9c7025);
+  box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.5), 0 0 18px rgba(255, 225, 138, 0.28);
+}
+
+#mastil-game-controls button[data-action="upgrade"].waiting {
+  border-color: rgba(142, 195, 240, 0.5);
 }
 
 #mastil-game-controls button.off {

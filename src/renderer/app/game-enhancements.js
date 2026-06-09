@@ -1477,6 +1477,7 @@
     }
 
     drawTowerTacticalMarkers(tower, width, height);
+    drawTowerUpgradeCue(tower, width, height);
 
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 18;
@@ -1640,6 +1641,46 @@
 
     drawTowerRoleDetails(tower, width, height, base);
     drawTowerBadges(tower, width, height, level);
+    ctx.restore();
+  }
+
+  function drawTowerUpgradeCue(tower, width, height) {
+    const preview = getUpgradePreview(tower);
+    if (!preview.available) return;
+
+    const isSelected = safe(() => selectedTower === tower, false);
+    if (!preview.enoughGold && !isSelected) return;
+
+    const now = performance.now();
+    const pulse = 0.62 + Math.sin(now * 0.006) * 0.16;
+    const accent = preview.enoughGold ? '#ffe18a' : '#8fc3f0';
+    const alpha = preview.enoughGold ? pulse : 0.34;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = rgba(accent, preview.enoughGold ? 0.9 : 0.62);
+    ctx.lineWidth = preview.enoughGold ? 3 : 2;
+    ctx.setLineDash(preview.enoughGold ? [10, 6] : [4, 7]);
+    ctx.beginPath();
+    ctx.ellipse(0, height * 0.18, width * 1.05, height * 0.66, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.globalAlpha = 1;
+    const badgeX = width * 0.54;
+    const badgeY = -height * 0.42;
+    ctx.fillStyle = preview.enoughGold ? 'rgba(255, 225, 138, 0.94)' : 'rgba(142, 195, 240, 0.88)';
+    ctx.strokeStyle = 'rgba(18, 11, 7, 0.82)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(badgeX, badgeY, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#171009';
+    ctx.font = '950 9px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(preview.enoughGold ? 'L+' : `${Math.round(preview.progress * 100)}%`, badgeX, badgeY + 0.5);
     ctx.restore();
   }
 
@@ -2934,6 +2975,47 @@
     if (current >= 4) return 3;
     if (current >= 2) return 2;
     return 1;
+  }
+
+  function getUpgradePreview(tower) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    if (!tower || tower.faction !== playerFaction) {
+      return { available: false };
+    }
+
+    const level = Math.max(1, Number(tower.level) || 1);
+    const nextLevel = level + 1;
+    const currentGold = Math.floor(safe(() => gold, 0));
+    const cost = typeof getUpgradeCost === 'function' ? getUpgradeCost(tower) : 65;
+    const nextCap = typeof getTowerMaxUnits === 'function'
+      ? getTowerMaxUnits(tower.faction, tower.type, nextLevel)
+      : (tower.maxUnits || 0) + 5;
+    const capGain = Math.max(1, nextCap - (tower.maxUnits || 0));
+    let detail = `+${capGain} Garnison und schnellere Ausbildung`;
+
+    if (level < 3 && nextLevel >= 3) {
+      detail = 'Burgmauern: Schutz und frische Reserven';
+    } else if (level < 5 && nextLevel >= 5) {
+      if (tower.type === typeFromKey('gold')) detail = 'Zitadellenmarkt: Goldschub beim Ausbau';
+      else if (tower.type === typeFromKey('troop')) detail = 'Heerhof: Truppen für alle eigenen Türme';
+      else if (tower.type === typeFromKey('watch')) detail = 'Signalspitze: Befehle werden schneller bereit';
+      else detail = 'Zitadellenkern: stärkere Garnison';
+    } else if (level < 7 && nextLevel >= 7) {
+      detail = 'Hochfeste: Ruhm und langer Schutz';
+    }
+
+    return {
+      available: true,
+      cost,
+      currentGold,
+      enoughGold: currentGold >= cost,
+      missingGold: Math.max(0, cost - currentGold),
+      progress: Math.min(1, currentGold / Math.max(1, cost)),
+      level,
+      nextLevel,
+      nextTier: getTowerTierName(nextLevel),
+      detail
+    };
   }
 
   function getUpgradeCostModifier(tower) {
@@ -5348,6 +5430,7 @@
         const beforeLevel = tower ? tower.level : 0;
         const result = originalUpgrade.apply(this, arguments);
         if (tower && tower.level > beforeLevel) {
+          selectedTower = tower;
           matchStats.upgrades += 1;
           tower.mastilVeteranCapacityApplied = 0;
           applyTowerVeteranBonus(tower);
@@ -5605,7 +5688,7 @@
       <button type="button" data-action="flank" data-cooldown-key="flank" title="Mehrere Türme greifen ein markiertes Ziel von der Seite an"><span class="mastil-command-icon mastil-icon-flank" aria-hidden="true"></span><span>Flanke</span><small></small></button>
       <button type="button" data-action="rally" data-cooldown-key="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span><small></small></button>
       <button type="button" data-action="siege" data-cooldown-key="siege" title="Belagert einen starken nahen Feindposten und schwächt seine Verteidigung"><span class="mastil-command-icon mastil-icon-siege" aria-hidden="true"></span><span>Belagern</span><small></small></button>
-      <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span></button>
+      <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span><small></small></button>
       <button type="button" data-action="specialize" title="Wechselt die Rolle des gewählten Turms"><span class="mastil-command-icon mastil-icon-specialize" aria-hidden="true"></span><span>Gilde</span></button>
       <button type="button" data-action="ability" data-cooldown-key="ability" title="Aktiviert die besondere Fähigkeit Eures Reiches"><span class="mastil-command-icon mastil-icon-ability" aria-hidden="true"></span><span>Wunder</span><small></small></button>
       <button type="button" data-action="fortify" title="Befestigt den gewählten Turm kurzzeitig"><span class="mastil-command-icon mastil-icon-fortify" aria-hidden="true"></span><span>Schild</span></button>
@@ -5656,6 +5739,22 @@
       const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
       const cost = getFlankCost(selected || getPlayerTowers()[0]);
       flankButton.title = `Flankenangriff: mehrere Türme setzen ein markiertes Ziel unter Druck. Kosten: ${cost} Gold.`;
+    }
+    const upgradeButton = controls.querySelector('button[data-action="upgrade"]');
+    if (upgradeButton) {
+      const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
+      const preview = getUpgradePreview(selected);
+      const small = upgradeButton.querySelector('small');
+      upgradeButton.classList.toggle('ready', Boolean(preview.available && preview.enoughGold));
+      upgradeButton.classList.toggle('waiting', Boolean(preview.available && !preview.enoughGold));
+      upgradeButton.title = preview.available
+        ? `${preview.nextTier}: ${preview.detail}. Kosten: ${preview.cost} Gold.`
+        : 'Wähle einen eigenen Turm, um den Ausbaupfad zu sehen.';
+      if (small) {
+        small.textContent = preview.available
+          ? preview.enoughGold ? `${preview.cost}` : `-${preview.missingGold}`
+          : '';
+      }
     }
     controls.querySelectorAll('button[data-cooldown-key]').forEach((button) => {
       const key = button.dataset.cooldownKey;
@@ -5722,6 +5821,10 @@
       <div class="mastil-strategy-row mastil-strategy-selected">
         <span class="mastil-strategy-label">Turm</span>
         <span id="mastil-strategy-selected">keiner gewählt</span>
+      </div>
+      <div class="mastil-strategy-row mastil-strategy-upgrade">
+        <span class="mastil-strategy-label">Ausbau</span>
+        <span id="mastil-strategy-upgrade">keinen Turm gewählt</span>
       </div>
       <div class="mastil-strategy-row mastil-strategy-advice">
         <span class="mastil-strategy-label">Rat</span>
@@ -5823,8 +5926,9 @@
     const supplyNode = document.getElementById('mastil-strategy-supply');
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
+    const upgradeNode = document.getElementById('mastil-strategy-upgrade');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !mapNode || !front || !targetNode || !moraleNode || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !mapNode || !front || !targetNode || !moraleNode || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !upgradeNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     const activeRegion = getActiveRegion();
@@ -5860,8 +5964,22 @@
         ? ` | ${veteran.title}${nextRenown ? ` ${Math.floor(selected.mastilRenown || 0)}/${nextRenown}` : ''}`
         : ` | Ruhm ${Math.floor(selected.mastilRenown || 0)}/${nextRenown || VETERAN_RANKS[0].threshold}`;
       selectedNode.textContent = `${getTowerTierName(selected.level)} | ${getTowerRoleName(selected.type)} | ${terrain.label} | ${Math.floor(selected.units)}/${selected.maxUnits}${renownText}${fortified}`;
+      const preview = getUpgradePreview(selected);
+      const upgradeRow = upgradeNode.closest('.mastil-strategy-upgrade');
+      if (upgradeRow) {
+        upgradeRow.classList.toggle('ready', preview.enoughGold);
+        upgradeRow.classList.toggle('waiting', !preview.enoughGold);
+      }
+      upgradeNode.textContent = preview.enoughGold
+        ? `${preview.nextTier} bereit | ${preview.cost} Gold | ${preview.detail}`
+        : `${preview.nextTier} | ${preview.missingGold} Gold fehlen | ${preview.detail}`;
     } else {
       selectedNode.textContent = 'keiner gewählt';
+      const upgradeRow = upgradeNode.closest('.mastil-strategy-upgrade');
+      if (upgradeRow) {
+        upgradeRow.classList.remove('ready', 'waiting');
+      }
+      upgradeNode.textContent = 'keinen Turm gewählt';
     }
     adviceNode.textContent = getTacticalAdvice(own, enemy, neutral, selected);
   }
