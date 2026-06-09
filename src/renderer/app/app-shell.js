@@ -31,8 +31,61 @@
     economy: { label: 'Handelskrieg', detail: 'mehr Märkte, Gold und lange Wege.' },
     conquest: { label: 'Reichskrieg', detail: 'mehr Burgen, längere Fronten und harte Endstellungen.' }
   };
+  const SKIRMISH_SCENARIOS = {
+    training: {
+      label: 'Training',
+      detail: 'ruhige Übung gegen ein KI-Reich mit klaren Wegen.',
+      mapId: 'startgebiet',
+      size: 'compact',
+      difficulty: 'easy',
+      opponents: 1,
+      plan: 'balanced',
+      color: '#2f6fa5'
+    },
+    siege: {
+      label: 'Belagerung',
+      detail: 'harte Burgfront mit mehr Mauern, Wachtürmen und Belagerungszielen.',
+      mapId: 'grenzlande',
+      size: 'large',
+      difficulty: 'hard',
+      opponents: 2,
+      plan: 'fortress',
+      color: '#8f4d2e'
+    },
+    trade: {
+      label: 'Handelskrieg',
+      detail: 'lange Routen, Märkte und Goldentscheidungen auf weiter Karte.',
+      mapId: 'wuestenreich',
+      size: 'large',
+      difficulty: 'normal',
+      opponents: 2,
+      plan: 'economy',
+      color: '#2e7a68'
+    },
+    shadow: {
+      label: 'Schattenkrieg',
+      detail: 'schnelle Überfälle, Waldwege und drei aktive KI-Kommandanten.',
+      mapId: 'nachtfestung',
+      size: 'war',
+      difficulty: 'hard',
+      opponents: 3,
+      plan: 'raiders',
+      color: '#4f5f95'
+    },
+    boss: {
+      label: 'Endboss-Schlacht',
+      detail: 'maximale Karte mit Zitadellen, drei KI-Reichen und Bossdruck ab Start.',
+      mapId: 'endboss',
+      size: 'epic',
+      difficulty: 'brutal',
+      opponents: 3,
+      plan: 'conquest',
+      color: '#7b2f2a'
+    }
+  };
   const DEFAULT_SKIRMISH = {
     mode: 'campaign',
+    scenario: 'training',
     mapId: 'startgebiet',
     size: 'standard',
     difficulty: 'normal',
@@ -303,8 +356,20 @@
       difficulty: (byId('mastil-skirmish-difficulty') && byId('mastil-skirmish-difficulty').value) || saved.difficulty,
       opponents: Number((byId('mastil-skirmish-opponents') && byId('mastil-skirmish-opponents').value) || saved.opponents),
       plan: (byId('mastil-skirmish-plan') && byId('mastil-skirmish-plan').value) || saved.plan,
+      scenario: (byId('mastil-skirmish-scenario') && byId('mastil-skirmish-scenario').value) || saved.scenario,
       color: (byId('mastil-skirmish-color') && byId('mastil-skirmish-color').value) || saved.color
     };
+  }
+
+  function getSkirmishRouteEstimate(values) {
+    const size = SKIRMISH_SIZES[values.size] || SKIRMISH_SIZES.standard;
+    const towerCount = Number((size.towers || '13').match(/\d+/)?.[0]) || 13;
+    return Math.max(7, Math.round(towerCount * 1.55));
+  }
+
+  function getSkirmishTowerCount(values) {
+    const size = SKIRMISH_SIZES[values.size] || SKIRMISH_SIZES.standard;
+    return Number((size.towers || '13').match(/\d+/)?.[0]) || 13;
   }
 
   function renderSkirmishBrief() {
@@ -314,17 +379,50 @@
     const size = SKIRMISH_SIZES[values.size] || SKIRMISH_SIZES.standard;
     const difficulty = SKIRMISH_DIFFICULTIES[values.difficulty] || SKIRMISH_DIFFICULTIES.normal;
     const plan = SKIRMISH_PLANS[values.plan] || SKIRMISH_PLANS.balanced;
+    const scenario = SKIRMISH_SCENARIOS[values.scenario] || SKIRMISH_SCENARIOS.training;
     const opponentText = `${Math.max(1, Math.min(3, values.opponents || 1))} KI-Reich${Number(values.opponents) === 1 ? '' : 'e'}`;
+    const routeEstimate = getSkirmishRouteEstimate(values);
+    const towerCount = getSkirmishTowerCount(values);
 
     document.querySelectorAll('.mastil-world-card[data-region-id]').forEach((card) => {
       card.classList.toggle('selected', card.dataset.regionId === region.id);
     });
+    document.querySelectorAll('.mastil-skirmish-preset[data-scenario]').forEach((button) => {
+      button.classList.toggle('selected', button.dataset.scenario === values.scenario);
+    });
     if (!brief) return;
     brief.innerHTML = `
-      <strong>${region.title}: ${region.style}</strong>
-      <span>${region.terrain}. ${size.towers}, ${size.detail}. ${opponentText}, ${difficulty.label.toLowerCase()}: ${difficulty.detail}. ${plan.label}: ${plan.detail}</span>
-      <em style="--chosen-color:${values.color || '#2f6fa5'}"><i></i> Eure Reichsfarbe wird auf alle eigenen Türme übertragen.</em>
+      <strong>${scenario.label} auf ${region.title}</strong>
+      <span>${scenario.detail} ${region.terrain}. ${size.detail}. ${opponentText}, ${difficulty.label.toLowerCase()}: ${difficulty.detail}. ${plan.label}: ${plan.detail}</span>
+      <div class="mastil-skirmish-stats" aria-label="Gefechtsvorschau">
+        <b>${towerCount}<small>Orte</small></b>
+        <b>${routeEstimate}<small>Wege</small></b>
+        <b>${values.opponents}<small>KI</small></b>
+        <b>${region.boss.split(' ')[0]}<small>Boss</small></b>
+      </div>
+      <em style="--chosen-color:${values.color || '#2f6fa5'}"><i></i> Eure Reichsfarbe wird auf eigene Türme, Banner und Gefechtsbefehle übertragen.</em>
     `;
+  }
+
+  function applySkirmishScenario(id) {
+    const scenario = SKIRMISH_SCENARIOS[id] || SKIRMISH_SCENARIOS.training;
+    const fields = {
+      scenario: byId('mastil-skirmish-scenario'),
+      mapId: byId('mastil-skirmish-map'),
+      size: byId('mastil-skirmish-size'),
+      difficulty: byId('mastil-skirmish-difficulty'),
+      opponents: byId('mastil-skirmish-opponents'),
+      plan: byId('mastil-skirmish-plan'),
+      color: byId('mastil-skirmish-color')
+    };
+    if (fields.scenario) fields.scenario.value = id;
+    if (fields.mapId) fields.mapId.value = scenario.mapId;
+    if (fields.size) fields.size.value = scenario.size;
+    if (fields.difficulty) fields.difficulty.value = scenario.difficulty;
+    if (fields.opponents) fields.opponents.value = String(scenario.opponents);
+    if (fields.plan) fields.plan.value = scenario.plan;
+    if (fields.color) fields.color.value = scenario.color;
+    renderSkirmishBrief();
   }
 
   function createWorldMapModal() {
@@ -342,8 +440,22 @@
         </div>
         <div class="mastil-world-grid" id="mastil-world-grid"></div>
         <div class="mastil-skirmish-panel">
-          <h3>Gefechtsmodus</h3>
+          <div class="mastil-skirmish-panel-head">
+            <h3>Gefechtsmodus</h3>
+            <p>Wähle eine Vorlage oder stelle Karte, Größe, Gegner und Farbe selbst ein.</p>
+          </div>
+          <div class="mastil-skirmish-presets" id="mastil-skirmish-presets">
+            ${Object.entries(SKIRMISH_SCENARIOS).map(([id, scenario]) => `
+              <button class="mastil-skirmish-preset" type="button" data-scenario="${id}">
+                <strong>${scenario.label}</strong>
+                <small>${scenario.detail}</small>
+              </button>
+            `).join('')}
+          </div>
           <div class="mastil-skirmish-options">
+            <label>Gefechtsart<select id="mastil-skirmish-scenario">
+              ${Object.entries(SKIRMISH_SCENARIOS).map(([id, scenario]) => `<option value="${id}">${scenario.label}</option>`).join('')}
+            </select></label>
             <label>Karte<select id="mastil-skirmish-map"></select></label>
             <label>Größe<select id="mastil-skirmish-size">
               <option value="compact">Kompakt</option>
@@ -392,6 +504,14 @@
     byId('mastil-world-x-btn').addEventListener('click', hideWorldMap);
     byId('mastil-start-campaign-btn').addEventListener('click', () => startConfiguredMatch('campaign'));
     byId('mastil-start-skirmish-btn').addEventListener('click', () => startConfiguredMatch('skirmish'));
+    byId('mastil-skirmish-presets').addEventListener('click', (event) => {
+      const preset = event.target && event.target.closest ? event.target.closest('[data-scenario]') : null;
+      if (!preset) return;
+      applySkirmishScenario(preset.dataset.scenario);
+    });
+    byId('mastil-skirmish-scenario').addEventListener('change', (event) => {
+      applySkirmishScenario(event.target.value);
+    });
     byId('mastil-world-grid').addEventListener('click', (event) => {
       const card = event.target && event.target.closest ? event.target.closest('[data-region-id]') : null;
       if (!card) return;
@@ -399,7 +519,7 @@
       if (mapSelect) mapSelect.value = card.dataset.regionId;
       renderSkirmishBrief();
     });
-    ['mastil-skirmish-map', 'mastil-skirmish-size', 'mastil-skirmish-difficulty', 'mastil-skirmish-opponents', 'mastil-skirmish-plan', 'mastil-skirmish-color']
+    ['mastil-skirmish-scenario', 'mastil-skirmish-map', 'mastil-skirmish-size', 'mastil-skirmish-difficulty', 'mastil-skirmish-opponents', 'mastil-skirmish-plan', 'mastil-skirmish-color']
       .forEach((id) => {
         const field = byId(id);
         if (field) {
@@ -431,6 +551,7 @@
     }
 
     const fields = {
+      scenario: byId('mastil-skirmish-scenario'),
       mapId: byId('mastil-skirmish-map'),
       size: byId('mastil-skirmish-size'),
       difficulty: byId('mastil-skirmish-difficulty'),
@@ -438,6 +559,7 @@
       plan: byId('mastil-skirmish-plan'),
       color: byId('mastil-skirmish-color')
     };
+    if (fields.scenario) fields.scenario.value = config.scenario || DEFAULT_SKIRMISH.scenario;
     if (fields.mapId) fields.mapId.value = config.mapId;
     if (fields.size) fields.size.value = config.size;
     if (fields.difficulty) fields.difficulty.value = config.difficulty;
@@ -466,6 +588,7 @@
     if (mode === 'campaign') return { ...DEFAULT_SKIRMISH, mode: 'campaign', color: values.color };
     return {
       mode: 'skirmish',
+      scenario: values.scenario,
       mapId: values.mapId,
       size: values.size,
       difficulty: values.difficulty,
@@ -644,13 +767,14 @@
     const savedSize = SKIRMISH_SIZES[saved.size] || SKIRMISH_SIZES.standard;
     const savedDifficulty = SKIRMISH_DIFFICULTIES[saved.difficulty] || SKIRMISH_DIFFICULTIES.normal;
     const savedPlan = SKIRMISH_PLANS[saved.plan] || SKIRMISH_PLANS.balanced;
+    const savedScenario = SKIRMISH_SCENARIOS[saved.scenario] || SKIRMISH_SCENARIOS.training;
 
     if (current) current.textContent = `${region.title} | ${progress}`;
     if (boss) boss.textContent = `Bestwelle ${bestWave} | Boss: ${region.boss}`;
     if (license) license.textContent = state.licenseActive ? 'Vollversion aktiv' : 'Demo bis Welle 5';
     if (online) online.textContent = getBackendStatusText();
-    if (skirmish) skirmish.textContent = `${savedSize.label} | ${savedDifficulty.label}`;
-    if (skirmishDetail) skirmishDetail.textContent = `${savedRegion.title}, ${saved.opponents} KI, ${savedPlan.label}`;
+    if (skirmish) skirmish.textContent = `${savedScenario.label} | ${savedSize.label}`;
+    if (skirmishDetail) skirmishDetail.textContent = `${savedRegion.title}, ${saved.opponents} KI, ${savedDifficulty.label}, ${savedPlan.label}`;
     if (footer) footer.textContent = state.licenseActive
       ? 'Vollversion: alle Wellen freigeschaltet'
       : 'Demo aktiv: Kampagne frei bis Welle 5';

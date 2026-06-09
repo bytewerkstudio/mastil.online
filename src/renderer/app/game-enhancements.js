@@ -300,6 +300,68 @@
       detail: 'grosse Karten, Burgen und mehrere Fronten'
     }
   };
+  const SKIRMISH_SCENARIOS = {
+    training: {
+      id: 'training',
+      label: 'Training',
+      goldBonus: 28,
+      graceFactor: 1.32,
+      startUnits: 1.14,
+      enemyUnits: 0.86,
+      enemyLevel: 0,
+      neutralUnits: 0.88,
+      commanderTempo: 1.18
+    },
+    siege: {
+      id: 'siege',
+      label: 'Belagerung',
+      goldBonus: 22,
+      graceFactor: 1.08,
+      startUnits: 1.06,
+      enemyUnits: 1.08,
+      enemyLevel: 1,
+      neutralUnits: 1,
+      commanderTempo: 1.02,
+      fortressBias: true
+    },
+    trade: {
+      id: 'trade',
+      label: 'Handelskrieg',
+      goldBonus: 42,
+      graceFactor: 1.04,
+      startUnits: 1.02,
+      enemyUnits: 0.94,
+      enemyLevel: 0,
+      neutralUnits: 1.04,
+      commanderTempo: 1,
+      tradeBias: true
+    },
+    shadow: {
+      id: 'shadow',
+      label: 'Schattenkrieg',
+      goldBonus: 16,
+      graceFactor: 0.92,
+      startUnits: 0.98,
+      enemyUnits: 1.06,
+      enemyLevel: 0,
+      neutralUnits: 1.02,
+      commanderTempo: 0.82,
+      shadowBias: true
+    },
+    boss: {
+      id: 'boss',
+      label: 'Endboss-Schlacht',
+      goldBonus: 30,
+      graceFactor: 0.9,
+      startUnits: 1,
+      enemyUnits: 1.18,
+      enemyLevel: 1,
+      neutralUnits: 1.05,
+      commanderTempo: 0.92,
+      fortressBias: true,
+      bossAtStart: true
+    }
+  };
   const FACTION_TRAITS = {
     england: {
       name: 'Ritter von Albion',
@@ -664,6 +726,7 @@
   function getMatchConfig() {
     return {
       mode: 'campaign',
+      scenario: 'training',
       mapId: 'startgebiet',
       size: 'standard',
       difficulty: 'normal',
@@ -720,6 +783,10 @@
     return WAR_PLANS[config.plan] || WAR_PLANS.balanced;
   }
 
+  function getSkirmishScenario(config) {
+    return SKIRMISH_SCENARIOS[config.scenario] || SKIRMISH_SCENARIOS.training;
+  }
+
   function getMapNodeForConfig(baseNode, index, config, waveNumber) {
     const profileId = getMapProfileId(config, waveNumber);
     const variant = MAP_VARIANTS[profileId] || MAP_VARIANTS.startgebiet;
@@ -744,6 +811,7 @@
     );
 
     if (config.mode === 'skirmish') {
+      const scenario = getSkirmishScenario(config);
       if (plan === WAR_PLANS.raiders && node.role === 'enemy') {
         node.type = 'troop';
         node.terrain = index % 2 ? 'forest' : 'road';
@@ -764,6 +832,18 @@
           node.type = index % 2 === 0 ? 'troop' : node.type;
           node.terrain = index % 3 === 0 ? 'road' : node.terrain;
         }
+      }
+      if (scenario.fortressBias && node.role !== 'player' && node.rank >= 3) {
+        node.terrain = node.rank >= 7 || index % 2 === 0 ? 'keep' : 'hill';
+        node.type = node.role === 'enemy' ? (index % 3 === 0 ? 'watch' : 'normal') : node.type;
+      }
+      if (scenario.tradeBias && node.role !== 'player') {
+        node.terrain = index % 3 === 0 ? 'market' : index % 4 === 0 ? 'quarry' : node.terrain;
+        node.type = node.terrain === 'market' || node.terrain === 'quarry' ? 'gold' : node.type;
+      }
+      if (scenario.shadowBias && node.role !== 'player') {
+        node.terrain = index % 2 === 0 ? 'forest' : node.terrain;
+        node.type = node.role === 'enemy' ? 'troop' : node.type;
       }
     }
 
@@ -4922,8 +5002,10 @@
       if (now < enemyCommandState.readyAt.get(group.faction)) continue;
 
       const orderText = executeCommanderTactic(group, own);
-      const planTempo = getWarPlan(getMatchConfig()).commanderTempo || 1;
-      enemyCommandState.readyAt.set(group.faction, now + group.commander.interval * planTempo + Math.random() * 2400);
+      const config = getMatchConfig();
+      const planTempo = getWarPlan(config).commanderTempo || 1;
+      const scenarioTempo = config.mode === 'skirmish' ? getSkirmishScenario(config).commanderTempo || 1 : 1;
+      enemyCommandState.readyAt.set(group.faction, now + group.commander.interval * planTempo * scenarioTempo + Math.random() * 2400);
       if (!orderText) continue;
 
       matchStats.enemyOrders += 1;
@@ -5116,8 +5198,14 @@
     const config = getMatchConfig();
     const difficulty = DIFFICULTY[config.difficulty] || DIFFICULTY.normal;
     const warPlan = getWarPlan(config);
+    const scenario = config.mode === 'skirmish' ? getSkirmishScenario(config) : SKIRMISH_SCENARIOS.training;
+    const scenarioEnemyLevel = config.mode === 'skirmish' ? scenario.enemyLevel : 0;
+    const scenarioEnemyUnits = config.mode === 'skirmish' ? scenario.enemyUnits : 1;
+    const scenarioNeutralUnits = config.mode === 'skirmish' ? scenario.neutralUnits : 1;
     const currentWave = Math.max(1, safe(() => wave, 1));
     const bossWave = isBossWave(currentWave);
+    const scenarioBossWave = config.mode === 'skirmish' && scenario.bossAtStart;
+    const activeBossWave = bossWave || scenarioBossWave;
     const limit = SIZE_LIMITS[config.size] || SIZE_LIMITS.standard;
     const skirmishStartRank = config.mode === 'skirmish'
       ? ({ compact: 0, standard: 1, large: 1, war: 2, epic: 2 }[config.size] || 1)
@@ -5133,7 +5221,7 @@
     const previousGold = safe(() => gold, 0);
     towers = [];
     units = [];
-    gold = options.preserveHome ? previousGold : (config.mode === 'skirmish' ? difficulty.gold + warPlan.goldBonus : 120);
+    gold = options.preserveHome ? previousGold : (config.mode === 'skirmish' ? difficulty.gold + warPlan.goldBonus + scenario.goldBonus : 120);
 
     const mappedNodes = MAP_NODES.map((node, index) => getMapNodeForConfig(node, index, config, currentWave));
     const activeNodes = mappedNodes
@@ -5154,10 +5242,10 @@
           applyTowerVeteranBonus(home);
         } else if (config.mode === 'skirmish') {
           const startRatioByDifficulty = { easy: 0.78, normal: 0.7, hard: 0.64, brutal: 0.58 };
-          const sizeBoost = config.size === 'war' ? 0.08 : config.size === 'large' ? 0.05 : 0.02;
-          const startRatio = Math.min(0.86, (startRatioByDifficulty[config.difficulty] || 0.68) + sizeBoost);
+          const sizeBoost = config.size === 'epic' ? 0.1 : config.size === 'war' ? 0.08 : config.size === 'large' ? 0.05 : 0.02;
+          const startRatio = Math.min(0.9, ((startRatioByDifficulty[config.difficulty] || 0.68) + sizeBoost) * scenario.startUnits);
           home.units = Math.min(home.maxUnits, Math.max(home.units, Math.floor(home.maxUnits * startRatio)));
-          if (config.size === 'war' || warPlan === WAR_PLANS.fortress) {
+          if (config.size === 'war' || config.size === 'epic' || warPlan === WAR_PLANS.fortress || scenario.fortressBias) {
             home.fortifiedUntil = Math.max(home.fortifiedUntil || 0, performance.now() + 16000);
           }
         } else {
@@ -5173,12 +5261,12 @@
 
       if (node.role === 'enemy') {
         const faction = getEnemyFaction(enemyIndex, opponentCount);
-        let level = 1 + difficulty.enemyLevel + warPlan.enemyLevel + Math.floor(currentWave / 6) + (bossWave ? 1 : 0);
+        let level = 1 + difficulty.enemyLevel + warPlan.enemyLevel + scenarioEnemyLevel + Math.floor(currentWave / 6) + (activeBossWave ? 1 : 0);
         if (node.terrain === 'keep') level += 1;
         if (config.mode === 'skirmish' && warPlan === WAR_PLANS.conquest && node.rank >= 7) level += 1;
-        const factor = Math.min(0.98, (difficulty.enemyUnits + currentWave * 0.018 + (bossWave ? 0.16 : 0)) * warPlan.enemyUnits);
+        const factor = Math.min(0.98, (difficulty.enemyUnits + currentWave * 0.018 + (activeBossWave ? 0.16 : 0)) * warPlan.enemyUnits * scenarioEnemyUnits);
         const tower = createBattleTower(node, faction, level, factor);
-        if (config.mode === 'skirmish' && warPlan === WAR_PLANS.fortress) {
+        if (config.mode === 'skirmish' && (warPlan === WAR_PLANS.fortress || scenario.fortressBias)) {
           tower.fortifiedUntil = performance.now() + 14000;
         }
         if (config.mode === 'skirmish' && warPlan === WAR_PLANS.conquest && node.terrain === 'keep') {
@@ -5191,7 +5279,7 @@
 
       let neutralLevel = currentWave >= 10 && node.rank >= 4 ? 2 : 1;
       if (config.mode === 'skirmish' && node.terrain === 'keep') neutralLevel += 1;
-      const neutralFactor = 0.36 + Math.min(0.16, currentWave * 0.01) + (config.mode === 'skirmish' && warPlan === WAR_PLANS.economy ? 0.06 : 0);
+      const neutralFactor = (0.36 + Math.min(0.16, currentWave * 0.01) + (config.mode === 'skirmish' && warPlan === WAR_PLANS.economy ? 0.06 : 0)) * scenarioNeutralUnits;
       towers.push(createBattleTower(node, neutralFaction, neutralLevel, neutralFactor));
     }
 
@@ -5200,17 +5288,18 @@
       towers.push(createBattleTower(front, getEnemyFaction(0, opponentCount), 1 + difficulty.enemyLevel, difficulty.enemyUnits));
     }
 
-    if (bossWave) {
+    if (activeBossWave) {
       promoteBossTower(currentWave);
     }
 
     window.MASTIL_ACTIVE_REGION = getActiveRegion();
-    window.MASTIL_ACTIVE_BOSS_WAVE = bossWave;
+    window.MASTIL_ACTIVE_BOSS_WAVE = activeBossWave;
     window.MASTIL_WAR_PLAN = warPlan.label;
+    window.MASTIL_SKIRMISH_SCENARIO = scenario.label;
     const graceByDifficulty = { easy: 26000, normal: 20500, hard: 16500, brutal: 12200 };
-    const sizeGrace = { compact: 0.96, standard: 1.06, large: 1.2, war: 1.38 }[config.size] || 1;
+    const sizeGrace = { compact: 0.96, standard: 1.06, large: 1.2, war: 1.38, epic: 1.52 }[config.size] || 1;
     const opponentGrace = 1 + Math.max(0, opponentCount - 1) * 0.08;
-    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 18000) * warPlan.graceFactor * sizeGrace * opponentGrace : 22000);
+    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 18000) * warPlan.graceFactor * scenario.graceFactor * sizeGrace * opponentGrace : 22000);
     enemyCommandState.readyAt.clear();
     enemyCommandState.lastOrderText = 'Feindliche Kommandanten sondieren die Front.';
     enemyCommandState.lastCommanderId = '';
@@ -5218,7 +5307,7 @@
     enemyCommandState.warningUntil = 0;
     applyFactionStartBonus(options);
     safe(() => saveGameState());
-    pushEvent(config.mode === 'skirmish' ? `Gefecht: ${difficulty.label} | ${warPlan.label}` : 'Kampagne gestartet', 'wave');
+    pushEvent(config.mode === 'skirmish' ? `Gefecht: ${scenario.label} | ${difficulty.label} | ${warPlan.label}` : 'Kampagne gestartet', 'wave');
     pushEvent(`Schlachtfeld: ${getBattlefieldCondition().title}`, 'condition');
   }
 
@@ -6689,13 +6778,16 @@
     if (bossStatus) {
       const currentWave = safe(() => wave, 1);
       const region = getBossRegionForWave(currentWave);
+      const activeBossTower = enemy.find((tower) => tower.boss && tower.bossName);
+      const bossActive = isBossWave(currentWave) || Boolean(activeBossTower);
+      const bossName = activeBossTower && activeBossTower.bossName ? activeBossTower.bossName : region.boss;
       const nextBossWave = getMatchConfig().mode === 'skirmish'
         ? Math.max(5, Math.ceil(currentWave / 5) * 5)
         : region.waves[1];
-      bossStatus.textContent = isBossWave(currentWave)
-        ? `Boss aktiv: ${region.boss}`
-        : `Naechster Boss: ${region.boss} in Welle ${nextBossWave}`;
-      bossStatus.classList.toggle('active', isBossWave(currentWave));
+      bossStatus.textContent = bossActive
+        ? `Boss aktiv: ${bossName}`
+        : `Naechster Boss: ${bossName} in Welle ${nextBossWave}`;
+      bossStatus.classList.toggle('active', bossActive);
     }
     if (conditionBox && conditionTitle && conditionDetail) {
       const condition = getBattlefieldCondition();
@@ -6857,11 +6949,13 @@
       config: getMatchConfig(),
       activeRegion: getActiveRegion().title,
       warPlan: getWarPlan(getMatchConfig()).label,
+      scenario: getMatchConfig().mode === 'skirmish' ? getSkirmishScenario(getMatchConfig()).label : 'Kampagne',
       towers: currentTowers.length,
       playerTowers: currentTowers.filter((tower) => tower.faction === playerFaction).length,
       enemyTowers: currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction).length,
       neutralTowers: currentTowers.filter((tower) => tower.faction === neutralFaction).length,
       castleSites: currentTowers.filter((tower) => tower.mastilCastleSite).length,
+      activeBosses: currentTowers.filter((tower) => tower.boss).length,
       roadHubs: currentTowers.filter((tower) => tower.mastilRoadHub).length,
       formations: battleFormations.size,
       taggedUnits: currentUnits.filter((unit) => unit.mastilFormationId).length,
