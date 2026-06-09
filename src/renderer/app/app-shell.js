@@ -13,9 +13,9 @@
   ];
   const SKIRMISH_SIZES = {
     compact: { label: 'Kompakt', towers: '10 Orte', detail: 'schnelle Trainingsrunde mit kurzer Front' },
-    standard: { label: 'Standard', towers: '13 Orte', detail: 'klassische Karte mit klarer Mitte' },
-    large: { label: 'Groß', towers: '16 Orte', detail: 'mehr Burgen, längere Versorgungslinien' },
-    war: { label: 'Kriegskarte', towers: '20 Orte', detail: 'volle Weltkarte mit mehreren Fronten' },
+    standard: { label: 'Standard', towers: '14 Orte', detail: 'klassische Karte mit klarer Mitte und Nebenroute' },
+    large: { label: 'Groß', towers: '18 Orte', detail: 'mehr Burgen, Außenposten und längere Versorgungslinien' },
+    war: { label: 'Kriegskarte', towers: '21 Orte', detail: 'volle Weltkarte mit seitlicher Vorburg' },
     epic: { label: 'Reichskrieg', towers: '24 Orte', detail: 'große Kriegskarte mit Außenburgen und Nebenfronten' }
   };
   const SKIRMISH_DIFFICULTIES = {
@@ -441,6 +441,13 @@
     return /^#[0-9a-f]{6}$/i.test(value) ? value : '#2f6fa5';
   }
 
+  function isSkirmishSideStartNode(node, index, values) {
+    if (!node || node.role !== 'neutral') return false;
+    if (values.size === 'war') return index === 20;
+    if (values.size === 'epic') return index === 20 || index === 21;
+    return false;
+  }
+
   function getSkirmishPreviewNodes(values, towerCount) {
     const startRankBySize = { compact: 0, standard: 1, large: 1, war: 2, epic: 2 };
     const startRank = startRankBySize[values.size] || 1;
@@ -452,7 +459,7 @@
       .map((node, index) => {
         let owner = node.role;
         let ownerIndex = 0;
-        if (node.role === 'neutral' && node.rank <= startRank) {
+        if (node.role === 'neutral' && (node.rank <= startRank || isSkirmishSideStartNode(node, index, values))) {
           owner = 'player';
         } else if (node.role === 'enemy') {
           ownerIndex = enemyIndex % opponentCount;

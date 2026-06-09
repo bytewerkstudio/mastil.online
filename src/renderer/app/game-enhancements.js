@@ -246,7 +246,7 @@
     { threshold: 18, title: 'Veteran', mark: 'II', color: '#f4d77a' },
     { threshold: 34, title: 'Legendär', mark: 'III', color: '#ffb17e' }
   ];
-  const SIZE_LIMITS = { compact: 10, standard: 13, large: 16, war: 20, epic: 24 };
+  const SIZE_LIMITS = { compact: 10, standard: 14, large: 18, war: 21, epic: 24 };
   const DIFFICULTY = {
     easy: { gold: 155, enemyUnits: 0.48, enemyLevel: 0, label: 'Training' },
     normal: { gold: 130, enemyUnits: 0.62, enemyLevel: 0, label: 'Normal' },
@@ -810,6 +810,14 @@
 
   function getSkirmishScenario(config) {
     return SKIRMISH_SCENARIOS[config.scenario] || SKIRMISH_SCENARIOS.training;
+  }
+
+  function isSkirmishSideStartNode(node, config) {
+    if (!node || config.mode !== 'skirmish' || node.role !== 'neutral') return false;
+    const index = Number(node.index);
+    if (config.size === 'war') return index === 20;
+    if (config.size === 'epic') return index === 20 || index === 21;
+    return false;
   }
 
   function getMapNodeForConfig(baseNode, index, config, waveNumber) {
@@ -5750,10 +5758,11 @@
 
     let enemyIndex = 0;
     for (const node of activeNodes) {
-      const playerStartNode = node.role === 'player' || (config.mode === 'skirmish' && node.role === 'neutral' && node.rank <= skirmishStartRank);
+      const sideStartNode = isSkirmishSideStartNode(node, config);
+      const playerStartNode = node.role === 'player' || (config.mode === 'skirmish' && node.role === 'neutral' && (node.rank <= skirmishStartRank || sideStartNode));
       if (playerStartNode) {
-        const home = createBattleTower(node, playerFaction, previousHome && options.preserveHome ? previousHome.level : 1, 0.65);
-        if (previousHome && options.preserveHome) {
+        const home = createBattleTower(node, playerFaction, previousHome && options.preserveHome && !sideStartNode ? previousHome.level : 1, 0.65);
+        if (previousHome && options.preserveHome && !sideStartNode) {
           home.units = Math.min(home.maxUnits, Math.max(10, Math.floor(previousHome.units * 0.65)));
           home.type = previousHome.type || home.type;
           home.mastilRenown = Number(previousHome.mastilRenown || 0);
@@ -5767,6 +5776,13 @@
           home.units = Math.min(home.maxUnits, Math.max(home.units, Math.floor(home.maxUnits * startRatio)));
           if (config.size === 'war' || config.size === 'epic' || warPlan === WAR_PLANS.fortress || scenario.fortressBias) {
             home.fortifiedUntil = Math.max(home.fortifiedUntil || 0, performance.now() + 16000);
+          }
+          if (sideStartNode) {
+            home.units = Math.min(home.maxUnits, Math.max(6, Math.floor(home.maxUnits * 0.5)));
+            home.supplyRoot = true;
+            home.mastilRoadHub = true;
+            home.mastilSideStart = true;
+            home.fortifiedUntil = Math.max(home.fortifiedUntil || 0, performance.now() + 18000);
           }
         } else {
           const campaignStartRatio = currentWave <= 1 ? 0.86 : 0.72;
@@ -7479,6 +7495,7 @@
       enemyTowers: currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction).length,
       neutralTowers: currentTowers.filter((tower) => tower.faction === neutralFaction).length,
       castleSites: currentTowers.filter((tower) => tower.mastilCastleSite).length,
+      sideStarts: currentTowers.filter((tower) => tower.mastilSideStart).length,
       activeBosses: currentTowers.filter((tower) => tower.boss).length,
       roadHubs: currentTowers.filter((tower) => tower.mastilRoadHub).length,
       formations: battleFormations.size,

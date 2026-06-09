@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.38
+        // Game version information - Update auf 2.6.39
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 38,
+    patch: 39,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.39": [
+        "Gefechtsgrößen wirken stärker im echten Spiel: Standard, Groß und Kriegskarte enthalten mehr Orte",
+        "Kriegskarte und Reichskrieg starten mit passenden seitlichen Vorburgen, die an das Straßennetz angebunden sind",
+        "Gefechtsvorschau und echte Kartenlogik wurden synchronisiert, damit ausgewählte Größe und Startstellung übereinstimmen"
+    ],
     "2.6.38": [
         "Hauptmenü ergonomisch verbessert: die drei wichtigsten Aktionen erscheinen früher und sind im Kriegstisch schneller erreichbar",
         "Menü-Karten zeigen jetzt dynamische Feldzug- und Gefechtsdaten direkt am Button",
