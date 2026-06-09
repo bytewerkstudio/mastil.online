@@ -111,7 +111,6 @@ namespace Mastil
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 1;
             CreateTextures();
-            CreateStyles();
             CreateRegions();
         }
 
@@ -131,6 +130,11 @@ namespace Mastil
 
         private void OnGUI()
         {
+            if (titleStyle == null)
+            {
+                CreateStyles();
+            }
+
             float scale = Mathf.Min(Screen.width / (float)BaseScreenWidth, Screen.height / (float)BaseScreenHeight);
             scale = Mathf.Clamp(scale, 0.72f, 1.25f);
             GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
