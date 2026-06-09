@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.34
+        // Game version information - Update auf 2.6.35
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 34,
+    patch: 35,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,12 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.35": [
+        "Hauptmenü weiter zum MASTIL-Kartentisch ausgebaut: neuer Kommandotisch, dynamische Frontdaten und stimmigere Befehlsoptik",
+        "Türme und Schlösser zeigen Upgrade-Stufen deutlicher mit Mauern, Bannern, Stützpfeilern, Zitadellenringen und Burgstandort-Details",
+        "Legenden- und Credits-Fenster erhalten ruhigere Leseflächen und größere Scrollbereiche",
+        "Canvas-Hintergrund hat jetzt eine dunkle Kartenbasis, damit beim Laden oder Wechseln keine weiße Fläche durchscheint"
+    ],
     "2.6.34": [
         "Neue Angriffsprognose auf der Karte: empfohlene Route, Zielbewertung, Chance, Truppenmenge und taktischer Grund werden direkt am Schlachtfeld angezeigt",
         "Angriffs- und Plan-Befehle zeigen jetzt klarere Zielinformationen, damit Entscheidungen schneller und verständlicher werden"

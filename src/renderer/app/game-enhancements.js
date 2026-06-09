@@ -1928,6 +1928,8 @@
       ctx.fill();
     }
 
+    drawTowerUpgradeArchitecture(tower, width, height, mainW, mainH, base, faction, level, visualTier);
+
     if (level >= 5) {
       ctx.strokeStyle = 'rgba(255, 226, 136, 0.72)';
       ctx.lineWidth = 2;
@@ -1967,6 +1969,139 @@
 
     drawTowerRoleDetails(tower, width, height, base);
     drawTowerBadges(tower, width, height, level);
+    ctx.restore();
+  }
+
+  function drawTowerUpgradeArchitecture(tower, width, height, mainW, mainH, base, faction, level, visualTier) {
+    const stoneLight = shade(base, faction === 'neutral' ? 42 : 76);
+    const stoneDark = shade(base, -42);
+    const gold = '#f1cf6b';
+
+    ctx.save();
+    ctx.shadowBlur = 0;
+
+    if (tower.mastilCastleSite) {
+      ctx.strokeStyle = 'rgba(244, 222, 158, 0.34)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-width * 0.72, height * 0.42);
+      ctx.lineTo(-width * 0.54, height * 0.2);
+      ctx.lineTo(-width * 0.32, height * 0.28);
+      ctx.moveTo(width * 0.72, height * 0.42);
+      ctx.lineTo(width * 0.54, height * 0.2);
+      ctx.lineTo(width * 0.32, height * 0.28);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(35, 22, 14, 0.68)';
+      for (const side of [-1, 1]) {
+        roundRect(ctx, side * width * 0.58 - 6, height * 0.24, 12, 18, 3);
+        ctx.fill();
+      }
+    }
+
+    if (tower.mastilRoadHub) {
+      ctx.strokeStyle = 'rgba(244, 222, 158, 0.28)';
+      ctx.lineWidth = 2;
+      for (const angle of [-0.72, -0.26, 0.34]) {
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * width * 0.46, height * 0.38 + Math.sin(angle) * 8);
+        ctx.lineTo(Math.cos(angle) * width * 0.86, height * 0.56 + Math.sin(angle) * 13);
+        ctx.stroke();
+      }
+    }
+
+    if (level >= 2) {
+      ctx.strokeStyle = rgba(stoneLight, 0.42);
+      ctx.lineWidth = 1.5;
+      for (let row = 0; row < Math.min(3, level); row += 1) {
+        const y = -mainH * 0.42 + row * mainH * 0.21;
+        ctx.beginPath();
+        ctx.moveTo(-mainW * 0.42, y);
+        ctx.lineTo(mainW * 0.42, y);
+        ctx.stroke();
+      }
+
+      const bannerColor = faction === 'player' ? gold : faction === 'neutral' ? '#d7c7a7' : shade(base, 48);
+      ctx.fillStyle = bannerColor;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(side * mainW * 0.26, -mainH * 0.25);
+        ctx.lineTo(side * mainW * 0.38, -mainH * 0.19);
+        ctx.lineTo(side * mainW * 0.32, mainH * 0.08);
+        ctx.lineTo(side * mainW * 0.22, mainH * 0.02);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    if (level >= 3) {
+      ctx.fillStyle = rgba(stoneDark, 0.7);
+      for (const side of [-1, 1]) {
+        roundRect(ctx, side * mainW * 0.52 - (side > 0 ? 0 : 10), -mainH * 0.38, 10, mainH * 0.66, 4);
+        ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(255, 238, 190, 0.2)';
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 4; i += 1) {
+        const x = -mainW * 0.34 + i * mainW * 0.23;
+        ctx.beginPath();
+        ctx.moveTo(x, -mainH * 0.52);
+        ctx.lineTo(x + mainW * 0.08, -mainH * 0.44);
+        ctx.stroke();
+      }
+    }
+
+    if (level >= 4) {
+      const braceGradient = ctx.createLinearGradient(-mainW, -mainH * 0.2, mainW, mainH * 0.32);
+      braceGradient.addColorStop(0, rgba(stoneLight, 0.62));
+      braceGradient.addColorStop(1, rgba(stoneDark, 0.78));
+      ctx.fillStyle = braceGradient;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(side * mainW * 0.44, -mainH * 0.5);
+        ctx.lineTo(side * mainW * 0.68, -mainH * 0.34);
+        ctx.lineTo(side * mainW * 0.6, mainH * 0.32);
+        ctx.lineTo(side * mainW * 0.38, mainH * 0.22);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.fillStyle = 'rgba(255, 238, 190, 0.78)';
+      for (const side of [-1, 1]) {
+        for (let row = 0; row < 2; row += 1) {
+          roundRect(ctx, side * mainW * 0.23 - 3, -mainH * 0.46 + row * mainH * 0.2, 6, 11, 3);
+          ctx.fill();
+        }
+      }
+    }
+
+    if (level >= 5) {
+      ctx.strokeStyle = rgba(gold, 0.66);
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.arc(0, mainH * 0.2, mainW * 0.22, Math.PI * 1.06, Math.PI * 1.94);
+      ctx.stroke();
+
+      ctx.fillStyle = rgba(gold, 0.86);
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(side * mainW * 0.2, -mainH * 0.56);
+        ctx.lineTo(side * mainW * 0.28, -mainH * 0.46);
+        ctx.lineTo(side * mainW * 0.2, -mainH * 0.36);
+        ctx.lineTo(side * mainW * 0.12, -mainH * 0.46);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    if (visualTier >= 4) {
+      ctx.strokeStyle = 'rgba(255, 242, 191, 0.42)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-mainW * 0.3, -mainH * 0.62);
+      ctx.quadraticCurveTo(0, -mainH * 0.76, mainW * 0.3, -mainH * 0.62);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 

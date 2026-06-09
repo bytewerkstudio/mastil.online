@@ -786,6 +786,11 @@
     const briefingWave = byId('mastil-menu-briefing-wave');
     const briefingBoss = byId('mastil-menu-briefing-boss');
     const briefingPlan = byId('mastil-menu-briefing-plan');
+    const commandTitle = byId('mastil-menu-command-title');
+    const commandCopy = byId('mastil-menu-command-copy');
+    const commandRoute = byId('mastil-menu-command-route');
+    const commandBoss = byId('mastil-menu-command-boss');
+    const commandSkirmish = byId('mastil-menu-command-skirmish');
     const saved = readSkirmishConfig();
     const savedRegion = getRegionById(saved.mapId);
     const savedSize = SKIRMISH_SIZES[saved.size] || SKIRMISH_SIZES.standard;
@@ -804,6 +809,11 @@
     if (briefingWave) briefingWave.textContent = `Wellen ${region.waves}`;
     if (briefingBoss) briefingBoss.textContent = `Boss: ${region.boss}`;
     if (briefingPlan) briefingPlan.textContent = `${savedScenario.label}, ${savedDifficulty.label}`;
+    if (commandTitle) commandTitle.textContent = `${region.title} sichern`;
+    if (commandCopy) commandCopy.textContent = MENU_BRIEFINGS[region.id] || 'Lies die Wege, sammle Reserven und führe Angriffe nur mit klarem Ziel.';
+    if (commandRoute) commandRoute.textContent = `Route: Wellen ${region.waves}`;
+    if (commandBoss) commandBoss.textContent = `Bossziel: ${region.boss}`;
+    if (commandSkirmish) commandSkirmish.textContent = `Gefecht: ${savedScenario.label} | ${savedDifficulty.label}`;
     if (footer) footer.textContent = state.licenseActive
       ? 'Vollversion: alle Wellen freigeschaltet'
       : 'Demo aktiv: Kampagne frei bis Welle 5';
@@ -873,8 +883,8 @@
         <div class="mastil-menu-titleline">
           <div>
             <span>Kriegszentrale</span>
-            <strong>Hauptquartier von MASTIL</strong>
-            <p>Wähle deinen nächsten Befehl: Kampagne, Gefecht, Online-Duell, Weltkarte oder Archiv. Alles führt über dieselbe Kriegszentrale.</p>
+            <strong>Kartentisch von MASTIL</strong>
+            <p>Plane deinen Feldzug wie an einem echten Kommandotisch: Front lesen, Reich wählen, Gefecht trainieren und dann mit klaren Befehlen in die Karte gehen.</p>
           </div>
           <div class="mastil-menu-seal" aria-hidden="true">
             <img src="../../assets/branding/mastil-logo.png" alt="">
@@ -915,6 +925,36 @@
         menu.appendChild(briefing);
       } else {
         menu.prepend(briefing);
+      }
+    }
+
+    if (!menu.querySelector('.mastil-menu-command-table')) {
+      const commandTable = document.createElement('section');
+      commandTable.className = 'mastil-menu-command-table';
+      commandTable.setAttribute('aria-label', 'Kommandotisch');
+      commandTable.innerHTML = `
+        <div class="mastil-command-table-map" aria-hidden="true">
+          <span class="mastil-table-route"></span>
+          <i></i><i></i><i></i><i></i>
+        </div>
+        <div class="mastil-command-table-copy">
+          <span>Befehlsrat</span>
+          <strong id="mastil-menu-command-title">Front lesen, dann befehlen</strong>
+          <p id="mastil-menu-command-copy">Nutze die Kampagne für Fortschritt, den Gefechtsmodus zum Trainieren und die Weltkarte, um Bossfronten vorab zu planen.</p>
+        </div>
+        <div class="mastil-command-table-orders" aria-label="Schnellstatus">
+          <small id="mastil-menu-command-route">Route: Wellen 1-5</small>
+          <small id="mastil-menu-command-boss">Bossziel: Grenzwacht Roderich</small>
+          <small id="mastil-menu-command-skirmish">Gefecht: Training</small>
+        </div>
+      `;
+      const briefing = menu.querySelector('.mastil-menu-briefing');
+      if (briefing && briefing.nextSibling) {
+        menu.insertBefore(commandTable, briefing.nextSibling);
+      } else if (briefing) {
+        menu.appendChild(commandTable);
+      } else {
+        menu.prepend(commandTable);
       }
     }
 
