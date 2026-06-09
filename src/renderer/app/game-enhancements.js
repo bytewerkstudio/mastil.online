@@ -502,6 +502,10 @@
       title: 'Kriegsrat',
       detail: 'Drei taktische Befehle in einer Partie geführt.'
     },
+    firstReserve: {
+      title: 'Marschbefehl',
+      detail: 'Erste Reserve an die Front geschickt.'
+    },
     grandOffensive: {
       title: 'Großer Heerzug',
       detail: 'Ersten koordinierten Frontalangriff befohlen.'
@@ -721,7 +725,8 @@
     enemyOrders: 0,
     veterans: 0,
     contracts: 0,
-    convoys: 0
+    convoys: 0,
+    reserves: 0
   };
   const enemyCommandState = {
     readyAt: new Map(),
@@ -1082,6 +1087,7 @@
     if (key === 'assault') return 14000;
     if (key === 'flank') return 18000;
     if (key === 'rally') return 11000;
+    if (key === 'reserve') return 15500;
     if (key === 'siege') return 22000;
     if (key === 'ability') return getFactionTrait().cooldown;
     return 1;
@@ -3386,6 +3392,7 @@
       matchStats.incidentFailures * 120 +
       matchStats.contracts * 190 +
       matchStats.convoys * 130 +
+      matchStats.reserves * 105 +
       Math.round(matchStats.maxMorale * 8) +
       Math.round(computeSupplyState().ratio * 220) +
       matchAchievements.size * 420 +
@@ -3450,6 +3457,7 @@
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
         <span><strong>${matchStats.contracts}</strong> Aufträge</span>
         <span><strong>${matchStats.convoys}</strong> Konvois</span>
+        <span><strong>${matchStats.reserves}</strong> Reserven</span>
         <span><strong>${matchStats.veterans}</strong> Veteranenrang</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
         <span><strong>${unlockedAchievements.size}/${TOTAL_ACHIEVEMENTS}</strong> Auszeichnungen</span>
@@ -3587,6 +3595,7 @@
     matchStats.veterans = 0;
     matchStats.contracts = 0;
     matchStats.convoys = 0;
+    matchStats.reserves = 0;
     commandCooldowns.clear();
     edictState.pending = false;
     edictState.nextWave = 0;
@@ -4941,6 +4950,9 @@
     if (selectedPressure >= 0.78 && !fortified && currentGold >= getFortifyCost(selected)) {
       return 'Front heiß: diesen Turm befestigen und Reserven heranziehen.';
     }
+    if (selectedPressure >= 0.58 && own.length >= 3 && getReservePlan().ready) {
+      return 'Front heiß: Reservebefehl zieht Truppen aus hinteren Türmen nach.';
+    }
     if (selectedPressure >= 0.58 && enemy.length && currentGold >= getSiegeCost(selected)) {
       return 'Feinddruck sichtbar: Belagerung schwächt den nächsten Gegner.';
     }
@@ -4969,7 +4981,7 @@
       return 'Ausbau bereit: dieser Turm kann stärker werden.';
     }
     if (own.length >= 3 && enemy.length && selected.units < selected.maxUnits * 0.32) {
-      return 'Reserveturm schwach: Sammeln bündelt Truppen an der Front.';
+      return 'Frontposten schwach: Reserve oder Sammeln bündelt Truppen an der Linie.';
     }
     if (own.length >= 3 && enemy.length && own.some((tower) => tower.units > tower.maxUnits * 0.55)) {
       return 'Mehrere Türme bereit: Frontangriff kann die Linie brechen.';
@@ -5924,9 +5936,90 @@
     if (matchStats.commands >= 3) {
       unlockAchievement('tacticalCommander');
     }
-    if ((matchStats.plans || 0) + (matchStats.flanks || 0) + matchStats.sieges >= 5) {
+    if ((matchStats.plans || 0) + (matchStats.flanks || 0) + (matchStats.reserves || 0) + matchStats.sieges >= 5) {
       unlockAchievement('masterTactician');
     }
+  }
+
+  function getReservePlan() {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const own = getPlayerTowers().filter((tower) => tower && tower.faction === playerFaction);
+    const enemy = getEnemyTowers();
+    if (own.length < 2) {
+      return { ready: false, reason: 'Reserve braucht mindestens zwei eigene Türme.', own, sources: [], target: null, sentTotal: 0 };
+    }
+
+    const supply = computeSupplyState(own);
+    const front = computeFrontPressure(own, enemy);
+    const selected = safe(() => selectedTower && selectedTower.faction === playerFaction ? selectedTower : null, null);
+    const target = selected && (selected.frontPressure >= 0.26 || selected.units < selected.maxUnits * 0.58)
+      ? selected
+      : front.hottest || own
+        .map((tower) => ({
+          tower,
+          score:
+            (tower.maxUnits - tower.units) +
+            (tower.frontPressure || 0) * 22 +
+            (!tower.supplyLinked ? 9 : 0) +
+            ((tower.terrain === 'keep' || tower.mastilCastleSite) ? 4 : 0)
+        }))
+        .sort((a, b) => b.score - a.score)[0]?.tower || null;
+
+    if (!target) {
+      return { ready: false, reason: 'Kein Frontziel für Reserven gefunden.', own, sources: [], target: null, sentTotal: 0 };
+    }
+
+    const routeState = computeRouteControlState(safe(() => towers, own));
+    const routeBonus = routeState.secured >= Math.min(3, routeState.total || 3) ? 0.04 : 0;
+    const sources = own
+      .filter((source) => source !== target && source.units >= Math.max(6, source.maxUnits * 0.32))
+      .map((source) => {
+        const distance = Math.hypot(source.x - target.x, source.y - target.y);
+        const roadScore = source.terrain === 'road' || source.mastilRoadHub ? 12 : 0;
+        const castleScore = source.terrain === 'keep' || source.mastilCastleSite ? 7 : 0;
+        const reserveStrength = Math.max(0, source.units - source.maxUnits * 0.28);
+        return {
+          source,
+          distance,
+          score:
+            reserveStrength +
+            (source.supplyLinked ? 12 : 0) +
+            roadScore +
+            castleScore -
+            (source.frontPressure || 0) * 15 -
+            distance / 105
+        };
+      })
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, Math.min(3, Math.max(1, own.length - 1)));
+
+    let sentTotal = 0;
+    const shipments = sources
+      .map((entry) => {
+        const source = entry.source;
+        const reserveFloor = Math.max(2, Math.floor(source.maxUnits * 0.24));
+        const available = Math.max(0, Math.floor(source.units - reserveFloor));
+        const roadRatio = source.terrain === 'road' || source.mastilRoadHub || target.supplyLinked ? 0.04 : 0;
+        const pressureRatio = target.frontPressure >= 0.72 ? 0.04 : target.frontPressure >= 0.46 ? 0.02 : 0;
+        const ratio = 0.18 + roadRatio + pressureRatio + routeBonus;
+        const amount = Math.min(available, Math.max(1, Math.floor(source.units * ratio)));
+        sentTotal += Math.max(0, amount);
+        return { source, amount };
+      })
+      .filter((entry) => entry.amount > 0);
+
+    return {
+      ready: shipments.length > 0 && sentTotal > 0,
+      reason: shipments.length ? `${shipments.length} Reserveposten bereit.` : 'Keine hinteren Türme mit entbehrlichen Truppen.',
+      own,
+      sources: shipments,
+      target,
+      sentTotal,
+      supply,
+      front,
+      routeState
+    };
   }
 
   function getNearestTargetFor(source, candidates) {
@@ -6260,6 +6353,44 @@
     recordTacticalCommand(`Sammelbefehl: ${sentTotal} Reserven`, 'defense');
     spawnEffect(target.x, target.y, 'fortify', { color: '#8fc3f0', text: `+${sentTotal}`, duration: 1150, size: 1.05 });
     showEnhancementNotice(`Sammelbefehl: ${sentTotal} Reserven zum ${getTowerTierName(target.level)}.`);
+    playSound('select');
+  }
+
+  function sendReserveColumn() {
+    if (!isCommandReady('reserve', getCommandCooldownMs('reserve'), 'Reserve')) return;
+
+    const plan = getReservePlan();
+    if (!plan.ready || !plan.target) {
+      commandCooldowns.delete('reserve');
+      showEnhancementNotice(plan.reason || 'Keine Reserven bereit.');
+      playSound('error');
+      return;
+    }
+
+    plan.sources.forEach(({ source, amount }, index) => {
+      safe(() => sendUnitsFromTower(source, plan.target, amount));
+      spawnEffect(source.x, source.y, 'attack', {
+        color: colorForFaction(source.faction),
+        text: index === 0 ? 'Reserve' : `-${amount}`,
+        duration: 900,
+        size: 0.88
+      });
+    });
+
+    selectedTower = plan.target;
+    if (plan.target.frontPressure >= 0.64) {
+      plan.target.fortifiedUntil = Math.max(plan.target.fortifiedUntil || 0, performance.now() + 5400);
+    }
+    matchStats.reserves += 1;
+    recordTacticalCommand(`Reserve: ${plan.sentTotal} Truppen an die Front`, 'supply');
+    unlockAchievement('firstReserve', { tower: plan.target });
+    spawnEffect(plan.target.x, plan.target.y, 'fortify', {
+      color: '#8fc3f0',
+      text: `+${plan.sentTotal}`,
+      duration: 1250,
+      size: 1.02
+    });
+    showEnhancementNotice(`Reserve: ${plan.sentTotal} Truppen marschieren zum ${getTowerTierName(plan.target.level)}.`);
     playSound('select');
   }
 
@@ -6869,6 +7000,7 @@
       <button type="button" data-action="assault" data-cooldown-key="assault" title="Mehrere eigene Türme greifen koordinierte Ziele an"><span class="mastil-command-icon mastil-icon-assault" aria-hidden="true"></span><span>Front</span><small></small></button>
       <button type="button" data-action="flank" data-cooldown-key="flank" title="Mehrere Türme greifen ein markiertes Ziel von der Seite an"><span class="mastil-command-icon mastil-icon-flank" aria-hidden="true"></span><span>Flanke</span><small></small></button>
       <button type="button" data-action="rally" data-cooldown-key="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span><small></small></button>
+      <button type="button" data-action="reserve" data-cooldown-key="reserve" title="Schickt Reserveposten aus hinteren Türmen an die Front"><span class="mastil-command-icon mastil-icon-reserve" aria-hidden="true"></span><span>Reserve</span><small></small></button>
       <button type="button" data-action="siege" data-cooldown-key="siege" title="Belagert einen starken nahen Feindposten und schwächt seine Verteidigung"><span class="mastil-command-icon mastil-icon-siege" aria-hidden="true"></span><span>Belagern</span><small></small></button>
       <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span><small></small></button>
       <button type="button" data-action="specialize" title="Wechselt die Rolle des gewählten Turms"><span class="mastil-command-icon mastil-icon-specialize" aria-hidden="true"></span><span>Gilde</span><small></small></button>
@@ -6887,6 +7019,7 @@
       if (action === 'assault') coordinatedAssault();
       if (action === 'flank') flankingStrike();
       if (action === 'rally') rallyToSelectedTower();
+      if (action === 'reserve') sendReserveColumn();
       if (action === 'siege') launchSiegeStrike();
       if (action === 'upgrade') upgradeSelectedTower();
       if (action === 'specialize') specializeSelectedTower();
@@ -6974,6 +7107,14 @@
       rallyButton.title = ready
         ? 'Sammelt Reserven am gewählten oder schwächsten eigenen Turm.'
         : 'Sammeln braucht mindestens zwei eigene Türme und einen Turm mit Platz.';
+    }
+    const reserveButton = controls.querySelector('button[data-action="reserve"]');
+    if (reserveButton) {
+      const plan = getReservePlan();
+      setButtonState(reserveButton, plan.ready ? 'ready' : 'blocked', plan.ready ? `${plan.sentTotal}` : '');
+      reserveButton.title = plan.ready
+        ? `Reserve: ${plan.sentTotal} Truppen von ${plan.sources.length} Turm${plan.sources.length === 1 ? '' : 'en'} zum ${getTowerTierName(plan.target.level)}.`
+        : plan.reason || 'Schickt Reserveposten aus hinteren Türmen an die Front.';
     }
     const upgradeButton = controls.querySelector('button[data-action="upgrade"]');
     if (upgradeButton) {
@@ -7384,7 +7525,7 @@
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
-    maneuvers.textContent = `${matchStats.plans + matchStats.flanks} Manöver`;
+    maneuvers.textContent = `${matchStats.plans + matchStats.flanks + matchStats.reserves} Manöver`;
     moraleStat.textContent = `${Math.round(warMorale)} Moral`;
     eventStat.textContent = `${matchStats.warEvents} Ereign.`;
     spoils.textContent = `${matchStats.spoils} Beute`;
@@ -7518,6 +7659,8 @@
     coordinatedAssault,
     launchSiegeStrike,
     rallyToSelectedTower,
+    sendReserveColumn,
+    getReservePlan,
     activateFactionAbility,
     upgradeSelectedTower,
     specializeSelectedTower,

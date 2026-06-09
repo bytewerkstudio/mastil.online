@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.40
+        // Game version information - Update auf 2.6.41
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 40,
+    patch: 41,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.41": [
+        "Neuer Reservebefehl im Windows-Spiel: hintere Türme schicken gezielt Truppen an bedrohte Frontposten",
+        "Reserve nutzt Frontdruck, Versorgung und gesicherte Wege, statt Truppen zufällig zu verschieben",
+        "Befehlsleiste, Auswertung, Auszeichnung und taktischer Rat wurden um Reserve/Marschbefehl erweitert"
+    ],
     "2.6.40": [
         "Website-Ausrichtung umgestellt: mastil.online ist jetzt die offizielle Windows-Download-Seite statt Browser-Spielportal",
         "Alte Browser-Spielaufrufe fuehren im Web-Build auf einen sauberen Windows-Download-Hinweis",

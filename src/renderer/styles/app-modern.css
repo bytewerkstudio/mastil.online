@@ -2698,9 +2698,9 @@
   transform: translateX(-50%);
   z-index: 1550;
   display: none;
-  grid-template-columns: repeat(12, minmax(58px, 1fr));
+  grid-template-columns: repeat(13, minmax(54px, 1fr));
   gap: 7px;
-  width: min(1040px, calc(100vw - 28px));
+  width: min(1120px, calc(100vw - 28px));
   padding: 8px;
   border: 1px solid rgba(226, 189, 90, 0.38);
   border-radius: 8px;
@@ -3637,6 +3637,21 @@ body:has(#game-container[style*="block"]) #info-panel {
   border: 2px solid #1c1007;
   border-radius: 50%;
   background: transparent;
+}
+
+.mastil-icon-reserve::before {
+  width: 15px;
+  height: 3px;
+  border-radius: 3px;
+  box-shadow: 0 -5px 0 #1c1007, 0 5px 0 #1c1007;
+}
+
+.mastil-icon-reserve::after {
+  width: 7px;
+  height: 7px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: translate(8%, -50%);
+  box-shadow: -11px 0 0 -1px #1c1007;
 }
 
 .mastil-icon-siege::before {
