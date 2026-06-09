@@ -44,13 +44,14 @@ function emptyDir(dir) {
 
 const siteCss = `
   :root {
-    --ink: #100b07;
-    --panel: rgba(18, 12, 8, 0.84);
-    --panel-strong: rgba(8, 6, 5, 0.74);
-    --line: rgba(226, 189, 90, 0.44);
+    --ink: #0b0f11;
+    --panel: rgba(9, 13, 15, 0.88);
+    --panel-strong: rgba(6, 8, 10, 0.82);
+    --line: rgba(226, 189, 90, 0.42);
     --gold: #e2bd5a;
     --gold-bright: #ffe18a;
-    --blue: #8fc3f0;
+    --steel: #8fc3f0;
+    --emerald: #73d6a1;
     --cream: #f4e6bf;
     --muted: rgba(244, 230, 191, 0.72);
   }
@@ -81,8 +82,8 @@ const siteCss = `
     inset: 0;
     z-index: -1;
     background:
-      linear-gradient(90deg, rgba(5, 4, 3, 0.88), rgba(5, 4, 3, 0.36) 52%, rgba(5, 4, 3, 0.82)),
-      radial-gradient(circle at 22% 20%, rgba(226, 189, 90, 0.13), transparent 26rem);
+      linear-gradient(90deg, rgba(4, 7, 9, 0.92), rgba(4, 7, 9, 0.38) 52%, rgba(4, 7, 9, 0.86)),
+      linear-gradient(180deg, rgba(115, 214, 161, 0.08), transparent 42%);
   }
 
   .page {
@@ -121,7 +122,7 @@ const siteCss = `
     padding: 9px 11px;
     border: 1px solid var(--line);
     border-radius: 6px;
-    background: rgba(10, 7, 5, 0.64);
+    background: rgba(7, 12, 14, 0.68);
     color: var(--muted);
     font: 850 12px/1 "Segoe UI", Arial, sans-serif;
   }
@@ -206,6 +207,25 @@ const siteCss = `
     line-height: 1.48;
   }
 
+  .notice {
+    width: min(760px, 100%);
+    display: grid;
+    gap: 7px;
+    padding: 12px 14px;
+    border: 1px solid rgba(115, 214, 161, 0.34);
+    border-radius: 8px;
+    background: rgba(7, 16, 18, 0.72);
+  }
+
+  .notice strong {
+    color: #d9fff0;
+  }
+
+  .notice span {
+    color: var(--muted);
+    line-height: 1.42;
+  }
+
   .actions {
     display: flex;
     flex-wrap: wrap;
@@ -228,7 +248,7 @@ const siteCss = `
 
   .button.secondary {
     color: var(--cream);
-    background: rgba(10, 7, 5, 0.66);
+    background: rgba(8, 15, 18, 0.7);
   }
 
   .cards {
@@ -274,11 +294,17 @@ const siteCss = `
 
 function pageHtml({ legacy = false } = {}) {
   const title = legacy
-    ? 'MASTIL ist jetzt Windows-Download'
-    : 'MASTIL | Windows Download';
+    ? 'MASTIL Browser-Version beendet'
+    : 'MASTIL | Offizieller Windows Download';
   const intro = legacy
-    ? 'Die Browser-Version wird nicht mehr als Spielmodus angeboten. MASTIL wird ab jetzt als fluessiges Windows-Spiel mit Setup-Installer ausgeliefert.'
-    : 'MASTIL wird als Windows-Spiel ausgeliefert. Lade den Setup-Installer herunter, installiere das Spiel und spiele lokal mit besserer Leistung als im Browser.';
+    ? 'Dieser alte Browser-Spiel-Link ist abgeschaltet. MASTIL wird ab jetzt als fluessiges Windows-Spiel mit Setup-Installer ausgeliefert.'
+    : 'MASTIL ist auf mastil.online kein Browser-Spiel mehr. Die offizielle Version ist die Windows-App: herunterladen, installieren und lokal fluessig spielen.';
+  const noticeTitle = legacy
+    ? 'Browser-Spiel nicht mehr verfuegbar'
+    : 'Offizieller Fokus: Windows-Download';
+  const noticeCopy = legacy
+    ? 'GitHub Pages zeigt hier nur noch den Download-Hinweis. Installiere MASTIL unter Windows, um die aktuelle Version zu spielen.'
+    : 'Die Website hostet Beschreibung, Branding und den Release-Link. Das Spiel selbst wird als Windows-Setup bereitgestellt, nicht als Web-Spiel.';
 
   return `<!doctype html>
 <html lang="de">
@@ -298,14 +324,19 @@ function pageHtml({ legacy = false } = {}) {
         <img src="${legacy ? '../../assets/branding/mastil-logo.png' : './assets/branding/mastil-logo.png'}" alt="MASTIL">
         <span>Bytewerk Studio</span>
       </div>
-      <div class="status">Offizielle Website: mastil.online</div>
+      <div class="status">Offizielle Website: mastil.online | Windows-Download</div>
     </nav>
 
     <main>
       <section class="hero">
-        <div class="kicker">Windows-EXE statt Browser-Spiel</div>
+        <div class="kicker">Nur noch Windows-Version</div>
         <h1>MASTIL</h1>
         <p class="copy">${intro}</p>
+      </section>
+
+      <section class="notice" aria-label="Website Status">
+        <strong>${noticeTitle}</strong>
+        <span>${noticeCopy}</span>
       </section>
 
       <section class="download-panel" aria-label="Windows Download">
@@ -317,16 +348,16 @@ function pageHtml({ legacy = false } = {}) {
           <code>SHA-256:<br>${installerSha256}</code>
         </div>
         <div class="actions">
-          <a class="button" href="${downloadUrl}">Windows Setup herunterladen</a>
-          <a class="button secondary" href="${releasePageUrl}">Release-Seite oeffnen</a>
+          <a class="button" href="${downloadUrl}">Setup fuer Windows herunterladen</a>
+          <a class="button secondary" href="${releasePageUrl}">Alle Releases ansehen</a>
         </div>
       </section>
 
       <section class="cards" aria-label="MASTIL Eigenschaften">
-        <article class="card"><span>Windows</span><strong>Fluessiger spielen</strong><small>Der Fokus liegt auf der Desktop-Version statt auf GitHub-Pages-Browserbetrieb.</small></article>
+        <article class="card"><span>Windows-App</span><strong>Direkt installiert</strong><small>MASTIL startet als eigene EXE statt im Browserfenster.</small></article>
+        <article class="card"><span>Leistung</span><strong>Fluessiger spielen</strong><small>Die Desktop-Version ist der feste Fokus fuer Kampf, Karten und Effekte.</small></article>
         <article class="card"><span>Offline</span><strong>Gegen KI</strong><small>Kampagne und Gefechtsmodus laufen lokal auf dem Rechner.</small></article>
-        <article class="card"><span>Lizenz</span><strong>Demo bis Welle 5</strong><small>Die Vollversion wird ueber Lizenzaktivierung freigeschaltet.</small></article>
-        <article class="card"><span>Online</span><strong>Server spaeter</strong><small>1v1 bleibt fuer den separaten MASTIL-Server vorbereitet, nicht fuer GitHub Pages.</small></article>
+        <article class="card"><span>Installer</span><strong>Sauber verwaltet</strong><small>Setup, Verknuepfungen und Deinstallation bleiben geordnet.</small></article>
       </section>
     </main>
 
@@ -352,6 +383,7 @@ writeFile(path.join(outDir, 'MASTIL-WEBSITE.txt'), `MASTIL Windows Download Webs
 
 Diese GitHub-Pages-Ausgabe ist nur noch die offizielle Download-Seite.
 Das Browser-Spiel wird nicht mehr als oeffentlicher Spielmodus ausgeliefert.
+Alte Spiel-Links zeigen nur noch einen Windows-Download-Hinweis.
 
 Primaerer Download:
 ${downloadUrl}

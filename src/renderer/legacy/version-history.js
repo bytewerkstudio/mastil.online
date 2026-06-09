@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.47
+        // Game version information - Update auf 2.6.48
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 47,
+    patch: 48,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.48": [
+        "mastil.online wurde weiter auf Windows-Download ausgerichtet: kein oeffentliches Browser-Spiel, sondern klare Setup-Seite",
+        "Alte Web-Spieladressen zeigen jetzt deutlicher, dass MASTIL als Windows-App installiert werden soll",
+        "Website-Texte, Download-Hinweise und Projektbeschreibung wurden auf den fluessigen Windows-Fokus bereinigt"
+    ],
     "2.6.47": [
         "KI-Reaktion erweitert: Feindkommandanten werden nach starken Befehlsketten wachsam und bereiten schneller Gegenbefehle vor",
         "Das Feindkommando-Panel zeigt diese Wachsamkeit mit eigener Meldung, damit Spieler die Antwort erkennen koennen",

@@ -35,9 +35,11 @@ Stripe can stay empty during local development. The Admin window can create test
 Run `npm run build:web` to create `dist-web`. This folder is the official `mastil.online` website for the Windows download.
 
 - The website no longer offers the browser game as the public play mode.
+- `mastil.online` is a Windows download page, not a browser game portal.
 - The primary button points to the GitHub Releases download for `MASTIL-Setup-3.0.0.exe`.
 - Large installer files are published as GitHub Release assets, not committed to the repository.
-- Old browser-game URLs under `src/renderer/index.html` show a clean Windows-download notice.
+- Old browser-game URLs under `src/renderer/index.html` show only a clean Windows-download notice.
+- The actual game files are kept for the Windows app and are not published as the public GitHub Pages game.
 - Online 1v1, buying and license activation still need a public MASTIL backend later.
 
 The included GitHub Pages workflow builds `dist-web` automatically when the project is pushed to `main` or `master`.
