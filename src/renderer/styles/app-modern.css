@@ -13,6 +13,146 @@
   transform: translateZ(0);
 }
 
+.royal-welcome {
+  top: 78px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(560px, calc(100vw - 28px)) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 46px;
+  gap: 7px 12px;
+  align-items: center;
+  padding: 14px 14px 12px 16px !important;
+  color: #fff2bf !important;
+  text-align: left !important;
+  pointer-events: auto !important;
+  border: 1px solid rgba(226, 189, 90, 0.58) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(145deg, rgba(32, 21, 13, 0.94), rgba(9, 7, 5, 0.9)),
+    url("../../../assets/backgrounds/panel-bg.png") center/cover no-repeat !important;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.48), inset 0 0 34px rgba(226, 189, 90, 0.08) !important;
+  opacity: 0;
+  animation: mastilWelcomeIn 260ms ease forwards, mastilWelcomeOut 320ms ease 3.9s forwards !important;
+}
+
+.royal-welcome.leaving {
+  animation: mastilWelcomeOut 220ms ease forwards !important;
+}
+
+.royal-welcome::before,
+.royal-welcome::after {
+  display: none !important;
+}
+
+.royal-welcome-title,
+.royal-welcome-message,
+.royal-welcome-signature,
+.royal-welcome-progress {
+  grid-column: 1;
+}
+
+.royal-welcome-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0 !important;
+  color: #ffe18a !important;
+  font: 950 17px/1.14 Cinzel, Georgia, serif !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+.royal-welcome .mastil-inline-icon {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.royal-welcome-message {
+  margin: 0 !important;
+  color: rgba(244, 230, 191, 0.86) !important;
+  font: 750 13px/1.38 "Segoe UI", sans-serif !important;
+  text-shadow: none !important;
+}
+
+.royal-welcome-signature {
+  margin: 0 !important;
+  color: rgba(142, 195, 240, 0.92) !important;
+  font: 900 12px/1.28 "Segoe UI", sans-serif !important;
+  text-shadow: none !important;
+}
+
+.royal-seal {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  justify-self: center;
+  width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  border: 1px solid rgba(255, 242, 191, 0.48);
+  background: radial-gradient(circle at 36% 28%, #ffe18a, #a56c24) !important;
+}
+
+.royal-seal::before {
+  content: "" !important;
+  width: 24px;
+  height: 24px;
+  background: #2a180b;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M45 4l15 15-8 3-21 21 7 7-8 8-7-7-10 10-6-6 10-10-7-7 8-8 7 7 21-21 3-12zM8 8l10 4 28 28-8 8L10 20 8 8z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M45 4l15 15-8 3-21 21 7 7-8 8-7-7-10 10-6-6 10-10-7-7 8-8 7 7 21-21 3-12zM8 8l10 4 28 28-8 8L10 20 8 8z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.royal-welcome-close {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: #fff2bf;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 50%;
+  background: rgba(8, 5, 4, 0.6);
+  cursor: pointer;
+  font: 900 16px/1 "Segoe UI", sans-serif;
+}
+
+.royal-welcome-progress {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.royal-welcome-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #8fc3f0, #ffe18a);
+  animation: mastilWelcomeProgress 4s linear forwards;
+}
+
+@keyframes mastilWelcomeIn {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes mastilWelcomeOut {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, -12px); }
+}
+
+@keyframes mastilWelcomeProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
 .mastil-music-btn,
 .mastil-sfx-btn {
   display: inline-grid !important;

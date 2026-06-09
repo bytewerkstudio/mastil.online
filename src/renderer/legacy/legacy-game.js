@@ -855,26 +855,38 @@
             
             // Personalisierte Anrede basierend auf dem Namen und der Fraktion
             let title = `${factionIcon} ${factionTitle}`;
-            let message = `Sei willkommen, ${playerName ? 'Majestät ' + playerName : 'Eure Majestät'}!<br>${factionDesc}<br>Erobert Türme, erweitert Euer Königreich und beweist Eure strategische Überlegenheit.`;
-            let signature = 'Auf Euren Erfolg!';
+            let message = `${playerName ? 'Majestät ' + playerName : 'Eure Majestät'}, ${factionDesc}`;
+            let signature = window.MASTIL_MATCH_CONFIG && window.MASTIL_MATCH_CONFIG.mode === 'skirmish'
+                ? 'Gefechtsziel: Wege sichern, Front brechen, Burgen halten.'
+                : 'Kampagnenziel: Türme erobern, Wellen brechen, Boss besiegen.';
             
             // Füge Inhalte hinzu
             welcome.innerHTML = `
+                <button class="royal-welcome-close" type="button" aria-label="Schließen">×</button>
                 <div class="royal-welcome-title">${title}</div>
                 <div class="royal-welcome-message">${message}</div>
                 <div class="royal-welcome-signature">${signature}</div>
+                <div class="royal-welcome-progress" aria-hidden="true"><span></span></div>
                 <div class="royal-seal"></div>
             `;
             
             // Füge zum UI hinzu
             document.body.appendChild(welcome);
+            const closeButton = welcome.querySelector('.royal-welcome-close');
+            const dismissWelcome = () => {
+                welcome.classList.add('leaving');
+                setTimeout(() => {
+                    if (welcome.parentNode) {
+                        welcome.remove();
+                    }
+                }, 240);
+            };
+            if (closeButton) {
+                closeButton.addEventListener('click', dismissWelcome);
+            }
             
-            // Entferne nach 6 Sekunden (Animation dauert 5s, 1s Puffer)
-            setTimeout(() => {
-                if (welcome.parentNode) {
-                    welcome.remove();
-                }
-            }, 6000);
+            // Kurz zeigen, aber nicht lange das Spiel verdecken.
+            setTimeout(dismissWelcome, 4200);
         }
         
         // Verbesserte KI-Logik für aggressiveres Verhalten
