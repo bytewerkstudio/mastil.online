@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.32
+        // Game version information - Update auf 2.6.33
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 32,
+    patch: 33,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.33": [
+        "Hauptmenü als MASTIL-Kriegszentrale überarbeitet: Einsatzbriefing, stärkere Startbefehle und klarere Statusanzeige",
+        "Legendenarchiv erweitert: Weltprolog, Spiellehren, Reichsbriefings und bessere Scrollbereiche",
+        "Credits und Archivfenster ergonomischer gestaltet, damit lange Inhalte sauber im Fenster bleiben"
+    ],
     "2.6.32": [
         "Verbessertes UI-Design: Schriftart für 'Wählt Euer Reich:' an Hauptüberschrift angepasst für ein konsistenteres Erscheinungsbild"
     ],
@@ -2324,6 +2329,12 @@ const VERSION_HISTORY = {
             ['Lizenz', 'Demo bis Welle 5, Vollversion 10,99 EUR und Aktivierungsfluss im Spiel.']
         ];
 
+        const MASTIL_WORLD_DOCTRINES = [
+            ['Wege entscheiden', 'Türme sind nicht nur Punkte. Straßen, Kreuzungen und Nachschub bestimmen, ob ein Angriff rechtzeitig ankommt.'],
+            ['Gold braucht Schutz', 'Einkommen ist stark, aber nur mit gehaltenen Märkten und gesicherten Wegen wird daraus ein Sieg.'],
+            ['Bosswellen brechen Linien', 'Alle fünf Wellen prüft ein Boss dein Reich. Reserven und Upgrades zählen dann mehr als blinde Masse.']
+        ];
+
         function compareVersionsDesc(a, b) {
             const pa = a.split('.').map(Number);
             const pb = b.split('.').map(Number);
@@ -2367,12 +2378,23 @@ const VERSION_HISTORY = {
                     <p>${chapter.text}</p>
                 </article>
             `).join('');
+            const doctrines = MASTIL_WORLD_DOCTRINES.map(([title, text]) => `
+                <article>
+                    <span>${title}</span>
+                    <p>${text}</p>
+                </article>
+            `).join('');
 
             return `
                 <section class="mastil-lore-home">
                     <span class="mastil-kicker">Reichsarchiv</span>
                     <h3>Die Welt hinter den Wellen</h3>
-                    <p>MASTIL ist ein Krieg um Wege, Vorräte und alte Schwüre. Jede Fraktion betritt dieselbe Welt mit einer anderen Art zu denken: Albion hält Linien, Solterra drückt nach vorne, Yaxtun liest Muster, Al-Kimiya baut Überlegenheit und Aethelgard verbindet das Reich.</p>
+                    <p>MASTIL ist ein Krieg um Wege, Vorräte und alte Schwüre. Wer nur den nächsten Turm sieht, verliert die Karte. Wer Linien, Märkte und Bossfronten versteht, macht aus kleinen Burgen ein Reich.</p>
+                    <div class="mastil-lore-prologue">
+                        <strong>Die Legende beginnt nach dem Fall der Ersten Zitadelle.</strong>
+                        <p>Fünf Reiche erheben Anspruch auf dieselben alten Straßen. Unter jeder Karte liegen vergessene Banner, zerstörte Handelsringe und Bossfestungen, die nur auf einen schwachen Herrscher warten. Jede Partie ist ein neuer Feldzug durch diese Welt.</p>
+                    </div>
+                    <div class="mastil-doctrine-grid">${doctrines}</div>
                     <div class="mastil-world-lore">${chapters}</div>
                     <div class="mastil-lore-section-head">
                         <span>Reiche wählen</span>
@@ -2414,6 +2436,12 @@ const VERSION_HISTORY = {
                     <strong>${text}</strong>
                 </article>
             `).join('');
+            const commandBriefing = `
+                <section class="mastil-lore-command">
+                    <span>Kommandantenbriefing</span>
+                    <p>${lore.name} gewinnt, wenn du seine Identität ernst nimmst: ${lore.style} Baue zuerst die passende Kartenstruktur, dann greife mit einem Ziel an, nicht aus Gewohnheit.</p>
+                </section>
+            `;
 
             return `
                 <button class="mastil-lore-back" onclick="showLoreHome()">Zurück zum Reichsarchiv</button>
@@ -2432,6 +2460,7 @@ const VERSION_HISTORY = {
                     <div><span>Risiko</span><strong>${lore.risk}</strong></div>
                     <div><span>Boss</span><strong>${lore.boss}</strong></div>
                 </div>
+                ${commandBriefing}
                 <div class="mastil-lore-playbook">${playbook}</div>
                 <div class="mastil-lore-grid">${chapters}</div>
                 <section class="mastil-lore-chronicle">

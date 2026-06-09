@@ -96,70 +96,89 @@
   const START_MENU_ITEMS = {
     campaign: {
       label: 'Kampagne gegen KI',
-      detail: 'Weltkarte, Bosswellen und Reichsfortschritt.',
+      detail: 'Starte vom Weltpfad aus, besiege Bosswellen und sichere Reich um Reich.',
+      command: 'Feldzug starten',
       tone: 'blue',
       rank: 'primary'
     },
     skirmish: {
       label: 'Gefechtsmodus',
-      detail: 'Trainiere Kriege gegen KI mit Karte, Gegnern und Schwierigkeit.',
+      detail: 'Karte, Reichsfarbe, Gegnerzahl und Schwierigkeit frei wählen.',
+      command: 'Krieg üben',
       tone: 'red',
       rank: 'primary'
     },
     online: {
       label: 'Online 1v1',
-      detail: 'Erstelle oder betrete Räume für echte Duelle.',
+      detail: 'Räume erstellen oder betreten, sobald dein MASTIL-Server verbunden ist.',
+      command: 'Duell öffnen',
       tone: 'green',
       rank: 'primary'
     },
     map: {
       label: 'Weltkarte',
       detail: 'Regionen, Bosse und deinen Feldzug ansehen.',
+      command: 'Karte ansehen',
       tone: 'gold',
       rank: 'secondary'
     },
     license: {
       label: 'Lizenz aktivieren',
       detail: 'Vollversion freischalten und Welle 6+ spielen.',
+      command: 'Freischalten',
       tone: 'violet',
       rank: 'secondary'
     },
     buy: {
       label: 'Kaufen 10,99 EUR',
       detail: 'Einmaliger Kauf für die Vollversion.',
+      command: 'Kauf öffnen',
       tone: 'gold',
       rank: 'secondary'
     },
     legends: {
       label: 'Legenden von MASTIL',
-      detail: 'Reiche, Helden, Bosse und Geschichte.',
+      detail: 'Reiche, Helden, Bosse, Spielweise und Ursprung der Welt.',
+      command: 'Archiv',
       tone: 'blue',
       rank: 'secondary'
     },
     options: {
       label: 'Optionen',
       detail: 'Grafik, Audio und Online-Server einstellen.',
+      command: 'Einstellen',
       tone: 'green',
       rank: 'utility'
     },
     highscores: {
       label: 'Highscore-Liste',
       detail: 'Beste Herrscher und erreichte Wellen.',
+      command: 'Rangliste',
       tone: 'gold',
       rank: 'utility'
     },
     progress: {
       label: 'Auszeichnungen',
       detail: 'Erfolge, Ziele und freigeschalteter Ruhm.',
+      command: 'Ruhm',
       tone: 'red',
       rank: 'utility'
     },
     credits: {
       label: 'Credits',
       detail: 'Studio, Versionen und Projektinformationen.',
+      command: 'Projekt',
       tone: 'violet',
       rank: 'utility'
     }
+  };
+
+  const MENU_BRIEFINGS = {
+    startgebiet: 'Sichere zuerst die nahen Wege, nimm neutrale Orte sauber ein und baue eine stabile Linie vor der Grenzwacht.',
+    grenzlande: 'Halte Engpässe, verstärke Kreuzungen und greife nicht einzeln an. Der Eisenvogt bestraft offene Flanken.',
+    wuestenreich: 'Schütze Märkte und lange Straßen. Einkommen gewinnt hier nur, wenn deine Versorgung nicht aufbricht.',
+    nachtfestung: 'Plane langsamer, markiere Ziele und rechne mit Gegenangriffen aus Nebenwegen. Die Nachtfestung lebt von Hinterhalten.',
+    endboss: 'Sammle Reserven, breche Außenburgen und schlage erst dann gegen die Zitadelle. Kaiser Veyron duldet keine halben Angriffe.'
   };
 
   function byId(id) {
@@ -762,6 +781,11 @@
     const skirmish = byId('mastil-menu-skirmish-state');
     const skirmishDetail = byId('mastil-menu-skirmish-detail');
     const footer = byId('mastil-menu-footer-state');
+    const briefingTitle = byId('mastil-menu-briefing-title');
+    const briefingCopy = byId('mastil-menu-briefing-copy');
+    const briefingWave = byId('mastil-menu-briefing-wave');
+    const briefingBoss = byId('mastil-menu-briefing-boss');
+    const briefingPlan = byId('mastil-menu-briefing-plan');
     const saved = readSkirmishConfig();
     const savedRegion = getRegionById(saved.mapId);
     const savedSize = SKIRMISH_SIZES[saved.size] || SKIRMISH_SIZES.standard;
@@ -775,6 +799,11 @@
     if (online) online.textContent = getBackendStatusText();
     if (skirmish) skirmish.textContent = `${savedScenario.label} | ${savedSize.label}`;
     if (skirmishDetail) skirmishDetail.textContent = `${savedRegion.title}, ${saved.opponents} KI, ${savedDifficulty.label}, ${savedPlan.label}`;
+    if (briefingTitle) briefingTitle.textContent = `${region.title}: ${region.style}`;
+    if (briefingCopy) briefingCopy.textContent = MENU_BRIEFINGS[region.id] || region.terrain;
+    if (briefingWave) briefingWave.textContent = `Wellen ${region.waves}`;
+    if (briefingBoss) briefingBoss.textContent = `Boss: ${region.boss}`;
+    if (briefingPlan) briefingPlan.textContent = `${savedScenario.label}, ${savedDifficulty.label}`;
     if (footer) footer.textContent = state.licenseActive
       ? 'Vollversion: alle Wellen freigeschaltet'
       : 'Demo aktiv: Kampagne frei bis Welle 5';
@@ -816,6 +845,7 @@
     button.innerHTML = `
       <span class="mastil-menu-icon mastil-menu-icon-${key}" aria-hidden="true"></span>
       <span class="mastil-menu-copy">
+        <span class="mastil-menu-command">${item.command || 'Öffnen'}</span>
         <span class="button-text">${item.label}</span>
         <small>${item.detail}</small>
       </span>
@@ -842,9 +872,9 @@
       header.innerHTML = `
         <div class="mastil-menu-titleline">
           <div>
-            <span>Kommandozelt</span>
+            <span>Kriegszentrale</span>
             <strong>Hauptquartier von MASTIL</strong>
-            <p>Plane deinen Feldzug, starte ein Gefecht oder öffne Archiv, Weltkarte und Online-Duell direkt aus einer Zentrale.</p>
+            <p>Wähle deinen nächsten Befehl: Kampagne, Gefecht, Online-Duell, Weltkarte oder Archiv. Alles führt über dieselbe Kriegszentrale.</p>
           </div>
           <div class="mastil-menu-seal" aria-hidden="true">
             <img src="../../assets/branding/mastil-logo.png" alt="">
@@ -857,6 +887,35 @@
         </div>
       `;
       menu.prepend(header);
+    }
+
+    if (!menu.querySelector('.mastil-menu-briefing')) {
+      const briefing = document.createElement('section');
+      briefing.className = 'mastil-menu-briefing';
+      briefing.innerHTML = `
+        <div class="mastil-menu-briefing-map" aria-hidden="true">
+          <span></span>
+          <i></i>
+        </div>
+        <div class="mastil-menu-briefing-copy">
+          <span>Nächster Einsatz</span>
+          <strong id="mastil-menu-briefing-title">Startgebiet: Ausgewogen</strong>
+          <p id="mastil-menu-briefing-copy">Sichere zuerst die nahen Wege und baue eine stabile Linie vor der Grenzwacht.</p>
+          <div class="mastil-menu-briefing-tags" aria-label="Einsatzdaten">
+            <small id="mastil-menu-briefing-wave">Wellen 1-5</small>
+            <small id="mastil-menu-briefing-boss">Boss: Grenzwacht Roderich</small>
+            <small id="mastil-menu-briefing-plan">Training, Normal</small>
+          </div>
+        </div>
+      `;
+      const header = menu.querySelector('.mastil-menu-header');
+      if (header && header.nextSibling) {
+        menu.insertBefore(briefing, header.nextSibling);
+      } else if (header) {
+        menu.appendChild(briefing);
+      } else {
+        menu.prepend(briefing);
+      }
     }
 
     if (!menu.querySelector('.mastil-menu-dashboard')) {
