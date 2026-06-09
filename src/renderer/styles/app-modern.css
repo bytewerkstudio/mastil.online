@@ -1340,6 +1340,10 @@
   z-index: 1545;
   display: none;
   width: min(310px, calc(100vw - 32px));
+  max-height: calc(100vh - 178px);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.62) rgba(18, 11, 7, 0.34);
   padding: 12px;
   color: var(--mastil-cream);
   border: 1px solid rgba(226, 189, 90, 0.38);
@@ -1347,7 +1351,22 @@
   background: rgba(17, 10, 7, 0.9);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
   backdrop-filter: none;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+#mastil-objective-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+#mastil-objective-panel::-webkit-scrollbar-track {
+  background: rgba(18, 11, 7, 0.34);
+  border-radius: 999px;
+}
+
+#mastil-objective-panel::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(18, 11, 7, 0.34);
+  border-radius: 999px;
+  background: rgba(226, 189, 90, 0.72);
 }
 
 .mastil-objective-head {
@@ -1409,6 +1428,55 @@
 
 .mastil-condition-panel span {
   font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-morale-panel {
+  --morale-color: #d8c49a;
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid color-mix(in srgb, var(--morale-color) 42%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--morale-color) 18%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(13, 9, 7, 0.18);
+}
+
+.mastil-morale-panel strong {
+  color: color-mix(in srgb, var(--morale-color) 84%, #fff2bf);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-morale-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-morale-panel em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.mastil-morale-panel i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--morale-color), #ffe18a);
+  transition: width 240ms ease;
+}
+
+.mastil-morale-panel.high {
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--morale-color) 16%, transparent);
+}
+
+.mastil-morale-panel.low {
+  border-color: color-mix(in srgb, var(--morale-color) 72%, #ff8a6d);
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--morale-color) 18%, transparent);
 }
 
 .mastil-war-contract {
@@ -1625,6 +1693,10 @@
 
 .mastil-event-assault strong {
   color: #ffc66d;
+}
+
+.mastil-event-morale strong {
+  color: #f6d873;
 }
 
 .mastil-event-site strong {

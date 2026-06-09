@@ -441,6 +441,14 @@
       title: 'Flankenritt',
       detail: 'Ersten Flankenangriff geführt.'
     },
+    firstMoraleSurge: {
+      title: 'Kriegslaune',
+      detail: 'Die Moral des Reiches steigt erstmals über 75.'
+    },
+    lastStand: {
+      title: 'Letztes Aufgebot',
+      detail: 'Bei niedriger Moral eine Notreserve erhalten.'
+    },
     masterTactician: {
       title: 'Feldherr',
       detail: 'Fünf taktische Manöver in einer Partie befohlen.'
@@ -547,7 +555,11 @@
   let lastSupplyWarningAt = 0;
   let lastFrontWarningAt = 0;
   let lastFormationEventAt = 0;
+  let lastMoraleEventAt = 0;
+  let lastMoraleAidAt = 0;
   let formationCounter = 0;
+  let warMorale = 54;
+  let moralePulseTimer = 0;
   let battlefieldParticleKey = '';
   let battlefieldParticles = [];
   const visualEffects = [];
@@ -584,6 +596,9 @@
     sieges: 0,
     plans: 0,
     flanks: 0,
+    moraleSurges: 0,
+    moraleAids: 0,
+    maxMorale: 54,
     enemyOrders: 0,
     veterans: 0
   };
@@ -2464,7 +2479,7 @@
         }
       }
 
-      if (effect.type === 'upgrade' || effect.type === 'capture' || effect.type === 'fortify' || effect.type === 'achievement') {
+      if (effect.type === 'upgrade' || effect.type === 'capture' || effect.type === 'fortify' || effect.type === 'achievement' || effect.type === 'morale') {
         const radius = 18 + ease * 36 * effect.size;
         ctx.strokeStyle = rgba(effect.color, 0.82);
         ctx.lineWidth = effect.type === 'capture' ? 4 : 3;
@@ -2476,11 +2491,12 @@
         ctx.arc(0, 0, radius * 0.62, 0, Math.PI * 2);
         ctx.fill();
 
-        if (effect.type === 'achievement') {
+        if (effect.type === 'achievement' || effect.type === 'morale') {
           ctx.strokeStyle = 'rgba(255, 242, 190, 0.82)';
           ctx.lineWidth = 2;
-          for (let i = 0; i < 10; i += 1) {
-            const angle = (Math.PI * 2 * i) / 10;
+          const rays = effect.type === 'morale' ? 7 : 10;
+          for (let i = 0; i < rays; i += 1) {
+            const angle = (Math.PI * 2 * i) / rays;
             ctx.beginPath();
             ctx.moveTo(Math.cos(angle) * radius * 0.34, Math.sin(angle) * radius * 0.34);
             ctx.lineTo(Math.cos(angle) * radius * 0.82, Math.sin(angle) * radius * 0.82);
@@ -2611,6 +2627,9 @@
       matchStats.fortified * 95 +
       matchStats.spoils * 180 +
       matchStats.sieges * 150 +
+      matchStats.moraleSurges * 160 +
+      matchStats.moraleAids * 85 +
+      Math.round(matchStats.maxMorale * 8) +
       Math.round(computeSupplyState().ratio * 220) +
       matchAchievements.size * 420 +
       currentGold * 2 -
@@ -2667,6 +2686,7 @@
         <span><strong>${matchStats.spoils}</strong> Beute</span>
         <span><strong>${matchStats.sieges}</strong> Belagerungen</span>
         <span><strong>${matchStats.edicts}</strong> Edikte</span>
+        <span><strong>${Math.round(matchStats.maxMorale)}</strong> beste Moral</span>
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
         <span><strong>${matchStats.veterans}</strong> Veteranenrang</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
@@ -2693,7 +2713,11 @@
     lastSupplyWarningAt = 0;
     lastFrontWarningAt = 0;
     lastFormationEventAt = 0;
+    lastMoraleEventAt = 0;
+    lastMoraleAidAt = 0;
     formationCounter = 0;
+    warMorale = 54;
+    moralePulseTimer = 0;
     battleFormations.clear();
     strategicState.pulseTimer = 0;
     strategicState.lastHeldCount = 0;
@@ -2711,6 +2735,11 @@
     matchStats.abilities = 0;
     matchStats.spoils = 0;
     matchStats.sieges = 0;
+    matchStats.plans = 0;
+    matchStats.flanks = 0;
+    matchStats.moraleSurges = 0;
+    matchStats.moraleAids = 0;
+    matchStats.maxMorale = 54;
     matchStats.enemyOrders = 0;
     matchStats.veterans = 0;
     commandCooldowns.clear();
@@ -3093,6 +3122,145 @@
         : 'Keine aktive Feindfront.',
       hottest
     };
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function getMoraleInfo(value = warMorale) {
+    const morale = clamp(Number(value) || 0, 0, 100);
+    if (morale >= 82) {
+      return {
+        title: 'Triumphzug',
+        short: 'Triumph',
+        detail: 'Das Reich marschiert geschlossen. Befehle laden etwas schneller.',
+        color: '#f6d873',
+        ratio: morale / 100
+      };
+    }
+    if (morale >= 66) {
+      return {
+        title: 'Aufwind',
+        short: 'Stark',
+        detail: 'Die Front steht gut. Reserven reagieren zuverlässiger.',
+        color: '#b7d394',
+        ratio: morale / 100
+      };
+    }
+    if (morale >= 42) {
+      return {
+        title: 'Gefasst',
+        short: 'Stabil',
+        detail: 'Die Truppen folgen den Befehlen, aber die Lage bleibt offen.',
+        color: '#d8c49a',
+        ratio: morale / 100
+      };
+    }
+    if (morale >= 24) {
+      return {
+        title: 'Wankend',
+        short: 'Druck',
+        detail: 'Verluste drücken die Moral. Notreserven werden vorbereitet.',
+        color: '#ffb17e',
+        ratio: morale / 100
+      };
+    }
+    return {
+      title: 'Letztes Aufgebot',
+      short: 'Notlage',
+      detail: 'Das Reich kämpft ums Überleben. Schwache Türme erhalten Notreserven.',
+      color: '#ff8a6d',
+      ratio: morale / 100
+    };
+  }
+
+  function computeMoraleTarget(own = getPlayerTowers(), enemy = getEnemyTowers(), neutral = []) {
+    if (!own.length) return 0;
+    const supply = computeSupplyState(own);
+    const frontState = computeFrontPressure(own, enemy);
+    const strategic = computeStrategicSiteState();
+    const marked = getMarkedBattleTarget();
+    const bossPressure = enemy.some((tower) => tower.boss) ? -5 : 0;
+    const commanderPressure = getCommanderGroups(enemy).length * -1.4;
+    const towerBalance = clamp((own.length - enemy.length) * 2.8, -18, 18);
+    const neutralPressure = neutral.length > own.length ? -3 : neutral.length ? 2 : 4;
+    const performance =
+      matchStats.captured * 1.9 +
+      matchStats.spoils * 1.7 +
+      matchStats.sieges * 1.3 +
+      matchStats.plans * 0.9 +
+      matchStats.flanks * 1.2 -
+      matchStats.lost * 4.4 -
+      matchStats.enemyOrders * 0.9;
+    const score =
+      50 +
+      towerBalance +
+      supply.ratio * 14 +
+      strategic.ratio * 12 -
+      frontState.ratio * 18 +
+      neutralPressure +
+      performance +
+      bossPressure +
+      commanderPressure +
+      (marked ? 3 : 0);
+    return clamp(score, 6, 96);
+  }
+
+  function applyMoralePulse(deltaTime = 0) {
+    const own = getPlayerTowers();
+    const enemy = getEnemyTowers();
+    const neutral = safe(() => towers.filter((tower) => tower.faction === FACTIONS.NEUTRAL), []);
+    if (!own.length) {
+      warMorale = 0;
+      return;
+    }
+
+    const target = computeMoraleTarget(own, enemy, neutral);
+    const rate = target > warMorale ? 0.22 : 0.28;
+    warMorale += (target - warMorale) * Math.min(1, Math.max(0.02, deltaTime * rate));
+    warMorale = clamp(warMorale, 0, 100);
+    matchStats.maxMorale = Math.max(matchStats.maxMorale || 0, warMorale);
+
+    moralePulseTimer += deltaTime || 0;
+    if (moralePulseTimer < 7.5) return;
+    moralePulseTimer = 0;
+
+    const now = performance.now();
+    const info = getMoraleInfo(warMorale);
+    if (warMorale >= 75) {
+      reduceCommandCooldowns(520);
+      matchStats.moraleSurges += 1;
+      unlockAchievement('firstMoraleSurge', { tower: own[0] });
+      const targetTower = own
+        .filter((tower) => tower.units < tower.maxUnits)
+        .sort((a, b) => (a.units / Math.max(1, a.maxUnits)) - (b.units / Math.max(1, b.maxUnits)))[0];
+      if (targetTower) {
+        targetTower.units = Math.min(targetTower.maxUnits, targetTower.units + 1);
+        spawnEffect(targetTower.x, targetTower.y, 'morale', { color: info.color, text: '+Moral', duration: 920, size: 0.78 });
+      }
+      if (now - lastMoraleEventAt > 18000) {
+        lastMoraleEventAt = now;
+        pushEvent(`Moral: ${info.title}`, 'morale');
+      }
+      return;
+    }
+
+    if (warMorale <= 28 && enemy.length && now - lastMoraleAidAt > 12500) {
+      const weakest = own
+        .filter((tower) => tower.units < tower.maxUnits)
+        .sort((a, b) => a.units - b.units)[0];
+      if (weakest) {
+        const aid = warMorale <= 18 ? 3 : 2;
+        weakest.units = Math.min(weakest.maxUnits, weakest.units + aid);
+        weakest.fortifiedUntil = Math.max(weakest.fortifiedUntil || 0, now + 7200);
+        matchStats.moraleAids += 1;
+        lastMoraleAidAt = now;
+        spawnEffect(weakest.x, weakest.y, 'morale', { color: info.color, text: `+${aid}`, duration: 1050, size: 0.9 });
+        pushEvent(`Moral: ${info.title}`, 'morale');
+        unlockAchievement('lastStand', { tower: weakest });
+      }
+    }
   }
 
   function applyTerrainEconomy(tower, deltaTime) {
@@ -4864,6 +5032,7 @@
         const result = originalUpdateTowers.apply(this, arguments);
         safe(() => towers.forEach((tower) => applyTerrainEconomy(tower, deltaTime || 0)));
         safe(() => applyStrategicSitePulse(deltaTime || 0));
+        safe(() => applyMoralePulse(deltaTime || 0));
         safe(() => towers.forEach((tower) => assignEnemyCommander(tower)));
         safe(() => applyEnemyCommanderPressure());
         safe(() => towers.forEach((tower) => {
@@ -5088,6 +5257,10 @@
         <span id="mastil-strategy-target">kein Ziel</span>
       </div>
       <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Moral</span>
+        <span id="mastil-strategy-morale">Gefasst</span>
+      </div>
+      <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Druck</span>
         <span id="mastil-strategy-pressure">-</span>
       </div>
@@ -5140,6 +5313,11 @@
         <strong id="mastil-condition-title">Schlachtfeld</strong>
         <span id="mastil-condition-detail">Die Karte ist ruhig.</span>
       </div>
+      <div class="mastil-morale-panel" id="mastil-morale-panel">
+        <strong id="mastil-morale-title">Kriegslaune</strong>
+        <span id="mastil-morale-detail">Das Reich sammelt sich.</span>
+        <em><i id="mastil-morale-progress"></i></em>
+      </div>
       <div class="mastil-war-contract" id="mastil-war-contract">
         <strong>Kriegsauftrag</strong>
         <span id="mastil-contract-detail">Sichere wichtige Orte.</span>
@@ -5163,6 +5341,7 @@
         <span id="mastil-stat-upgrades">0 Ausbau</span>
         <span id="mastil-stat-commands">0 Befehle</span>
         <span id="mastil-stat-maneuvers">0 Manöver</span>
+        <span id="mastil-stat-morale">54 Moral</span>
         <span id="mastil-stat-spoils">0 Beute</span>
         <span id="mastil-stat-sieges">0 Belag.</span>
         <span id="mastil-stat-supply">0% Vers.</span>
@@ -5195,6 +5374,7 @@
     const mapNode = document.getElementById('mastil-strategy-map');
     const front = document.getElementById('mastil-strategy-front');
     const targetNode = document.getElementById('mastil-strategy-target');
+    const moraleNode = document.getElementById('mastil-strategy-morale');
     const pressureNode = document.getElementById('mastil-strategy-pressure');
     const siteNode = document.getElementById('mastil-strategy-sites');
     const threatNode = document.getElementById('mastil-strategy-threat');
@@ -5203,7 +5383,7 @@
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !mapNode || !front || !targetNode || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !mapNode || !front || !targetNode || !moraleNode || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     const activeRegion = getActiveRegion();
@@ -5216,6 +5396,8 @@
     targetNode.textContent = markedTarget
       ? `${getTowerRoleName(markedTarget.type)} | ${getTowerTierName(markedTarget.level)} | ${Math.floor(markedTarget.units)} Truppen`
       : 'kein Ziel markiert';
+    const moraleInfo = getMoraleInfo(warMorale);
+    moraleNode.textContent = `${moraleInfo.short} | ${Math.round(warMorale)}%`;
     const condition = getBattlefieldCondition();
     conditionNode.textContent = `${condition.title} | ${condition.short}`;
     const supply = computeSupplyState(own);
@@ -5263,6 +5445,10 @@
     const conditionBox = document.getElementById('mastil-condition-panel');
     const conditionTitle = document.getElementById('mastil-condition-title');
     const conditionDetail = document.getElementById('mastil-condition-detail');
+    const moraleBox = document.getElementById('mastil-morale-panel');
+    const moraleTitle = document.getElementById('mastil-morale-title');
+    const moraleDetail = document.getElementById('mastil-morale-detail');
+    const moraleProgress = document.getElementById('mastil-morale-progress');
     const contractBox = document.getElementById('mastil-war-contract');
     const contractDetail = document.getElementById('mastil-contract-detail');
     const contractProgress = document.getElementById('mastil-contract-progress');
@@ -5279,6 +5465,7 @@
     const upgrades = document.getElementById('mastil-stat-upgrades');
     const commands = document.getElementById('mastil-stat-commands');
     const maneuvers = document.getElementById('mastil-stat-maneuvers');
+    const moraleStat = document.getElementById('mastil-stat-morale');
     const spoils = document.getElementById('mastil-stat-spoils');
     const sieges = document.getElementById('mastil-stat-sieges');
     const supplyStat = document.getElementById('mastil-stat-supply');
@@ -5287,7 +5474,7 @@
     const threatStat = document.getElementById('mastil-stat-threat');
     const veteranStat = document.getElementById('mastil-stat-veterans');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -5307,6 +5494,15 @@
       conditionBox.style.setProperty('--condition-color', condition.color);
       conditionTitle.textContent = `Schlachtfeld: ${condition.title}`;
       conditionDetail.textContent = condition.detail;
+    }
+    if (moraleBox && moraleTitle && moraleDetail && moraleProgress) {
+      const morale = getMoraleInfo(warMorale);
+      moraleBox.style.setProperty('--morale-color', morale.color);
+      moraleBox.classList.toggle('high', warMorale >= 75);
+      moraleBox.classList.toggle('low', warMorale <= 32);
+      moraleTitle.textContent = `Kriegslaune: ${morale.title}`;
+      moraleDetail.textContent = morale.detail;
+      moraleProgress.style.width = `${Math.round(morale.ratio * 100)}%`;
     }
     if (contractBox && contractDetail && contractProgress) {
       const label = contractBox.querySelector('strong');
@@ -5340,6 +5536,7 @@
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
     maneuvers.textContent = `${matchStats.plans + matchStats.flanks} Manöver`;
+    moraleStat.textContent = `${Math.round(warMorale)} Moral`;
     spoils.textContent = `${matchStats.spoils} Beute`;
     sieges.textContent = `${matchStats.sieges} Belag.`;
     supplyStat.textContent = `${Math.round(supply.ratio * 100)}% Vers.`;
