@@ -780,7 +780,9 @@
     lastOrderText: 'Feindliche Kommandanten sondieren die Front.',
     lastCommanderId: '',
     globalReadyAt: 0,
-    warningUntil: 0
+    warningUntil: 0,
+    vigilanceUntil: 0,
+    vigilanceText: ''
   };
 
   function safe(fn, fallback) {
@@ -3693,6 +3695,8 @@
     enemyCommandState.lastCommanderId = '';
     enemyCommandState.globalReadyAt = 0;
     enemyCommandState.warningUntil = 0;
+    enemyCommandState.vigilanceUntil = 0;
+    enemyCommandState.vigilanceText = '';
     matchAchievements.clear();
     completedContracts.clear();
     matchSummarySaved = false;
@@ -5476,7 +5480,10 @@
     const lead = groups.sort((a, b) => b.score - a.score)[0];
     const ratio = lead.score / ownStrength;
     const level = ratio >= 1.28 ? 'kritisch' : ratio >= 0.92 ? 'hoch' : ratio >= 0.62 ? 'wachsend' : 'unter Kontrolle';
-    const recentOrder = enemyCommandState.lastCommanderId === lead.faction
+    const vigilant = performance.now() < (enemyCommandState.vigilanceUntil || 0);
+    const recentOrder = vigilant && enemyCommandState.vigilanceText
+      ? enemyCommandState.vigilanceText
+      : enemyCommandState.lastCommanderId === lead.faction
       ? enemyCommandState.lastOrderText
       : lead.commander.detail;
 
@@ -5486,7 +5493,7 @@
       detail: `${lead.commander.tactic}: ${level}. ${lead.towers.length} Posten, ${lead.units} Truppen. ${recentOrder}`,
       progress: Math.min(1, ratio / 1.45),
       color: lead.commander.color,
-      warning: performance.now() < enemyCommandState.warningUntil
+      warning: performance.now() < enemyCommandState.warningUntil || vigilant
     };
   }
 
@@ -6015,6 +6022,8 @@
     enemyCommandState.lastCommanderId = '';
     enemyCommandState.globalReadyAt = 0;
     enemyCommandState.warningUntil = 0;
+    enemyCommandState.vigilanceUntil = 0;
+    enemyCommandState.vigilanceText = '';
     applyFactionStartBonus(options);
     safe(() => saveGameState());
     pushEvent(config.mode === 'skirmish' ? `Gefecht: ${scenario.label} | ${difficulty.label} | ${warPlan.label}` : 'Kampagne gestartet', 'wave');
@@ -6151,6 +6160,7 @@
         });
       }
       pushEvent(`Befehlskette: ${previousLabel} -> ${label}`, 'command');
+      triggerEnemyVigilance(previousLabel, label, target);
       unlockAchievement('firstCommandChain', { tower: target });
       if (matchStats.commandChains >= 3) unlockAchievement('battleComposer', { tower: target });
       commandChainState.kind = '';
@@ -6162,6 +6172,41 @@
     commandChainState.kind = kind;
     commandChainState.label = label;
     commandChainState.at = now;
+  }
+
+  function triggerEnemyVigilance(previousLabel, label, focusTower) {
+    const enemy = getEnemyTowers();
+    if (!enemy.length || safe(() => wave, 1) <= 1) return;
+
+    const now = performance.now();
+    const groups = getCommanderGroups(enemy);
+    if (!groups.length) return;
+
+    const chosen = groups.sort((a, b) => b.score - a.score)[0];
+    const responseDelay = Math.max(2600, 5200 - Math.min(1800, matchStats.commandChains * 260));
+    const currentGlobal = enemyCommandState.globalReadyAt || 0;
+    enemyCommandState.globalReadyAt = currentGlobal > now
+      ? Math.min(currentGlobal, now + responseDelay)
+      : now + responseDelay;
+    groups.forEach((group) => {
+      const current = enemyCommandState.readyAt.get(group.faction) || (now + group.commander.stagger);
+      enemyCommandState.readyAt.set(group.faction, Math.min(current, now + responseDelay + group.commander.stagger * 0.18));
+    });
+    enemyCommandState.warningUntil = Math.max(enemyCommandState.warningUntil || 0, now + 11000);
+    enemyCommandState.vigilanceUntil = now + 14000;
+    enemyCommandState.vigilanceText = `${chosen.commander.name} erkennt eure Folge ${previousLabel} -> ${label}.`;
+    enemyCommandState.lastCommanderId = chosen.faction;
+    enemyCommandState.lastOrderText = enemyCommandState.vigilanceText;
+
+    if (focusTower) {
+      spawnEffect(focusTower.x, focusTower.y, 'impact', {
+        color: chosen.commander.color,
+        text: 'Auge',
+        duration: 1050,
+        size: 0.82
+      });
+    }
+    pushEvent(`Feind wachsam: ${enemyCommandState.vigilanceText}`, 'threat');
   }
 
   function getReservePlan() {

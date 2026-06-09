@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.46
+        // Game version information - Update auf 2.6.47
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 46,
+    patch: 47,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.47": [
+        "KI-Reaktion erweitert: Feindkommandanten werden nach starken Befehlsketten wachsam und bereiten schneller Gegenbefehle vor",
+        "Das Feindkommando-Panel zeigt diese Wachsamkeit mit eigener Meldung, damit Spieler die Antwort erkennen koennen",
+        "Befehlsketten bleiben stark, erzeugen aber mehr lebendigen Gegenspiel-Druck in längeren Schlachten"
+    ],
     "2.6.46": [
         "Reichsarchiv ausgebaut: neue Kriegslehren, Tastatur-Befehlsfolgen und spielnahe Hinweise direkt in den Legenden",
         "Jedes Reich besitzt jetzt einen kompakten dreistufigen Feldzugplan passend zu Spielstil, Risiko und Bossziel",
