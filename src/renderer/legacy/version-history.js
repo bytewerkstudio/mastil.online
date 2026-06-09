@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.50
+        // Game version information - Update auf 2.6.51
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 50,
+    patch: 51,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.51": [
+        "Schlachtfelder wirken jetzt lebendiger: Nebel, Frost, Sandsturm, Nachtregen und Aschefall werden im Kampf sichtbar gezeichnet",
+        "Die Atmosphaere bleibt flackerarm, weil Partikel deterministisch laufen und die Kartenbasis weiter gecacht bleibt",
+        "Bosswarnungen, Feindwachsamkeit und Kriegsereignisse verstaerken die Wetterwirkung dezent, damit Gefahr im Bild besser lesbar wird"
+    ],
     "2.6.50": [
         "Bosskaempfe erweitert: aktive Bosse bereiten jetzt eigene Bossbefehle wie Grenzruf, Eisenwall, Nachtmal und Kaiserzug vor",
         "Neue Bossbefehl-Anzeige im Auftragspanel zeigt Timer, Wirkung und Gegenfenster waehrend Bosswellen",

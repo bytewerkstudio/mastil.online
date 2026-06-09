@@ -1362,10 +1362,12 @@
   function drawWorldConditionWash() {
     const condition = getBattlefieldCondition();
     if (!condition || !condition.washAlpha) return;
+    const atmosphere = getBattlefieldAtmosphereState(condition);
+    const washAlpha = Math.min(0.26, condition.washAlpha * atmosphere.intensity);
     ctx.save();
-    ctx.fillStyle = rgba(condition.color, condition.washAlpha);
+    ctx.fillStyle = rgba(condition.color, washAlpha);
     ctx.fillRect(0, 0, gameWidth, gameHeight);
-    ctx.globalAlpha = Math.min(0.22, condition.washAlpha * 1.15);
+    ctx.globalAlpha = Math.min(0.28, washAlpha * 1.18);
     const gradient = ctx.createLinearGradient(0, 0, gameWidth, gameHeight);
     gradient.addColorStop(0, rgba(condition.color, 0.18));
     gradient.addColorStop(0.52, 'rgba(0, 0, 0, 0)');
@@ -1375,9 +1377,68 @@
     ctx.restore();
   }
 
+  function getBattlefieldAtmosphereState(condition = getBattlefieldCondition()) {
+    const now = performance.now();
+    const detail = safe(() => getQualitySetting('animationDetail'), 'medium');
+    const lowDetail = detail === 'low' || safe(() => getQualitySetting('particleEffects'), true) === false;
+    let intensity = lowDetail ? 0.55 : detail === 'high' ? 1.14 : 0.86;
+    let alert = false;
+
+    if (warIncidentState.active) intensity += 0.12;
+    if (now < (enemyCommandState.warningUntil || 0) || now < (enemyCommandState.vigilanceUntil || 0)) {
+      intensity += 0.1;
+      alert = true;
+    }
+    if (now < (bossCommandState.warningUntil || 0)) {
+      intensity += 0.28;
+      alert = true;
+    }
+    if (now < (bossCommandState.activeUntil || 0)) {
+      intensity += 0.18;
+      alert = true;
+    }
+    if (condition && condition.id === 'ashfall') intensity += 0.08;
+
+    return {
+      alert,
+      lowDetail,
+      intensity: Math.max(0.35, Math.min(1.48, intensity))
+    };
+  }
+
+  function drawAtmosphereWindBands(condition, atmosphere, time) {
+    if (!condition || atmosphere.lowDetail) return;
+    const bandAlpha = (atmosphere.alert ? 0.1 : 0.052) * atmosphere.intensity;
+    if (bandAlpha <= 0.02) return;
+
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.16, bandAlpha);
+    ctx.strokeStyle = rgba(condition.color, 0.66);
+    ctx.lineCap = 'round';
+    ctx.lineWidth = condition.particle === 'sand' ? 7 : condition.particle === 'rain' ? 3.5 : 4.5;
+
+    const spacing = condition.particle === 'rain' ? 180 : 220;
+    const drift = ((time * (condition.particle === 'sand' ? 56 : 34)) % spacing);
+    for (let i = -2; i < 8; i += 1) {
+      const y = i * spacing - drift;
+      ctx.beginPath();
+      if (condition.particle === 'rain') {
+        ctx.moveTo(gameWidth * 0.12, y);
+        ctx.lineTo(gameWidth * 0.94, y + gameHeight * 0.2);
+      } else {
+        ctx.moveTo(-gameWidth * 0.08, y + Math.sin(time + i) * 18);
+        ctx.bezierCurveTo(gameWidth * 0.24, y - 42, gameWidth * 0.66, y + 58, gameWidth * 1.08, y - 24);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function drawBattlefieldAmbience() {
     const condition = getBattlefieldCondition();
     if (!condition) return;
+    const atmosphere = getBattlefieldAtmosphereState(condition);
+    if (atmosphere.lowDetail && condition.particle !== 'ash') return;
     ensureBattlefieldParticles(condition);
     if (!battlefieldParticles.length) return;
 
@@ -1386,19 +1447,20 @@
     const height = Math.max(1, gameHeight);
     ctx.save();
     ctx.lineCap = 'round';
+    drawAtmosphereWindBands(condition, atmosphere, time);
 
     for (const particle of battlefieldParticles) {
       const t = time * particle.speed + particle.phase;
       let x = particle.x;
       let y = particle.y;
-      ctx.globalAlpha = particle.alpha;
+      ctx.globalAlpha = particle.alpha * atmosphere.intensity;
       ctx.strokeStyle = rgba(condition.color, 0.72);
       ctx.fillStyle = rgba(condition.color, 0.62);
 
       if (condition.particle === 'mist') {
         x = (particle.x + Math.sin(t * 0.35) * 42 + width) % width;
         y = (particle.y + Math.cos(t * 0.24) * 18 + height) % height;
-        ctx.globalAlpha = particle.alpha * 0.23;
+        ctx.globalAlpha = particle.alpha * 0.2 * atmosphere.intensity;
         ctx.fillStyle = rgba(condition.color, 0.22);
         ctx.beginPath();
         ctx.ellipse(x, y, 52 * particle.size, 9 * particle.size, Math.sin(t) * 0.12, 0, Math.PI * 2);
@@ -1406,14 +1468,14 @@
       } else if (condition.particle === 'snow') {
         x = (particle.x + Math.sin(t) * 16 + width) % width;
         y = (particle.y + t * 24) % height;
-        ctx.globalAlpha = particle.alpha * 0.72;
+        ctx.globalAlpha = particle.alpha * 0.58 * atmosphere.intensity;
         ctx.beginPath();
         ctx.arc(x, y, 1.2 + particle.size, 0, Math.PI * 2);
         ctx.fill();
       } else if (condition.particle === 'sand') {
         x = (particle.x + t * 64 + width) % width;
         y = (particle.y + Math.sin(t * 0.7) * 24 + height) % height;
-        ctx.globalAlpha = particle.alpha * 0.44;
+        ctx.globalAlpha = particle.alpha * 0.38 * atmosphere.intensity;
         ctx.lineWidth = 1.2 + particle.size * 0.9;
         ctx.beginPath();
         ctx.moveTo(x - 34 * particle.size, y + 7 * particle.size);
@@ -1422,7 +1484,7 @@
       } else if (condition.particle === 'rain') {
         x = (particle.x + t * 38 + width) % width;
         y = (particle.y + t * 96) % height;
-        ctx.globalAlpha = particle.alpha * 0.5;
+        ctx.globalAlpha = particle.alpha * 0.42 * atmosphere.intensity;
         ctx.lineWidth = 1.1;
         ctx.beginPath();
         ctx.moveTo(x, y);
@@ -1431,7 +1493,7 @@
       } else {
         x = (particle.x + Math.sin(t * 0.7) * 18 + width) % width;
         y = (particle.y + t * 31) % height;
-        ctx.globalAlpha = particle.alpha * 0.6;
+        ctx.globalAlpha = particle.alpha * 0.52 * atmosphere.intensity;
         ctx.fillStyle = rgba(condition.color, 0.72);
         ctx.beginPath();
         ctx.arc(x, y, 1.5 + particle.size * 1.2, 0, Math.PI * 2);
@@ -1670,6 +1732,7 @@
       drawWorldOverlayBase();
     }
     drawWorldConditionWash();
+    drawBattlefieldAmbience();
     drawWorldMist();
     ctx.restore();
   }
@@ -8511,7 +8574,6 @@
         updateStrategyPanel();
         updateObjectivePanel();
         updateCommandButtons();
-        drawBattlefieldAmbience();
         drawEffects();
         drawEnhancedMinimap();
       };
@@ -8541,9 +8603,17 @@
     }, {});
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
     const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
+    const battlefieldCondition = getBattlefieldCondition();
+    const atmosphere = getBattlefieldAtmosphereState(battlefieldCondition);
     return {
       config: getMatchConfig(),
       activeRegion: getActiveRegion().title,
+      atmosphere: {
+        condition: battlefieldCondition.id,
+        particle: battlefieldCondition.particle,
+        intensity: Number(atmosphere.intensity.toFixed(2)),
+        alert: atmosphere.alert
+      },
       warPlan: getWarPlan(getMatchConfig()).label,
       scenario: getMatchConfig().mode === 'skirmish' ? getSkirmishScenario(getMatchConfig()).label : 'Kampagne',
       towers: currentTowers.length,
