@@ -793,6 +793,109 @@
       .filter(([a, b]) => a && b);
   }
 
+  function getRouteStatus(a, b, playerFaction = safe(() => FACTIONS.PLAYER, 'player'), neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral')) {
+    const aPlayer = a && a.faction === playerFaction;
+    const bPlayer = b && b.faction === playerFaction;
+    const aNeutral = a && a.faction === neutralFaction;
+    const bNeutral = b && b.faction === neutralFaction;
+    const aEnemy = a && isEnemyFaction(a.faction);
+    const bEnemy = b && isEnemyFaction(b.faction);
+
+    if (aPlayer && bPlayer) return 'secured';
+    if ((aPlayer && bEnemy) || (bPlayer && aEnemy)) return 'front';
+    if ((aPlayer && bNeutral) || (bPlayer && aNeutral)) return 'open';
+    if (aEnemy && bEnemy) return 'enemy';
+    if ((aNeutral && bEnemy) || (bNeutral && aEnemy)) return 'enemy-open';
+    return 'neutral';
+  }
+
+  function getRouteStyle(a, b, index, playerFaction = safe(() => FACTIONS.PLAYER, 'player'), neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral')) {
+    const status = getRouteStatus(a, b, playerFaction, neutralFaction);
+    const roadLike = a.terrain === 'road' || b.terrain === 'road' || a.mastilRoadHub || b.mastilRoadHub;
+    const fortressRoad = a.terrain === 'keep' || b.terrain === 'keep' || a.mastilCastleSite || b.mastilCastleSite;
+    const mainRoad = roadLike || fortressRoad || Math.abs(Number(a.routeRank || 0) - Number(b.routeRank || 0)) <= 1;
+    const colors = {
+      secured: '#ffe18a',
+      front: '#ff8a6d',
+      open: '#d8c49a',
+      enemy: '#cf6256',
+      'enemy-open': '#b78062',
+      neutral: '#a98a62'
+    };
+    return {
+      status,
+      mainRoad,
+      roadLike,
+      fortressRoad,
+      color: colors[status] || colors.neutral,
+      width: status === 'front' ? 7.5 : mainRoad ? 6.2 : 4.8,
+      alpha: status === 'front' ? 0.68 : status === 'secured' ? 0.58 : status === 'open' ? 0.42 : status === 'enemy' ? 0.36 : 0.28,
+      label: status === 'secured' ? 'gesichert' : status === 'front' ? 'Frontweg' : status === 'open' ? 'offener Weg' : status === 'enemy' ? 'Feindweg' : 'Weg',
+      bend: {
+        x: (a.x + b.x) / 2 + Math.sin(index * 1.9) * (mainRoad ? 9 : 12),
+        y: (a.y + b.y) / 2 + Math.cos(index * 1.37) * (mainRoad ? 6 : 8)
+      }
+    };
+  }
+
+  function computeRouteControlState(towerList = safe(() => towers, [])) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
+    const routes = getActiveRoutePairs(towerList);
+    const state = {
+      total: routes.length,
+      secured: 0,
+      front: 0,
+      open: 0,
+      enemy: 0,
+      neutral: 0,
+      next: null,
+      detail: 'Keine Wege.'
+    };
+
+    routes.forEach(([a, b], index) => {
+      const status = getRouteStatus(a, b, playerFaction, neutralFaction);
+      if (status === 'secured') state.secured += 1;
+      else if (status === 'front') state.front += 1;
+      else if (status === 'open') {
+        state.open += 1;
+        if (!state.next) {
+          const target = a.faction === neutralFaction ? a : b;
+          state.next = { tower: target, index };
+        }
+      } else if (status === 'enemy' || status === 'enemy-open') state.enemy += 1;
+      else state.neutral += 1;
+    });
+
+    const visibleTotal = Math.max(1, state.total);
+    state.ratio = Math.min(1, state.secured / visibleTotal);
+    state.detail = state.total
+      ? `${state.secured}/${state.total} gesichert | ${state.open} offen | ${state.front} Front`
+      : 'Keine aktiven Wege.';
+    return state;
+  }
+
+  function annotateRouteNetwork(towerList = safe(() => towers, [])) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
+    towerList.forEach((tower) => {
+      tower.mastilRouteDegree = 0;
+      tower.mastilSecuredRoutes = 0;
+      tower.mastilFrontRoutes = 0;
+      tower.mastilOpenRoutes = 0;
+    });
+
+    getActiveRoutePairs(towerList).forEach(([a, b]) => {
+      const status = getRouteStatus(a, b, playerFaction, neutralFaction);
+      [a, b].forEach((tower) => {
+        tower.mastilRouteDegree = (tower.mastilRouteDegree || 0) + 1;
+        if (status === 'secured') tower.mastilSecuredRoutes = (tower.mastilSecuredRoutes || 0) + 1;
+        if (status === 'front') tower.mastilFrontRoutes = (tower.mastilFrontRoutes || 0) + 1;
+        if (status === 'open') tower.mastilOpenRoutes = (tower.mastilOpenRoutes || 0) + 1;
+      });
+    });
+  }
+
   function isBossWave(waveNumber) {
     return [5, 10, 15, 20, 25].includes(Number(waveNumber) || 0);
   }
@@ -1350,36 +1453,74 @@
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    routes.forEach(([a, b], index) => {
-      const sameFaction = a.faction === b.faction && a.faction !== neutralFaction;
-      const playerRoad = sameFaction && a.faction === playerFaction;
-      const contested =
-        (a.faction === playerFaction && isEnemyFaction(b.faction)) ||
-        (b.faction === playerFaction && isEnemyFaction(a.faction));
-      const mx = (a.x + b.x) / 2 + Math.sin(index * 1.9) * 10;
-      const my = (a.y + b.y) / 2 + Math.cos(index * 1.37) * 7;
 
-      ctx.globalAlpha = contested ? 0.44 : playerRoad ? 0.5 : sameFaction ? 0.36 : 0.26;
-      ctx.strokeStyle = contested
-        ? 'rgba(255, 138, 109, 0.52)'
-        : playerRoad
-          ? 'rgba(244, 215, 122, 0.48)'
-          : 'rgba(171, 132, 82, 0.35)';
-      ctx.lineWidth = contested ? 6.2 : playerRoad ? 5.4 : 4.4;
+    routes.forEach(([a, b], index) => {
+      const route = getRouteStyle(a, b, index, playerFaction, neutralFaction);
+      const { x: mx, y: my } = route.bend;
+
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = 'rgba(16, 10, 7, 0.78)';
+      ctx.lineWidth = route.width + 3.2;
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.quadraticCurveTo(mx, my, b.x, b.y);
       ctx.stroke();
 
-      ctx.globalAlpha = contested ? 0.58 : playerRoad ? 0.54 : 0.36;
-      ctx.strokeStyle = contested ? 'rgba(255, 224, 186, 0.36)' : 'rgba(255, 242, 191, 0.24)';
-      ctx.lineWidth = 1.25;
-      ctx.setLineDash(contested ? [9, 6] : []);
+      ctx.globalAlpha = route.alpha;
+      ctx.strokeStyle = rgba(route.color, 0.82);
+      ctx.lineWidth = route.width;
+      ctx.setLineDash(route.mainRoad ? [] : [8, 9]);
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.quadraticCurveTo(mx, my, b.x, b.y);
       ctx.stroke();
       ctx.setLineDash([]);
+
+      ctx.globalAlpha = route.status === 'front' ? 0.64 : route.status === 'secured' ? 0.5 : 0.32;
+      ctx.strokeStyle = route.status === 'front' ? 'rgba(255, 238, 199, 0.58)' : 'rgba(255, 242, 191, 0.3)';
+      ctx.lineWidth = route.mainRoad ? 1.4 : 1;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(mx, my, b.x, b.y);
+      ctx.stroke();
+    });
+
+    let routeLabelCount = 0;
+    routes.forEach(([a, b], index) => {
+      const route = getRouteStyle(a, b, index, playerFaction, neutralFaction);
+      if (route.status === 'neutral' && !route.mainRoad) return;
+      const { x: mx, y: my } = route.bend;
+      const markerRadius = route.status === 'front' ? 6.5 : route.status === 'secured' ? 5.8 : 4.8;
+
+      ctx.globalAlpha = route.status === 'front' ? 0.9 : route.status === 'secured' ? 0.72 : 0.54;
+      ctx.fillStyle = 'rgba(18, 11, 7, 0.82)';
+      ctx.strokeStyle = rgba(route.color, 0.88);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(mx, my, markerRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = rgba(route.color, 0.92);
+      ctx.beginPath();
+      ctx.arc(mx, my, markerRadius * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      if ((route.status === 'front' || route.status === 'open') && routeLabelCount < 8) {
+        routeLabelCount += 1;
+        ctx.globalAlpha = route.status === 'front' ? 0.86 : 0.62;
+        ctx.fillStyle = 'rgba(18, 11, 7, 0.82)';
+        ctx.strokeStyle = rgba(route.color, 0.58);
+        ctx.lineWidth = 1;
+        roundRect(ctx, mx - 25, my - 24, 50, 16, 6);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = route.status === 'front' ? '#ffcf9d' : '#fff2bf';
+        ctx.font = '950 9px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(route.status === 'front' ? 'Front' : 'Zielweg', mx, my - 16);
+      }
     });
     ctx.restore();
   }
@@ -1450,6 +1591,7 @@
     const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');
     const ownTowers = currentTowers.filter((tower) => tower.faction === playerFaction);
     const enemyTowers = currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction);
+    annotateRouteNetwork(currentTowers);
     computeSupplyState(ownTowers);
     computeFrontPressure(ownTowers, enemyTowers);
     drawBattleHotspots(ownTowers, enemyTowers);
@@ -1902,6 +2044,23 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(site.mark, width * 0.48 - 10, height * 0.48 + 8.8);
+
+    const routeDegree = Number(tower.mastilRouteDegree || 0);
+    if (routeDegree >= 2) {
+      const frontRoutes = Number(tower.mastilFrontRoutes || 0);
+      const securedRoutes = Number(tower.mastilSecuredRoutes || 0);
+      const openRoutes = Number(tower.mastilOpenRoutes || 0);
+      const routeColor = frontRoutes ? '#ff8a6d' : securedRoutes ? '#ffe18a' : openRoutes ? '#8fc3f0' : '#d8c49a';
+      ctx.fillStyle = 'rgba(18, 11, 7, 0.86)';
+      ctx.strokeStyle = rgba(routeColor, 0.82);
+      ctx.lineWidth = 1.4;
+      roundRect(ctx, -13, height * 0.5, 26, 15, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = rgba(routeColor, 0.98);
+      ctx.font = '950 8px Segoe UI';
+      ctx.fillText(`${frontRoutes ? 'F' : 'W'}${routeDegree}`, 0, height * 0.5 + 7.8);
+    }
     ctx.restore();
   }
 
@@ -3426,12 +3585,26 @@
       queue.push(tower);
     });
 
+    const routeAdjacency = new Map(playerTowers.map((tower) => [tower, []]));
+    getActiveRoutePairs(safe(() => towers, playerTowers)).forEach(([a, b]) => {
+      if (!routeAdjacency.has(a) || !routeAdjacency.has(b)) return;
+      const distance = Math.hypot(b.x - a.x, b.y - a.y);
+      const routeBoost = (a.mastilRoadHub || b.mastilRoadHub || a.mastilCastleSite || b.mastilCastleSite) ? 1.24 : 1.08;
+      if (distance <= getSupplyReach(a, b) * routeBoost) {
+        routeAdjacency.get(a).push(b);
+        routeAdjacency.get(b).push(a);
+      }
+    });
+
     while (queue.length) {
       const source = queue.shift();
-      for (const target of playerTowers) {
+      const routeNeighbors = routeAdjacency.get(source) || [];
+      const candidates = routeNeighbors.length ? routeNeighbors : playerTowers;
+      const routeSet = new Set(routeNeighbors);
+      for (const target of candidates) {
         if (target.supplyLinked) continue;
         const distance = Math.hypot(target.x - source.x, target.y - source.y);
-        if (distance <= getSupplyReach(source, target)) {
+        if (routeSet.has(target) || distance <= getSupplyReach(source, target)) {
           target.supplyLinked = true;
           target.supplyDepth = (source.supplyDepth || 0) + 1;
           queue.push(target);
@@ -4154,6 +4327,23 @@
       message = `${site.title}: Befehle schneller bereit`;
     }
 
+    const routeDegree = Number(tower.mastilRouteDegree || 0);
+    if (routeDegree >= 3) {
+      const routeBonus = 10 + routeDegree * 4;
+      safe(() => {
+        gold += routeBonus;
+        updateUI();
+      });
+      reduceCommandCooldowns(1800 + routeDegree * 450);
+      message += ` | Kreuzung +${routeBonus} Gold`;
+      spawnEffect(tower.x, tower.y + 18, 'achievement', {
+        color: '#ffe18a',
+        text: `W${routeDegree}`,
+        duration: 1100,
+        size: 0.82
+      });
+    }
+
     matchStats.spoils += 1;
     pushEvent(message, 'spoils');
     spawnEffect(tower.x, tower.y, 'achievement', {
@@ -4322,6 +4512,7 @@
   function getTacticalAdvice(own, enemy, neutral, selected) {
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
     const currentGold = Math.floor(safe(() => gold, 0));
+    const routeState = computeRouteControlState();
     if (!own.length) return 'Verteidigung gebrochen.';
     const incident = warIncidentState.active;
     if (incident && incident.target) {
@@ -4348,6 +4539,12 @@
     }
     if (!selected.supplyLinked && own.length >= 3) {
       return 'Turm isoliert: benachbarte Wege sichern oder die Linie schließen.';
+    }
+    if (routeState.front > 0 && currentGold >= getSiegeCost(selected) && selected.units >= Math.max(4, selected.maxUnits * 0.24)) {
+      return 'Frontweg bedroht: Belagerung oder Schnellangriff hält den Feind von der Straße fern.';
+    }
+    if (routeState.open > 0 && neutral.length) {
+      return 'Offener Weg sichtbar: neutrale Wegpunkte erobern, dann Versorgung ausbauen.';
     }
     if (getTowerVeteranRank(selected) >= 2 && selectedPressure >= 0.32) {
       return `${getTowerVeteranInfo(selected).title} halten: Dieser Turm ist ein Schlüsselposten.`;
@@ -4451,8 +4648,25 @@
     const plan = getWarPlan(config);
     const strategic = computeStrategicSiteState(currentTowers);
     const supply = computeSupplyState(own);
+    const routes = computeRouteControlState(currentTowers);
     const hasMarket = own.some((tower) => tower.terrain === 'market');
     const capturableMarket = currentTowers.some((tower) => tower.terrain === 'market' && tower.faction !== playerFaction);
+
+    if (routes.open > 0 && routes.secured < Math.min(5, routes.total)) {
+      return {
+        title: config.mode === 'skirmish' ? 'Gefecht: Straßen nehmen' : 'Kriegsauftrag: Königsweg',
+        detail: `${routes.secured}/${routes.total} Wege gesichert. Erobere offene Wegpunkte fuer Versorgung.`,
+        progress: Math.min(1, routes.secured / Math.max(1, Math.min(5, routes.total)))
+      };
+    }
+
+    if (routes.front > 0 && enemy.length > 0) {
+      return {
+        title: 'Kriegsauftrag: Frontweg halten',
+        detail: `${routes.front} Frontweg${routes.front === 1 ? '' : 'e'} bedroht. Schwäche den nächsten Feindposten.`,
+        progress: Math.max(0.08, routes.secured / Math.max(1, routes.total))
+      };
+    }
 
     if (config.mode === 'skirmish' && plan === WAR_PLANS.raiders && supply.ratio < 0.82 && own.length >= 3) {
       return {
@@ -5893,6 +6107,7 @@
         safe(() => applyWarIncidentPulse(deltaTime || 0));
         safe(() => towers.forEach((tower) => assignEnemyCommander(tower)));
         safe(() => applyEnemyCommanderPressure());
+        safe(() => annotateRouteNetwork(towers));
         safe(() => towers.forEach((tower) => {
           const previous = before.get(tower);
           if (previous && previous.faction !== tower.faction) {
@@ -6224,6 +6439,10 @@
         <span id="mastil-strategy-supply">-</span>
       </div>
       <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Wege</span>
+        <span id="mastil-strategy-routes">-</span>
+      </div>
+      <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Wunder</span>
         <span id="mastil-strategy-faction">-</span>
       </div>
@@ -6300,6 +6519,7 @@
         <span id="mastil-stat-breaches">0 Durchbr.</span>
         <span id="mastil-stat-counters">0 Parade</span>
         <span id="mastil-stat-supply">0% Vers.</span>
+        <span id="mastil-stat-routes">0 Wege</span>
         <span id="mastil-stat-front">0% Druck</span>
         <span id="mastil-stat-edicts">0 Edikte</span>
         <span id="mastil-stat-threat">0 Feindbef.</span>
@@ -6335,11 +6555,12 @@
     const threatNode = document.getElementById('mastil-strategy-threat');
     const conditionNode = document.getElementById('mastil-strategy-condition');
     const supplyNode = document.getElementById('mastil-strategy-supply');
+    const routeNode = document.getElementById('mastil-strategy-routes');
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const upgradeNode = document.getElementById('mastil-strategy-upgrade');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !mapNode || !front || !targetNode || !moraleNode || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !upgradeNode || !adviceNode) return;
+    if (!domain || !mapNode || !front || !targetNode || !moraleNode || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !routeNode || !factionNode || !selectedNode || !upgradeNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     const activeRegion = getActiveRegion();
@@ -6364,7 +6585,11 @@
     const supply = computeSupplyState(own);
     const frontState = computeFrontPressure(own, enemy);
     const siteState = computeStrategicSiteState(currentTowers);
+    const routeState = computeRouteControlState(currentTowers);
     supplyNode.textContent = supply.detail;
+    routeNode.textContent = routeState.next
+      ? `${routeState.detail} | nächstes Ziel: ${getTowerTierName(routeState.next.tower.level)}`
+      : routeState.detail;
     pressureNode.textContent = frontState.detail;
     siteNode.textContent = siteState.nextTarget
       ? `${siteState.detail} | nächstes Ziel: ${siteState.nextTarget.site.short}`
@@ -6451,12 +6676,13 @@
     const breaches = document.getElementById('mastil-stat-breaches');
     const counters = document.getElementById('mastil-stat-counters');
     const supplyStat = document.getElementById('mastil-stat-supply');
+    const routeStat = document.getElementById('mastil-stat-routes');
     const frontStat = document.getElementById('mastil-stat-front');
     const edicts = document.getElementById('mastil-stat-edicts');
     const threatStat = document.getElementById('mastil-stat-threat');
     const veteranStat = document.getElementById('mastil-stat-veterans');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !eventStat || !spoils || !sieges || !breaches || !counters || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !eventStat || !spoils || !sieges || !breaches || !counters || !supplyStat || !routeStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -6522,6 +6748,7 @@
     }
     progress.style.width = `${Math.round(objective.progress * 100)}%`;
     const supply = computeSupplyState(own);
+    const routeState = computeRouteControlState(currentTowers);
     const frontState = computeFrontPressure(own, enemy);
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
@@ -6534,6 +6761,7 @@
     breaches.textContent = `${matchStats.breaches} Durchbr.`;
     counters.textContent = `${matchStats.counters} Parade`;
     supplyStat.textContent = `${Math.round(supply.ratio * 100)}% Vers.`;
+    routeStat.textContent = `${routeState.secured}/${routeState.total} Wege`;
     frontStat.textContent = `${Math.round(frontState.ratio * 100)}% Druck`;
     edicts.textContent = `${matchStats.edicts} Edikte`;
     threatStat.textContent = `${matchStats.enemyOrders} Feindbef.`;
