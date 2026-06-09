@@ -1651,6 +1651,196 @@
   font: 750 11px/1.25 "Segoe UI", sans-serif;
 }
 
+.mastil-skirmish-map-preview {
+  --skirmish-map-color: #2f6fa5;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(250px, 0.72fr);
+  gap: 12px;
+  align-items: stretch;
+  min-height: 240px;
+  padding: 12px;
+  border: 1px solid rgba(142, 195, 240, 0.28);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(24, 42, 48, 0.66), rgba(8, 5, 4, 0.54)),
+    radial-gradient(circle at 88% 12%, rgba(226, 189, 90, 0.12), transparent 16rem);
+  overflow: hidden;
+}
+
+.mastil-skirmish-map-stage {
+  position: relative;
+  min-height: 216px;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(8, 6, 5, 0.2), rgba(8, 6, 5, 0.72)),
+    var(--skirmish-map-image, url("../../../assets/backgrounds/worlds/world-01-startgebiet.png")) center/cover no-repeat;
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.mastil-skirmish-map-stage::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.15);
+  border-radius: 8px;
+  background-image:
+    linear-gradient(90deg, rgba(226, 189, 90, 0.07) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(142, 195, 240, 0.055) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.mastil-preview-road {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(216, 196, 154, 0.74);
+  box-shadow: 0 0 0 2px rgba(13, 8, 5, 0.42), 0 0 16px rgba(226, 189, 90, 0.16);
+  transform: rotate(var(--angle));
+  transform-origin: left center;
+}
+
+.mastil-preview-road.contested {
+  background: linear-gradient(90deg, var(--skirmish-map-color), #f1cf6b, #e17a5c);
+  box-shadow: 0 0 0 2px rgba(13, 8, 5, 0.48), 0 0 18px rgba(241, 207, 107, 0.24);
+}
+
+.mastil-preview-node {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 24px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  color: #170f09;
+  border: 2px solid rgba(16, 10, 6, 0.86);
+  border-radius: 50%;
+  background: #cdbd98;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.22), 0 0 18px rgba(255, 242, 191, 0.16);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.mastil-preview-node i {
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  font-style: normal;
+}
+
+.mastil-preview-node.player {
+  width: 30px;
+  background: var(--chosen-color, var(--skirmish-map-color));
+  border-color: rgba(255, 242, 191, 0.86);
+  box-shadow: 0 0 0 5px rgba(47, 111, 165, 0.22), 0 0 22px color-mix(in srgb, var(--chosen-color, var(--skirmish-map-color)) 38%, transparent);
+}
+
+.mastil-preview-node.enemy {
+  width: 28px;
+  background: #b8483f;
+  border-color: rgba(255, 211, 190, 0.74);
+  color: #fff2bf;
+}
+
+.mastil-preview-node.enemy-2 {
+  background: #c87735;
+}
+
+.mastil-preview-node.enemy-3 {
+  background: #7651a6;
+}
+
+.mastil-preview-node.terrain-keep {
+  border-radius: 7px;
+}
+
+.mastil-preview-node.terrain-market {
+  background: #f0c85c;
+}
+
+.mastil-preview-node.terrain-barracks {
+  background: #8fc3f0;
+}
+
+.mastil-preview-node.terrain-forest {
+  background: #9ed6a2;
+}
+
+.mastil-preview-node.terrain-quarry {
+  background: #c9c0aa;
+}
+
+.mastil-preview-node.terrain-ford {
+  background: #8fc7d8;
+}
+
+.mastil-preview-front {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  color: #fff2bf;
+  border: 1px solid rgba(225, 122, 92, 0.42);
+  border-radius: 999px;
+  background: rgba(23, 11, 7, 0.7);
+  padding: 6px 9px;
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  z-index: 3;
+}
+
+.mastil-skirmish-map-intel {
+  display: grid;
+  align-content: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.mastil-skirmish-map-intel span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-skirmish-map-intel strong {
+  color: #fff2bf;
+  font: 950 18px/1.12 Cinzel, Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-skirmish-map-intel p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 12px/1.48 "Segoe UI", sans-serif;
+}
+
+.mastil-preview-ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.mastil-preview-ledger b {
+  display: grid;
+  gap: 3px;
+  min-height: 54px;
+  place-items: center;
+  color: #fff2bf;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.24);
+  font: 950 16px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-preview-ledger small {
+  color: rgba(244, 230, 191, 0.62);
+  font: 800 9px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  text-align: center;
+}
+
 .mastil-skirmish-options {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4402,6 +4592,32 @@ body:has(#game-container[style*="block"]) #info-panel {
 
   .mastil-skirmish-presets {
     grid-template-columns: 1fr;
+  }
+
+  .mastil-skirmish-map-preview {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 10px;
+  }
+
+  .mastil-skirmish-map-stage {
+    min-height: 210px;
+  }
+
+  .mastil-preview-node {
+    width: 22px;
+  }
+
+  .mastil-preview-node.player {
+    width: 27px;
+  }
+
+  .mastil-preview-node.enemy {
+    width: 25px;
+  }
+
+  .mastil-preview-ledger {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mastil-skirmish-brief {

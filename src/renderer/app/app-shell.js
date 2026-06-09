@@ -83,6 +83,51 @@
       color: '#7b2f2a'
     }
   };
+  const SKIRMISH_PREVIEW_NODES = [
+    { x: 0.16, y: 0.52, role: 'player', rank: 0, terrain: 'keep' },
+    { x: 0.29, y: 0.39, role: 'neutral', rank: 1, terrain: 'hill' },
+    { x: 0.30, y: 0.66, role: 'neutral', rank: 1, terrain: 'market' },
+    { x: 0.43, y: 0.27, role: 'neutral', rank: 2, terrain: 'barracks' },
+    { x: 0.46, y: 0.53, role: 'neutral', rank: 2, terrain: 'road' },
+    { x: 0.46, y: 0.78, role: 'neutral', rank: 2, terrain: 'ford' },
+    { x: 0.60, y: 0.37, role: 'neutral', rank: 3, terrain: 'market' },
+    { x: 0.62, y: 0.64, role: 'neutral', rank: 3, terrain: 'forest' },
+    { x: 0.74, y: 0.23, role: 'enemy', rank: 4, terrain: 'barracks' },
+    { x: 0.79, y: 0.52, role: 'enemy', rank: 4, terrain: 'road' },
+    { x: 0.72, y: 0.80, role: 'enemy', rank: 4, terrain: 'market' },
+    { x: 0.88, y: 0.36, role: 'enemy', rank: 5, terrain: 'hill' },
+    { x: 0.90, y: 0.68, role: 'enemy', rank: 5, terrain: 'forest' },
+    { x: 0.22, y: 0.20, role: 'neutral', rank: 6, terrain: 'quarry' },
+    { x: 0.22, y: 0.84, role: 'neutral', rank: 6, terrain: 'ford' },
+    { x: 0.55, y: 0.16, role: 'enemy', rank: 7, terrain: 'hill' },
+    { x: 0.56, y: 0.88, role: 'enemy', rank: 7, terrain: 'keep' },
+    { x: 0.38, y: 0.13, role: 'neutral', rank: 8, terrain: 'forest' },
+    { x: 0.39, y: 0.90, role: 'neutral', rank: 8, terrain: 'market' },
+    { x: 0.93, y: 0.50, role: 'enemy', rank: 9, terrain: 'keep' },
+    { x: 0.08, y: 0.30, role: 'neutral', rank: 10, terrain: 'hill' },
+    { x: 0.08, y: 0.74, role: 'neutral', rank: 10, terrain: 'market' },
+    { x: 0.68, y: 0.08, role: 'enemy', rank: 10, terrain: 'keep' },
+    { x: 0.68, y: 0.92, role: 'enemy', rank: 10, terrain: 'keep' }
+  ];
+  const SKIRMISH_PREVIEW_LINKS = [
+    [0, 1], [0, 2], [1, 3], [1, 4], [2, 4], [2, 5],
+    [3, 6], [4, 6], [4, 7], [5, 7], [6, 8], [6, 9],
+    [7, 9], [7, 10], [8, 11], [9, 11], [9, 12], [10, 12],
+    [3, 13], [5, 14], [13, 17], [14, 18], [8, 15], [10, 16],
+    [15, 11], [16, 12], [11, 19], [12, 19], [4, 9],
+    [0, 20], [20, 1], [20, 13], [0, 21], [21, 2], [21, 14],
+    [15, 22], [22, 8], [22, 11], [22, 19], [16, 23], [23, 10], [23, 12], [23, 19]
+  ];
+  const SKIRMISH_TERRAIN_LABELS = {
+    keep: 'Burg',
+    hill: 'Höhe',
+    market: 'Markt',
+    barracks: 'Heer',
+    road: 'Weg',
+    ford: 'Furt',
+    forest: 'Wald',
+    quarry: 'Stein'
+  };
   const DEFAULT_SKIRMISH = {
     mode: 'campaign',
     scenario: 'training',
@@ -391,6 +436,93 @@
     return Number((size.towers || '13').match(/\d+/)?.[0]) || 13;
   }
 
+  function getSafeSkirmishColor(color) {
+    const value = String(color || '').trim();
+    return /^#[0-9a-f]{6}$/i.test(value) ? value : '#2f6fa5';
+  }
+
+  function getSkirmishPreviewNodes(values, towerCount) {
+    const startRankBySize = { compact: 0, standard: 1, large: 1, war: 2, epic: 2 };
+    const startRank = startRankBySize[values.size] || 1;
+    const opponentCount = Math.max(1, Math.min(3, Number(values.opponents) || 1));
+    let enemyIndex = 0;
+
+    return SKIRMISH_PREVIEW_NODES
+      .slice(0, towerCount)
+      .map((node, index) => {
+        let owner = node.role;
+        let ownerIndex = 0;
+        if (node.role === 'neutral' && node.rank <= startRank) {
+          owner = 'player';
+        } else if (node.role === 'enemy') {
+          ownerIndex = enemyIndex % opponentCount;
+          enemyIndex += 1;
+        }
+        return { ...node, index, owner, ownerIndex };
+      });
+  }
+
+  function getPreviewRoadStyle(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const length = Math.sqrt(dx * dx + dy * dy) * 100;
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    return `--x:${(a.x * 100).toFixed(2)}%;--y:${(a.y * 100).toFixed(2)}%;--w:${length.toFixed(2)}%;--angle:${angle.toFixed(2)}deg;`;
+  }
+
+  function renderSkirmishMapPreview(values, region, scenario, size, difficulty, plan, routeEstimate, towerCount) {
+    const preview = byId('mastil-skirmish-map-preview');
+    if (!preview) return;
+
+    const safeColor = getSafeSkirmishColor(values.color);
+    const nodes = getSkirmishPreviewNodes(values, towerCount);
+    const byIndex = new Map(nodes.map((node) => [node.index, node]));
+    const roads = SKIRMISH_PREVIEW_LINKS
+      .filter(([a, b]) => byIndex.has(a) && byIndex.has(b))
+      .map(([a, b]) => {
+        const from = byIndex.get(a);
+        const to = byIndex.get(b);
+        const contested = from.owner !== to.owner;
+        return `<span class="mastil-preview-road ${contested ? 'contested' : ''}" style="${getPreviewRoadStyle(from, to)}"></span>`;
+      }).join('');
+    const markers = nodes.map((node) => {
+      const label = SKIRMISH_TERRAIN_LABELS[node.terrain] || 'Ort';
+      const ownerClass = node.owner === 'enemy' ? `enemy enemy-${node.ownerIndex + 1}` : node.owner;
+      const title = node.owner === 'player'
+        ? 'Eigene Startstellung'
+        : node.owner === 'enemy' ? `Feindburg ${node.ownerIndex + 1}` : label;
+      return `
+        <span class="mastil-preview-node ${ownerClass} terrain-${node.terrain}" style="--x:${(node.x * 100).toFixed(2)}%;--y:${(node.y * 100).toFixed(2)}%;--chosen-color:${safeColor};" title="${title}">
+          <i>${label.slice(0, 1)}</i>
+        </span>
+      `;
+    }).join('');
+    const ownCount = nodes.filter((node) => node.owner === 'player').length;
+    const enemyCount = nodes.filter((node) => node.owner === 'enemy').length;
+    const neutralCount = nodes.length - ownCount - enemyCount;
+
+    preview.style.setProperty('--skirmish-map-image', `url("${region.image}")`);
+    preview.style.setProperty('--skirmish-map-color', safeColor);
+    preview.innerHTML = `
+      <div class="mastil-skirmish-map-stage" aria-label="Kartenaufbau">
+        ${roads}
+        ${markers}
+        <span class="mastil-preview-front">Bossfront</span>
+      </div>
+      <div class="mastil-skirmish-map-intel">
+        <span>Kartenplan</span>
+        <strong>${region.title} | ${size.label}</strong>
+        <p>${scenario.label}: ${plan.label}. ${difficulty.detail}. ${routeEstimate} Wege verbinden ${towerCount} Orte.</p>
+        <div class="mastil-preview-ledger" aria-label="Kartenwerte">
+          <b>${ownCount}<small>Startburgen</small></b>
+          <b>${neutralCount}<small>neutral</small></b>
+          <b>${enemyCount}<small>Feindorte</small></b>
+          <b>${values.opponents}<small>KI-Reiche</small></b>
+        </div>
+      </div>
+    `;
+  }
+
   function renderSkirmishBrief() {
     const brief = byId('mastil-skirmish-brief');
     const values = getSkirmishFieldValues();
@@ -402,6 +534,7 @@
     const opponentText = `${Math.max(1, Math.min(3, values.opponents || 1))} KI-Reich${Number(values.opponents) === 1 ? '' : 'e'}`;
     const routeEstimate = getSkirmishRouteEstimate(values);
     const towerCount = getSkirmishTowerCount(values);
+    const safeColor = getSafeSkirmishColor(values.color);
 
     document.querySelectorAll('.mastil-world-card[data-region-id]').forEach((card) => {
       card.classList.toggle('selected', card.dataset.regionId === region.id);
@@ -409,6 +542,7 @@
     document.querySelectorAll('.mastil-skirmish-preset[data-scenario]').forEach((button) => {
       button.classList.toggle('selected', button.dataset.scenario === values.scenario);
     });
+    renderSkirmishMapPreview(values, region, scenario, size, difficulty, plan, routeEstimate, towerCount);
     if (!brief) return;
     brief.innerHTML = `
       <strong>${scenario.label} auf ${region.title}</strong>
@@ -419,7 +553,7 @@
         <b>${values.opponents}<small>KI</small></b>
         <b>${region.boss.split(' ')[0]}<small>Boss</small></b>
       </div>
-      <em style="--chosen-color:${values.color || '#2f6fa5'}"><i></i> Eure Reichsfarbe wird auf eigene Türme, Banner und Gefechtsbefehle übertragen.</em>
+      <em style="--chosen-color:${safeColor}"><i></i> Eure Reichsfarbe wird auf eigene Türme, Banner und Gefechtsbefehle übertragen.</em>
     `;
   }
 
@@ -471,6 +605,7 @@
               </button>
             `).join('')}
           </div>
+          <div class="mastil-skirmish-map-preview" id="mastil-skirmish-map-preview"></div>
           <div class="mastil-skirmish-options">
             <label>Gefechtsart<select id="mastil-skirmish-scenario">
               ${Object.entries(SKIRMISH_SCENARIOS).map(([id, scenario]) => `<option value="${id}">${scenario.label}</option>`).join('')}

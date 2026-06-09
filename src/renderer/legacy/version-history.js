@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.35
+        // Game version information - Update auf 2.6.36
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 35,
+    patch: 36,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.36": [
+        "Gefechtsmodus erweitert: neue Kriegskarten-Vorschau mit sichtbaren Wegen, Startburgen, neutralen Orten, Feindburgen und Bossfront",
+        "Kartenwahl reagiert jetzt klarer auf Größe, Gegnerzahl, Schwierigkeit, KI-Plan und Reichsfarbe",
+        "Gefechtsfenster ist ergonomischer lesbar, weil Vorschau, Werte und Textbriefing getrennte Aufgaben bekommen"
+    ],
     "2.6.35": [
         "Hauptmenü weiter zum MASTIL-Kartentisch ausgebaut: neuer Kommandotisch, dynamische Frontdaten und stimmigere Befehlsoptik",
         "Türme und Schlösser zeigen Upgrade-Stufen deutlicher mit Mauern, Bannern, Stützpfeilern, Zitadellenringen und Burgstandort-Details",
