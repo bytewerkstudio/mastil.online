@@ -243,29 +243,323 @@
   position: static !important;
   z-index: 3;
   display: grid !important;
-  grid-template-columns: repeat(3, minmax(160px, 1fr)) !important;
-  gap: 9px !important;
-  width: min(820px, 92vw) !important;
-  margin: auto auto clamp(28px, 5vh, 46px) !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: min(1080px, 92vw) !important;
+  max-height: min(72vh, 680px);
+  overflow: auto;
+  margin: auto auto clamp(22px, 4vh, 36px) !important;
   padding: 12px !important;
-  border: 1px solid rgba(226, 189, 90, 0.28);
+  border: 1px solid rgba(226, 189, 90, 0.38);
   border-radius: 8px;
-  background: rgba(14, 9, 6, 0.76);
-  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.36);
+  background:
+    linear-gradient(145deg, rgba(17, 11, 8, 0.9), rgba(7, 6, 6, 0.84)),
+    url("../../../assets/backgrounds/panel-bg.png") center/cover no-repeat;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.52), inset 0 0 44px rgba(226, 189, 90, 0.08);
   backdrop-filter: none;
   inset: auto !important;
   transform: none !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.68) rgba(12, 8, 6, 0.48);
+}
+
+#start-screen .menu-container::-webkit-scrollbar {
+  width: 10px;
+}
+
+#start-screen .menu-container::-webkit-scrollbar-track {
+  background: rgba(12, 8, 6, 0.5);
+  border-radius: 999px;
+}
+
+#start-screen .menu-container::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(12, 8, 6, 0.5);
+  border-radius: 999px;
+  background: rgba(226, 189, 90, 0.74);
+}
+
+.mastil-menu-header,
+.mastil-menu-footer {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mastil-menu-header {
+  padding: 4px 8px 8px;
+  border-bottom: 1px solid rgba(226, 189, 90, 0.22);
+}
+
+.mastil-menu-header span,
+.mastil-menu-footer span {
+  color: rgba(226, 189, 90, 0.88);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-menu-header strong {
+  color: #fff2bf;
+  font: 950 clamp(1.25rem, 2.5vw, 1.9rem)/1.05 Cinzel, Georgia, serif;
+}
+
+.mastil-menu-header p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 12px/1.4 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 1px;
+}
+
+.mastil-menu-badges small,
+.mastil-menu-footer strong {
+  color: rgba(244, 230, 191, 0.82);
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 6px 9px;
+  font: 850 11px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-footer {
+  padding: 7px 10px 1px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  border-top: 1px solid rgba(226, 189, 90, 0.16);
+}
+
+.mastil-menu-footer strong {
+  width: fit-content;
+  justify-self: end;
+  border-radius: 8px;
 }
 
 #start-screen .menu-button {
+  --menu-tone-a: #e2bd5a;
+  --menu-tone-b: #8f6a23;
+  grid-column: span 3;
   width: 100% !important;
-  min-height: 46px !important;
-  padding: 0 10px !important;
-  border-radius: 6px !important;
+  min-width: 0 !important;
+  min-height: 88px !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 12px !important;
+  color: #f7e7b8 !important;
+  text-align: left !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  border: 1px solid rgba(226, 189, 90, 0.28) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--menu-tone-b) 24%, rgba(255, 255, 255, 0.06)), rgba(0, 0, 0, 0.22)) !important;
+  box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.035), 0 12px 28px rgba(0, 0, 0, 0.28) !important;
+  overflow: hidden;
+  position: relative;
 }
 
-#start-screen .menu-button:nth-child(-n + 3) {
-  min-height: 52px !important;
+#start-screen .menu-button.mastil-menu-item,
+#start-screen .menu-button.mastil-menu-item * {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+#start-screen .menu-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--menu-tone-a) 14%, transparent), transparent);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+#start-screen .menu-button:hover,
+#start-screen .menu-button:focus-visible {
+  transform: translateY(-2px) !important;
+  border-color: color-mix(in srgb, var(--menu-tone-a) 76%, white) !important;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--menu-tone-b) 36%, rgba(255, 255, 255, 0.08)), rgba(6, 5, 5, 0.22)) !important;
+}
+
+#start-screen .menu-button:hover::after,
+#start-screen .menu-button:focus-visible::after {
+  opacity: 1;
+}
+
+#start-screen .menu-button.mastil-menu-primary {
+  grid-column: span 4;
+  min-height: 122px !important;
+  grid-template-columns: 52px minmax(0, 1fr);
+  padding: 14px !important;
+}
+
+#start-screen .menu-button.mastil-menu-secondary {
+  min-height: 96px !important;
+}
+
+#start-screen .menu-button.mastil-menu-utility {
+  min-height: 80px !important;
+}
+
+.mastil-menu-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+#start-screen .menu-button .button-text {
+  color: #fff2bf;
+  font: 950 15px/1.08 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+#start-screen .menu-button.mastil-menu-primary .button-text {
+  font: 950 18px/1.08 Cinzel, Georgia, serif;
+}
+
+#start-screen .menu-button small {
+  color: rgba(244, 230, 191, 0.68);
+  font: 750 11px/1.32 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--menu-tone-a) 62%, rgba(244, 230, 191, 0.4));
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 28%, rgba(255, 255, 255, 0.28), transparent 34%),
+    linear-gradient(180deg, var(--menu-tone-a), var(--menu-tone-b));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--menu-tone-a) 28%, transparent);
+  position: relative;
+}
+
+.mastil-menu-primary .mastil-menu-icon {
+  width: 52px;
+  height: 52px;
+}
+
+.mastil-menu-icon::before,
+.mastil-menu-icon::after {
+  content: "";
+  position: absolute;
+  background: #160d08;
+}
+
+.mastil-menu-icon-campaign::before,
+.mastil-menu-icon-skirmish::before,
+.mastil-menu-icon-online::before {
+  width: 23px;
+  height: 23px;
+  clip-path: polygon(50% 0, 100% 38%, 82% 38%, 82% 100%, 58% 100%, 58% 66%, 42% 66%, 42% 100%, 18% 100%, 18% 38%, 0 38%);
+}
+
+.mastil-menu-icon-skirmish::after {
+  width: 28px;
+  height: 4px;
+  transform: rotate(-38deg);
+  border-radius: 999px;
+}
+
+.mastil-menu-icon-online::before {
+  clip-path: polygon(50% 0, 65% 34%, 100% 38%, 74% 62%, 82% 100%, 50% 80%, 18% 100%, 26% 62%, 0 38%, 35% 34%);
+}
+
+.mastil-menu-icon-map::before {
+  width: 24px;
+  height: 18px;
+  border: 3px solid #160d08;
+  border-radius: 3px;
+  background: transparent;
+}
+
+.mastil-menu-icon-map::after {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  box-shadow: -7px -2px 0 #160d08, 7px 5px 0 #160d08;
+}
+
+.mastil-menu-icon-license::before,
+.mastil-menu-icon-buy::before {
+  width: 18px;
+  height: 22px;
+  border-radius: 3px;
+  clip-path: polygon(0 0, 100% 0, 100% 82%, 62% 82%, 50% 100%, 38% 82%, 0 82%);
+}
+
+.mastil-menu-icon-buy::after {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: 3px solid #160d08;
+}
+
+.mastil-menu-icon-legends::before,
+.mastil-menu-icon-credits::before {
+  width: 23px;
+  height: 18px;
+  border: 3px solid #160d08;
+  border-radius: 2px 8px 8px 2px;
+  background: transparent;
+}
+
+.mastil-menu-icon-options::before {
+  width: 23px;
+  height: 23px;
+  border: 4px solid #160d08;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-menu-icon-options::after {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.mastil-menu-icon-highscores::before,
+.mastil-menu-icon-progress::before {
+  width: 25px;
+  height: 23px;
+  clip-path: polygon(50% 0, 62% 35%, 100% 35%, 70% 56%, 82% 100%, 50% 74%, 18% 100%, 30% 56%, 0 35%, 38% 35%);
+}
+
+.mastil-menu-tone-blue {
+  --menu-tone-a: #73b7dc;
+  --menu-tone-b: #214f76;
+}
+
+.mastil-menu-tone-red {
+  --menu-tone-a: #e17a5c;
+  --menu-tone-b: #7d2a25;
+}
+
+.mastil-menu-tone-green {
+  --menu-tone-a: #82d6a0;
+  --menu-tone-b: #27664e;
+}
+
+.mastil-menu-tone-gold {
+  --menu-tone-a: #f3cf69;
+  --menu-tone-b: #8c6525;
+}
+
+.mastil-menu-tone-violet {
+  --menu-tone-a: #c4a8ff;
+  --menu-tone-b: #5b3f85;
 }
 
 #start-screen .copyright {
@@ -2717,8 +3011,66 @@ body:has(#game-container[style*="block"]) #info-panel {
 
   #start-screen .menu-container {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    width: min(380px, 86vw) !important;
+    width: min(440px, 88vw) !important;
+    max-height: min(62vh, 610px);
     margin-bottom: clamp(18px, 4vh, 28px) !important;
+    padding: 11px !important;
+  }
+
+  .mastil-menu-header {
+    padding: 4px 4px 9px;
+  }
+
+  .mastil-menu-header strong {
+    font-size: 1.22rem;
+  }
+
+  .mastil-menu-header p {
+    font-size: 12px;
+  }
+
+  .mastil-menu-badges {
+    display: none;
+  }
+
+  .mastil-menu-footer {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .mastil-menu-footer strong {
+    justify-self: start;
+  }
+
+  #start-screen .menu-button,
+  #start-screen .menu-button.mastil-menu-primary,
+  #start-screen .menu-button.mastil-menu-secondary,
+  #start-screen .menu-button.mastil-menu-utility {
+    grid-column: span 2;
+    min-height: 88px !important;
+    grid-template-columns: 42px minmax(0, 1fr);
+    padding: 10px !important;
+  }
+
+  #start-screen .menu-button.mastil-menu-utility {
+    grid-column: span 2;
+    min-height: 78px !important;
+    align-content: center;
+  }
+
+  #start-screen .menu-button.mastil-menu-utility .mastil-menu-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  #start-screen .menu-button .button-text,
+  #start-screen .menu-button.mastil-menu-primary .button-text {
+    font-size: 14px;
+  }
+
+  #start-screen .menu-button small {
+    font-size: 10px;
+    line-height: 1.25;
   }
 
   #mastil-game-controls {
@@ -2783,8 +3135,8 @@ body:has(#game-container[style*="block"]) #info-panel {
     font-size: clamp(3rem, 17vw, 5.2rem) !important;
   }
 
-  #start-screen .menu-button,
-  #start-screen .menu-button:nth-child(-n + 3) {
+  #start-screen .menu-button:not(.mastil-menu-item),
+  #start-screen .menu-button:not(.mastil-menu-item):nth-child(-n + 3) {
     min-height: 44px !important;
   }
 

@@ -38,6 +38,74 @@
     plan: 'balanced',
     color: '#2f6fa5'
   };
+  const START_MENU_ITEMS = {
+    campaign: {
+      label: 'Offline gegen KI',
+      detail: 'Kampagne mit Weltkarte, Bosswellen und Demo-Fortschritt.',
+      tone: 'blue',
+      rank: 'primary'
+    },
+    skirmish: {
+      label: 'Gefechtsmodus',
+      detail: 'Trainiere Kriege gegen KI mit Karte, Gegnern und Schwierigkeit.',
+      tone: 'red',
+      rank: 'primary'
+    },
+    online: {
+      label: 'Online 1v1',
+      detail: 'Erstelle oder betrete Raeume fuer echte Duelle.',
+      tone: 'green',
+      rank: 'primary'
+    },
+    map: {
+      label: 'Weltkarte',
+      detail: 'Regionen, Bosse und Wellenpfad ansehen.',
+      tone: 'gold',
+      rank: 'secondary'
+    },
+    license: {
+      label: 'Lizenz aktivieren',
+      detail: 'Vollversion freischalten und Welle 6+ spielen.',
+      tone: 'violet',
+      rank: 'secondary'
+    },
+    buy: {
+      label: 'Kaufen 10,99 EUR',
+      detail: 'Einmaliger Kauf fuer die Vollversion.',
+      tone: 'gold',
+      rank: 'secondary'
+    },
+    legends: {
+      label: 'Legenden von MASTIL',
+      detail: 'Reiche, Helden, Bosse und Geschichte.',
+      tone: 'blue',
+      rank: 'secondary'
+    },
+    options: {
+      label: 'Optionen',
+      detail: 'Grafik, Audio und Online-Server einstellen.',
+      tone: 'green',
+      rank: 'utility'
+    },
+    highscores: {
+      label: 'Highscore-Liste',
+      detail: 'Beste Herrscher und erreichte Wellen.',
+      tone: 'gold',
+      rank: 'utility'
+    },
+    progress: {
+      label: 'Auszeichnungen',
+      detail: 'Erfolge, Ziele und freigeschalteter Ruhm.',
+      tone: 'red',
+      rank: 'utility'
+    },
+    credits: {
+      label: 'Credits',
+      detail: 'Studio, Versionen und Projektinformationen.',
+      tone: 'violet',
+      rank: 'utility'
+    }
+  };
 
   function byId(id) {
     return document.getElementById(id);
@@ -536,36 +604,96 @@
     }
   }
 
-  function buildMenuButton(label, handler) {
+  function decorateMenuButton(button, key, handler) {
+    const item = START_MENU_ITEMS[key] || {
+      label: button.textContent.trim(),
+      detail: '',
+      tone: 'gold',
+      rank: 'utility'
+    };
+
+    button.classList.add('mastil-menu-item', `mastil-menu-${item.rank}`, `mastil-menu-tone-${item.tone}`);
+    button.dataset.menuKey = key;
+    button.type = 'button';
+    button.innerHTML = `
+      <span class="mastil-menu-icon mastil-menu-icon-${key}" aria-hidden="true"></span>
+      <span class="mastil-menu-copy">
+        <span class="button-text">${item.label}</span>
+        <small>${item.detail}</small>
+      </span>
+    `;
+
+    if (handler) {
+      button.removeAttribute('onclick');
+      button.addEventListener('click', handler);
+    }
+  }
+
+  function buildMenuButton(key, handler) {
+    const item = START_MENU_ITEMS[key];
     const button = document.createElement('button');
     button.className = 'menu-button';
-    button.type = 'button';
-    button.innerHTML = `<span class="button-text">${label}</span>`;
-    button.addEventListener('click', handler);
+    decorateMenuButton(button, key, handler);
     return button;
+  }
+
+  function ensureMenuFrame(menu) {
+    if (!menu.querySelector('.mastil-menu-header')) {
+      const header = document.createElement('div');
+      header.className = 'mastil-menu-header';
+      header.innerHTML = `
+        <span>Kommandozelt</span>
+        <strong>Waehle deinen naechsten Feldzug</strong>
+        <p>Kampagne, Gefecht, Online-Duell und Reichsarchiv sind jetzt als klare Spielbereiche geordnet.</p>
+        <div class="mastil-menu-badges">
+          <small>Offline spielbar</small>
+          <small>Demo bis Welle 5</small>
+          <small>Online bereit</small>
+        </div>
+      `;
+      menu.prepend(header);
+    }
+
+    if (!menu.querySelector('.mastil-menu-footer')) {
+      const footer = document.createElement('div');
+      footer.className = 'mastil-menu-footer';
+      footer.innerHTML = `
+        <span>MASTIL Weltstatus</span>
+        <strong>GitHub Pages fuer Website, MASTIL-Server fuer Online-Spiel</strong>
+      `;
+      menu.appendChild(footer);
+    }
   }
 
   function enhanceMenu() {
     const menu = document.querySelector('#start-screen .menu-container');
     if (!menu || menu.dataset.mastilEnhanced === 'true') return;
     menu.dataset.mastilEnhanced = 'true';
+    ensureMenuFrame(menu);
 
     const firstButton = menu.querySelector('.menu-button');
     if (firstButton) {
-      const text = firstButton.querySelector('.button-text');
-      if (text) text.textContent = 'Offline gegen KI';
-      firstButton.removeAttribute('onclick');
-      firstButton.addEventListener('click', () => showWorldMap('campaign'));
+      decorateMenuButton(firstButton, 'campaign', () => showWorldMap('campaign'));
     }
 
     const insertAfter = firstButton ? firstButton.nextSibling : null;
-    menu.insertBefore(buildMenuButton('Online 1v1', () => window.MastilOnline.open()), insertAfter);
-    menu.insertBefore(buildMenuButton('Gefechtsmodus', () => showWorldMap('skirmish')), insertAfter);
-    menu.insertBefore(buildMenuButton('Weltkarte', () => showWorldMap('campaign')), insertAfter);
-    menu.insertBefore(buildMenuButton('Lizenz aktivieren', () => showLicenseModal('')), insertAfter);
-    menu.insertBefore(buildMenuButton('Kaufen 10,99 EUR', () => showLicenseModal('Zum Kaufen bitte E-Mail eintragen.')), insertAfter);
+    menu.insertBefore(buildMenuButton('online', () => window.MastilOnline.open()), insertAfter);
+    menu.insertBefore(buildMenuButton('skirmish', () => showWorldMap('skirmish')), insertAfter);
+    menu.insertBefore(buildMenuButton('map', () => showWorldMap('campaign')), insertAfter);
+    menu.insertBefore(buildMenuButton('license', () => showLicenseModal('')), insertAfter);
+    menu.insertBefore(buildMenuButton('buy', () => showLicenseModal('Zum Kaufen bitte E-Mail eintragen.')), insertAfter);
+
+    const legacyButtons = Array.from(menu.querySelectorAll('.menu-button:not([data-menu-key])'));
+    legacyButtons.forEach((button) => {
+      const text = button.textContent.trim();
+      if (text.includes('Legenden')) decorateMenuButton(button, 'legends');
+      else if (text.includes('Optionen')) decorateMenuButton(button, 'options');
+      else if (text.includes('Highscore')) decorateMenuButton(button, 'highscores');
+      else if (text.includes('Credits')) decorateMenuButton(button, 'credits');
+    });
+
     const highscoreButton = Array.from(menu.querySelectorAll('.menu-button')).find((button) => button.textContent.includes('Highscore'));
-    const progressButton = buildMenuButton('Auszeichnungen', showProgressModal);
+    const progressButton = buildMenuButton('progress', showProgressModal);
     if (highscoreButton) {
       menu.insertBefore(progressButton, highscoreButton.nextSibling);
     } else {
