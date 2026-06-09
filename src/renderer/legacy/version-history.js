@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.42
+        // Game version information - Update auf 2.6.43
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 42,
+    patch: 43,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.43": [
+        "Neuer Kriegsrat-Befehl: bewertet die aktuelle Frontlage und löst automatisch die sinnvollste Aktion aus",
+        "Der Kriegsrat berücksichtigt Frontdruck, Reserve, Belagerung, Angriffschance, Ausbau und Sammelbefehl",
+        "Befehlsleiste um ein eigenes Kriegsrat-Symbol erweitert; Leiste bleibt fuer Windows-Spieler kompakt bedienbar"
+    ],
     "2.6.42": [
         "Windows-Steuerung erweitert: wichtige Kampfbefehle reagieren jetzt direkt auf Tastaturbefehle",
         "Mausklick und Tastatur nutzen dieselbe Befehlslogik, damit Angriffe, Reserve, Ausbau und Karte gleich zuverlässig bleiben",

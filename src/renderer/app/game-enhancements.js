@@ -680,6 +680,7 @@
   const unlockedAchievements = new Set(loadAchievementIds());
   const completedContracts = new Set();
   const COMMAND_HOTKEYS = {
+    ' ': 'council',
     '1': 'select',
     '2': 'plan',
     '3': 'attack',
@@ -695,6 +696,7 @@
     m: 'map'
   };
   const COMMAND_HOTKEY_LABELS = {
+    council: 'Space',
     select: '1',
     plan: '2',
     attack: '3',
@@ -6425,6 +6427,68 @@
     playSound('select');
   }
 
+  function getWarCouncilPlan() {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const own = getPlayerTowers();
+    const enemy = getEnemyTowers();
+    const targets = getAttackTargets();
+    const selected = safe(() => selectedTower && selectedTower.faction === playerFaction ? selectedTower : null, null);
+    const currentGold = Math.floor(safe(() => gold, 0));
+    if (!own.length) return { action: '', label: 'Kein eigener Turm mehr verfügbar.' };
+
+    const front = computeFrontPressure(own, enemy);
+    const reservePlan = getReservePlan();
+    const recommendation = getRecommendedTargetForSelected();
+    const commandSource = selected || own[0];
+    const siegeCost = getSiegeCost(commandSource);
+    const flankCost = getFlankCost(commandSource);
+    const upgradePreview = getUpgradePreview(selected);
+    const selectedPressure = selected ? selected.frontPressure || 0 : 0;
+
+    if (!selected && own.length) {
+      return { action: 'select', label: 'stärksten Turm wählen' };
+    }
+    if (selected && selectedPressure >= 0.76 && currentGold >= getFortifyCost(selected)) {
+      return { action: 'fortify', label: 'Frontturm befestigen' };
+    }
+    if (reservePlan.ready && (front.ratio >= 0.5 || reservePlan.target.units < reservePlan.target.maxUnits * 0.48)) {
+      return { action: 'reserve', label: `Reserve zum ${getTowerTierName(reservePlan.target.level)} schicken` };
+    }
+    if (selected && enemy.length && selectedPressure >= 0.5 && currentGold >= siegeCost) {
+      return { action: 'siege', label: 'nächsten Feindposten belagern' };
+    }
+    if (recommendation && recommendation.evaluation.chance >= 0.78) {
+      return { action: 'attack', label: `${recommendation.evaluation.label} ausnutzen` };
+    }
+    if (targets.length && own.length >= 2 && currentGold >= flankCost && recommendation && recommendation.evaluation.chance < 0.6) {
+      return { action: 'flank', label: 'schwere Stellung flankieren' };
+    }
+    if (targets.length && currentGold >= siegeCost && enemy.length) {
+      return { action: 'siege', label: 'starke Stellung schwächen' };
+    }
+    if (upgradePreview.available && upgradePreview.enoughGold && selected && selected.units >= selected.maxUnits * 0.42) {
+      return { action: 'upgrade', label: `${upgradePreview.nextTier} ausbauen` };
+    }
+    if (recommendation) {
+      return { action: 'plan', label: 'bestes Ziel markieren' };
+    }
+    if (own.length >= 2 && own.some((tower) => tower.units < tower.maxUnits)) {
+      return { action: 'rally', label: 'Truppen sammeln' };
+    }
+    return { action: 'select', label: 'stärksten Turm wählen' };
+  }
+
+  function runWarCouncilCommand() {
+    const plan = getWarCouncilPlan();
+    if (!plan.action) {
+      showEnhancementNotice(plan.label || 'Der Kriegsrat findet keinen sinnvollen Befehl.');
+      playSound('blocked');
+      return;
+    }
+    showEnhancementNotice(`Kriegsrat: ${plan.label}.`);
+    runCommandAction(plan.action, 'council');
+  }
+
   function pulseCommandButton(action) {
     const button = document.querySelector(`#mastil-game-controls button[data-action="${action}"]`);
     if (!button) return;
@@ -6437,6 +6501,10 @@
   function runCommandAction(action, source = 'button') {
     if (!action) return;
     if (source === 'keyboard') pulseCommandButton(action);
+    if (action === 'council') {
+      runWarCouncilCommand();
+      return;
+    }
     if (action === 'select') selectStrongestTower();
     if (action === 'plan') markPriorityTarget();
     if (action === 'attack') quickAttackWeakest();
@@ -7108,6 +7176,7 @@
     const controls = document.createElement('div');
     controls.id = 'mastil-game-controls';
     controls.innerHTML = `
+      <button type="button" data-action="council" title="Wählt automatisch den sinnvollsten Befehl der aktuellen Lage"><span class="mastil-command-icon mastil-icon-council" aria-hidden="true"></span><span>Rat</span><small></small></button>
       <button type="button" data-action="select" title="Wählt deinen stärksten Turm"><span class="mastil-command-icon mastil-icon-select" aria-hidden="true"></span><span>Stärkster</span></button>
       <button type="button" data-action="plan" data-cooldown-key="plan" title="Markiert das wichtigste Ziel auf der Karte"><span class="mastil-command-icon mastil-icon-plan" aria-hidden="true"></span><span>Plan</span><small></small></button>
       <button type="button" data-action="attack" title="Sendet 50% zum schwächsten nahen Ziel"><span class="mastil-command-icon mastil-icon-attack" aria-hidden="true"></span><span>Schnell</span><small></small></button>
@@ -7152,6 +7221,14 @@
       if (small && !button.dataset.cooldownKey) small.textContent = text || '';
     };
     const trait = getFactionTrait();
+    const councilButton = controls.querySelector('button[data-action="council"]');
+    if (councilButton) {
+      const council = getWarCouncilPlan();
+      setButtonState(councilButton, own.length ? 'ready' : 'blocked', council.action ? 'bereit' : '');
+      councilButton.title = council.action
+        ? `Kriegsrat: ${council.label}.`
+        : council.label || 'Wählt automatisch den sinnvollsten Befehl der aktuellen Lage.';
+    }
     const abilityButton = controls.querySelector('button[data-action="ability"]');
     if (abilityButton) {
       abilityButton.title = `${trait.ability}: ${trait.passive}`;
