@@ -449,6 +449,14 @@
       title: 'Letztes Aufgebot',
       detail: 'Bei niedriger Moral eine Notreserve erhalten.'
     },
+    firstWarIncident: {
+      title: 'Kriegschance',
+      detail: 'Erstes dynamisches Kriegsereignis erfolgreich genutzt.'
+    },
+    crisisBreaker: {
+      title: 'Krisenbrecher',
+      detail: 'Drei Kriegsereignisse in einer Partie gemeistert.'
+    },
     masterTactician: {
       title: 'Feldherr',
       detail: 'Fünf taktische Manöver in einer Partie befohlen.'
@@ -580,6 +588,11 @@
     lastHeldCount: 0,
     lastSignature: ''
   };
+  const warIncidentState = {
+    active: null,
+    nextAt: 0,
+    counter: 0
+  };
   const matchStats = {
     captured: 0,
     lost: 0,
@@ -599,6 +612,8 @@
     moraleSurges: 0,
     moraleAids: 0,
     maxMorale: 54,
+    warEvents: 0,
+    incidentFailures: 0,
     enemyOrders: 0,
     veterans: 0
   };
@@ -1630,35 +1645,38 @@
     const marked = tower.mastilMarkedUntil && tower.mastilMarkedUntil > now;
     const flanked = tower.flankedUntil && tower.flankedUntil > now;
     const sieged = tower.siegedUntil && tower.siegedUntil > now;
+    const incident = tower.mastilIncidentUntil && tower.mastilIncidentUntil > now;
     const weak = Number(tower.siegeWeakness || 0) > 0;
-    if (!marked && !flanked && !sieged && !weak) return;
+    if (!marked && !flanked && !sieged && !incident && !weak) return;
 
     ctx.save();
     ctx.shadowBlur = 0;
     const pulse = 0.62 + Math.sin(now * 0.006) * 0.16;
-    const color = marked
+    const color = incident
+      ? tower.mastilIncidentKind === 'sabotage' ? '#ff8a6d' : tower.mastilIncidentKind === 'convoy' ? '#f6d873' : '#ffbe67'
+      : marked
       ? tower.mastilMarkedKind === 'flank' ? '#8fc3f0' : '#f1cf6b'
       : flanked ? '#8fc3f0' : '#ffbe67';
-    ctx.strokeStyle = rgba(color, marked || flanked ? pulse : 0.46);
-    ctx.lineWidth = marked || flanked ? 3.2 : 2;
-    ctx.setLineDash(marked ? [12, 7] : flanked ? [5, 7] : [3, 8]);
+    ctx.strokeStyle = rgba(color, marked || flanked || incident ? pulse : 0.46);
+    ctx.lineWidth = marked || flanked || incident ? 3.2 : 2;
+    ctx.setLineDash(incident ? [4, 6] : marked ? [12, 7] : flanked ? [5, 7] : [3, 8]);
     ctx.beginPath();
-    ctx.ellipse(0, 0, width * (marked ? 1.14 : 1.04), height * (marked ? 0.86 : 0.78), 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, width * (marked || incident ? 1.14 : 1.04), height * (marked || incident ? 0.86 : 0.78), 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    if (marked || flanked) {
+    if (marked || flanked || incident) {
       ctx.fillStyle = 'rgba(18, 11, 7, 0.82)';
       ctx.strokeStyle = rgba(color, 0.82);
       ctx.lineWidth = 1.4;
-      roundRect(ctx, -31, -height * 0.98, 62, 18, 6);
+      roundRect(ctx, -36, -height * 0.98, 72, 18, 6);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#fff2bf';
       ctx.font = '950 10px Segoe UI';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(flanked ? 'Flanke' : 'Ziel', 0, -height * 0.98 + 9);
+      ctx.fillText(incident ? tower.mastilIncidentTitle || 'Ereignis' : flanked ? 'Flanke' : 'Ziel', 0, -height * 0.98 + 9);
     }
 
     if (weak || sieged) {
@@ -2629,6 +2647,8 @@
       matchStats.sieges * 150 +
       matchStats.moraleSurges * 160 +
       matchStats.moraleAids * 85 +
+      matchStats.warEvents * 210 -
+      matchStats.incidentFailures * 120 +
       Math.round(matchStats.maxMorale * 8) +
       Math.round(computeSupplyState().ratio * 220) +
       matchAchievements.size * 420 +
@@ -2687,6 +2707,7 @@
         <span><strong>${matchStats.sieges}</strong> Belagerungen</span>
         <span><strong>${matchStats.edicts}</strong> Edikte</span>
         <span><strong>${Math.round(matchStats.maxMorale)}</strong> beste Moral</span>
+        <span><strong>${matchStats.warEvents}</strong> Ereignisse</span>
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
         <span><strong>${matchStats.veterans}</strong> Veteranenrang</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
@@ -2722,6 +2743,9 @@
     strategicState.pulseTimer = 0;
     strategicState.lastHeldCount = 0;
     strategicState.lastSignature = '';
+    warIncidentState.active = null;
+    warIncidentState.nextAt = 0;
+    warIncidentState.counter = 0;
     matchStats.captured = 0;
     matchStats.lost = 0;
     matchStats.upgrades = 0;
@@ -2740,6 +2764,8 @@
     matchStats.moraleSurges = 0;
     matchStats.moraleAids = 0;
     matchStats.maxMorale = 54;
+    matchStats.warEvents = 0;
+    matchStats.incidentFailures = 0;
     matchStats.enemyOrders = 0;
     matchStats.veterans = 0;
     commandCooldowns.clear();
@@ -3263,6 +3289,259 @@
     }
   }
 
+  function getWarIncidentDelay() {
+    const config = getMatchConfig();
+    const difficultyFactor = { easy: 1.22, normal: 1, hard: 0.88, brutal: 0.78 }[config.difficulty] || 1;
+    const sizeFactor = { compact: 1.12, standard: 1, large: 0.94, war: 0.86 }[config.size] || 1;
+    const waveNumber = Math.max(1, safe(() => wave, 1));
+    const jitter = 3600 + seededFraction(waveNumber * 19 + warIncidentState.counter * 7) * 5200;
+    return Math.floor((16500 + jitter) * difficultyFactor * sizeFactor);
+  }
+
+  function getWarIncidentTarget(kind, own, enemy, neutral) {
+    if (kind === 'sabotage') {
+      const front = computeFrontPressure(own, enemy);
+      return front.hottest || own
+        .map((tower) => ({ tower, score: tower.units + (tower.supplyLinked ? 6 : 0) + (tower.fortifiedUntil && tower.fortifiedUntil > performance.now() ? 8 : 0) }))
+        .sort((a, b) => a.score - b.score)[0]?.tower || null;
+    }
+
+    if (kind === 'convoy') {
+      const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+      const candidates = [...neutral, ...enemy]
+        .filter((tower) => ['market', 'road', 'ford'].includes(tower.terrain) || tower.type === typeFromKey('gold'));
+      return candidates
+        .map((tower) => ({
+          tower,
+          score:
+            (tower.faction === playerFaction ? 20 : 0) +
+            (tower.terrain === 'market' ? -10 : 0) +
+            (tower.type === typeFromKey('gold') ? -6 : 0) +
+            Math.abs((tower.routeRank || 0) - 3) * 2 +
+            tower.units * 0.25
+        }))
+        .sort((a, b) => a.score - b.score)[0]?.tower || null;
+    }
+
+    const marked = getMarkedBattleTarget();
+    if (marked && enemy.includes(marked)) return marked;
+    return enemy
+      .map((tower) => ({
+        tower,
+        score:
+          tower.units +
+          (tower.level || 1) * 7 -
+          (tower.boss ? 26 : 0) -
+          (tower.commander ? 15 : 0) -
+          (tower.terrain === 'keep' ? 10 : 0)
+      }))
+      .sort((a, b) => b.score - a.score)[0]?.tower || null;
+  }
+
+  function chooseWarIncidentKind(own, enemy, neutral) {
+    const front = computeFrontPressure(own, enemy);
+    const hasConvoyTarget = [...neutral, ...enemy].some((tower) => ['market', 'road', 'ford'].includes(tower.terrain) || tower.type === typeFromKey('gold'));
+    if (front.ratio >= 0.72 && own.length) return 'sabotage';
+    if (hasConvoyTarget && (matchStats.warEvents + warIncidentState.counter) % 3 === 1) return 'convoy';
+    if (enemy.length) return 'breach';
+    if (hasConvoyTarget) return 'convoy';
+    return own.length ? 'sabotage' : '';
+  }
+
+  function createWarIncident(kind, target) {
+    if (!kind || !target) return null;
+    const now = performance.now();
+    const duration = kind === 'sabotage' ? 23000 : kind === 'convoy' ? 28000 : 24000;
+    const incident = {
+      id: `wi-${Date.now().toString(36)}-${warIncidentState.counter += 1}`,
+      kind,
+      target,
+      targetNode: target.mastilNodeIndex,
+      createdAt: now,
+      expiresAt: now + duration,
+      title: '',
+      detail: ''
+    };
+
+    if (kind === 'breach') {
+      incident.title = 'Mauerbruch';
+      incident.detail = `${getTowerTierName(target.level)} ist verwundbar. Belagern oder stürmen, bevor die Lücke geschlossen wird.`;
+      target.siegeWeakness = Math.min(4, (target.siegeWeakness || 0) + 1);
+      target.reconWeakness = Math.min(3, (target.reconWeakness || 0) + 1);
+      markBattleTarget(getPlayerTowers()[0], target, 'plan', duration);
+    } else if (kind === 'convoy') {
+      incident.title = 'Versorgungskonvoi';
+      incident.detail = `${getStrategicSiteInfo(target).title} trägt Vorräte. Sichere den Ort für Gold, Truppen und Moral.`;
+      markBattleTarget(getPlayerTowers()[0], target, 'plan', duration);
+    } else {
+      incident.title = 'Sabotage';
+      incident.detail = `${getTowerTierName(target.level)} ist bedroht. Halte, befestige oder versorge ihn bis der Angriff verpufft.`;
+    }
+
+    target.mastilIncidentId = incident.id;
+    target.mastilIncidentKind = kind;
+    target.mastilIncidentTitle = incident.title;
+    target.mastilIncidentUntil = incident.expiresAt;
+    warIncidentState.active = incident;
+    pushEvent(`Kriegsereignis: ${incident.title}`, kind === 'sabotage' ? 'danger' : 'incident');
+    spawnEffect(target.x, target.y, kind === 'sabotage' ? 'impact' : 'plan', {
+      color: kind === 'sabotage' ? '#ff8a6d' : kind === 'convoy' ? '#f6d873' : '#ffbe67',
+      text: incident.title,
+      duration: 1250,
+      size: target.boss ? 1.2 : 1
+    });
+    return incident;
+  }
+
+  function clearWarIncident(incident = warIncidentState.active) {
+    if (incident && incident.target) {
+      const tower = incident.target;
+      if (tower.mastilIncidentId === incident.id) {
+        tower.mastilIncidentId = '';
+        tower.mastilIncidentKind = '';
+        tower.mastilIncidentTitle = '';
+        tower.mastilIncidentUntil = 0;
+      }
+    }
+    if (warIncidentState.active === incident) warIncidentState.active = null;
+    warIncidentState.nextAt = performance.now() + getWarIncidentDelay();
+  }
+
+  function resolveWarIncident(success, reason = '') {
+    const incident = warIncidentState.active;
+    if (!incident || !incident.target) return;
+    const target = incident.target;
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const enemyFaction = isEnemyFaction(target.faction);
+    const now = performance.now();
+
+    if (success) {
+      matchStats.warEvents += 1;
+      warMorale = clamp(warMorale + (incident.kind === 'sabotage' ? 6 : 7), 0, 100);
+      if (incident.kind === 'breach') {
+        const bonus = 34 + Math.max(1, safe(() => wave, 1)) * 4;
+        safe(() => {
+          gold += bonus;
+          updateUI();
+        });
+        target.siegeWeakness = Math.min(4, (target.siegeWeakness || 0) + 1);
+        pushEvent(`Mauerbruch genutzt: +${bonus} Gold`, 'incident');
+      } else if (incident.kind === 'convoy') {
+        const bonus = 58 + Math.max(1, safe(() => wave, 1)) * 5;
+        safe(() => {
+          gold += bonus;
+          updateUI();
+        });
+        if (target.faction === playerFaction) {
+          target.units = Math.min(target.maxUnits, target.units + 4);
+        }
+        pushEvent(`Konvoi gesichert: +${bonus} Gold`, 'incident');
+      } else {
+        target.units = Math.min(target.maxUnits, target.units + 3);
+        target.fortifiedUntil = Math.max(target.fortifiedUntil || 0, now + 9000);
+        pushEvent('Sabotage abgewehrt', 'incident');
+      }
+      spawnEffect(target.x, target.y, 'achievement', {
+        color: '#f6d873',
+        text: 'Erfolg',
+        duration: 1200,
+        size: 0.95
+      });
+      unlockAchievement('firstWarIncident', { tower: target });
+      if (matchStats.warEvents >= 3) unlockAchievement('crisisBreaker', { tower: target });
+      clearWarIncident(incident);
+      return;
+    }
+
+    matchStats.incidentFailures += 1;
+    if (incident.kind === 'convoy' && enemyFaction) {
+      target.units = Math.min(target.maxUnits, target.units + 4);
+      pushEvent('Feindlicher Konvoi erreicht die Front', 'threat');
+    } else if (incident.kind === 'sabotage' && target.faction === playerFaction) {
+      const loss = Math.min(Math.max(1, Math.floor(target.units - 1)), 2 + Math.floor((target.level || 1) / 2));
+      target.units = Math.max(1, target.units - loss);
+      warMorale = clamp(warMorale - 6, 0, 100);
+      pushEvent(`Sabotage trifft: -${loss} Truppen`, 'danger');
+      spawnEffect(target.x, target.y, 'impact', { color: '#ff8a6d', text: `-${loss}`, duration: 1050, size: 0.95 });
+    } else {
+      pushEvent(reason || 'Kriegsgelegenheit verpasst', 'incident');
+    }
+    clearWarIncident(incident);
+  }
+
+  function getWarIncidentPanelState() {
+    const incident = warIncidentState.active;
+    if (!incident || !incident.target) {
+      return {
+        active: false,
+        title: 'Kriegsereignis',
+        detail: 'Keine besondere Chance aktiv.',
+        progress: 0,
+        kind: ''
+      };
+    }
+    const remaining = clamp((incident.expiresAt - performance.now()) / Math.max(1, incident.expiresAt - incident.createdAt), 0, 1);
+    return {
+      active: true,
+      title: incident.title,
+      detail: incident.detail,
+      progress: remaining,
+      kind: incident.kind
+    };
+  }
+
+  function applyWarIncidentPulse(deltaTime = 0) {
+    const now = performance.now();
+    const own = getPlayerTowers();
+    const enemy = getEnemyTowers();
+    const neutral = safe(() => towers.filter((tower) => tower.faction === FACTIONS.NEUTRAL), []);
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    if (!own.length) {
+      clearWarIncident();
+      return;
+    }
+
+    const active = warIncidentState.active;
+    if (active && active.target) {
+      const target = active.target;
+      if (!safe(() => towers.includes(target), false)) {
+        clearWarIncident(active);
+      } else if (active.kind === 'breach' && target.faction === playerFaction) {
+        resolveWarIncident(true);
+      } else if (active.kind === 'convoy' && target.faction === playerFaction) {
+        resolveWarIncident(true);
+      } else if (active.kind === 'sabotage') {
+        const held = target.faction === playerFaction;
+        const stable = held && (
+          (target.fortifiedUntil && target.fortifiedUntil > now) ||
+          target.supplyLinked ||
+          target.units >= Math.max(4, target.maxUnits * 0.52)
+        );
+        if (stable && now - active.createdAt > 10500) {
+          resolveWarIncident(true);
+        } else if (now >= active.expiresAt) {
+          resolveWarIncident(false);
+        }
+      } else if (now >= active.expiresAt) {
+        resolveWarIncident(false, 'Kriegsgelegenheit verpasst');
+      }
+      return;
+    }
+
+    if (!warIncidentState.nextAt) {
+      warIncidentState.nextAt = now + 9000 + seededFraction(Math.max(1, safe(() => wave, 1)) * 13) * 5000;
+    }
+    if (now < warIncidentState.nextAt) return;
+
+    const kind = chooseWarIncidentKind(own, enemy, neutral);
+    const target = getWarIncidentTarget(kind, own, enemy, neutral);
+    if (!kind || !target) {
+      warIncidentState.nextAt = now + getWarIncidentDelay();
+      return;
+    }
+    createWarIncident(kind, target);
+  }
+
   function applyTerrainEconomy(tower, deltaTime) {
     if (!tower || tower.faction !== safe(() => FACTIONS.PLAYER, 'player')) return;
     tower.mastilTerrainTimer = (tower.mastilTerrainTimer || 0) + deltaTime;
@@ -3667,6 +3946,12 @@
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
     const currentGold = Math.floor(safe(() => gold, 0));
     if (!own.length) return 'Verteidigung gebrochen.';
+    const incident = warIncidentState.active;
+    if (incident && incident.target) {
+      if (incident.kind === 'breach') return 'Kriegsereignis: Mauerbruch nutzen, jetzt belagern oder stürmen.';
+      if (incident.kind === 'convoy') return 'Kriegsereignis: Konvoi sichern, Ziel schnell erobern.';
+      if (incident.kind === 'sabotage') return 'Kriegsereignis: betroffenen Turm halten, versorgen oder befestigen.';
+    }
     if (!selected) return 'Wähle einen Turm, dann Angriff oder Ausbau.';
     if (selected.faction !== playerFaction) return 'Wähle zuerst einen eigenen Turm.';
 
@@ -5033,6 +5318,7 @@
         safe(() => towers.forEach((tower) => applyTerrainEconomy(tower, deltaTime || 0)));
         safe(() => applyStrategicSitePulse(deltaTime || 0));
         safe(() => applyMoralePulse(deltaTime || 0));
+        safe(() => applyWarIncidentPulse(deltaTime || 0));
         safe(() => towers.forEach((tower) => assignEnemyCommander(tower)));
         safe(() => applyEnemyCommanderPressure());
         safe(() => towers.forEach((tower) => {
@@ -5318,6 +5604,11 @@
         <span id="mastil-morale-detail">Das Reich sammelt sich.</span>
         <em><i id="mastil-morale-progress"></i></em>
       </div>
+      <div class="mastil-incident-panel" id="mastil-incident-panel">
+        <strong id="mastil-incident-title">Kriegsereignis</strong>
+        <span id="mastil-incident-detail">Keine besondere Chance aktiv.</span>
+        <em><i id="mastil-incident-progress"></i></em>
+      </div>
       <div class="mastil-war-contract" id="mastil-war-contract">
         <strong>Kriegsauftrag</strong>
         <span id="mastil-contract-detail">Sichere wichtige Orte.</span>
@@ -5342,6 +5633,7 @@
         <span id="mastil-stat-commands">0 Befehle</span>
         <span id="mastil-stat-maneuvers">0 Manöver</span>
         <span id="mastil-stat-morale">54 Moral</span>
+        <span id="mastil-stat-events">0 Ereign.</span>
         <span id="mastil-stat-spoils">0 Beute</span>
         <span id="mastil-stat-sieges">0 Belag.</span>
         <span id="mastil-stat-supply">0% Vers.</span>
@@ -5449,6 +5741,10 @@
     const moraleTitle = document.getElementById('mastil-morale-title');
     const moraleDetail = document.getElementById('mastil-morale-detail');
     const moraleProgress = document.getElementById('mastil-morale-progress');
+    const incidentBox = document.getElementById('mastil-incident-panel');
+    const incidentTitle = document.getElementById('mastil-incident-title');
+    const incidentDetail = document.getElementById('mastil-incident-detail');
+    const incidentProgress = document.getElementById('mastil-incident-progress');
     const contractBox = document.getElementById('mastil-war-contract');
     const contractDetail = document.getElementById('mastil-contract-detail');
     const contractProgress = document.getElementById('mastil-contract-progress');
@@ -5466,6 +5762,7 @@
     const commands = document.getElementById('mastil-stat-commands');
     const maneuvers = document.getElementById('mastil-stat-maneuvers');
     const moraleStat = document.getElementById('mastil-stat-morale');
+    const eventStat = document.getElementById('mastil-stat-events');
     const spoils = document.getElementById('mastil-stat-spoils');
     const sieges = document.getElementById('mastil-stat-sieges');
     const supplyStat = document.getElementById('mastil-stat-supply');
@@ -5474,7 +5771,7 @@
     const threatStat = document.getElementById('mastil-stat-threat');
     const veteranStat = document.getElementById('mastil-stat-veterans');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !eventStat || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -5503,6 +5800,15 @@
       moraleTitle.textContent = `Kriegslaune: ${morale.title}`;
       moraleDetail.textContent = morale.detail;
       moraleProgress.style.width = `${Math.round(morale.ratio * 100)}%`;
+    }
+    if (incidentBox && incidentTitle && incidentDetail && incidentProgress) {
+      const incident = getWarIncidentPanelState();
+      incidentBox.classList.toggle('active', incident.active);
+      incidentBox.classList.toggle('danger', incident.kind === 'sabotage');
+      incidentBox.classList.toggle('reward', incident.kind === 'convoy' || incident.kind === 'breach');
+      incidentTitle.textContent = incident.active ? `Kriegsereignis: ${incident.title}` : incident.title;
+      incidentDetail.textContent = incident.detail;
+      incidentProgress.style.width = `${Math.round(incident.progress * 100)}%`;
     }
     if (contractBox && contractDetail && contractProgress) {
       const label = contractBox.querySelector('strong');
@@ -5537,6 +5843,7 @@
     commands.textContent = `${matchStats.commands} Befehle`;
     maneuvers.textContent = `${matchStats.plans + matchStats.flanks} Manöver`;
     moraleStat.textContent = `${Math.round(warMorale)} Moral`;
+    eventStat.textContent = `${matchStats.warEvents} Ereign.`;
     spoils.textContent = `${matchStats.spoils} Beute`;
     sieges.textContent = `${matchStats.sieges} Belag.`;
     supplyStat.textContent = `${Math.round(supply.ratio * 100)}% Vers.`;

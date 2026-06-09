@@ -1479,6 +1479,60 @@
   box-shadow: inset 0 0 20px color-mix(in srgb, var(--morale-color) 18%, transparent);
 }
 
+.mastil-incident-panel {
+  --incident-color: #d8c49a;
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.76);
+  border: 1px solid rgba(216, 196, 154, 0.22);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mastil-incident-panel.active {
+  color: rgba(244, 230, 191, 0.9);
+  border-color: color-mix(in srgb, var(--incident-color) 48%, transparent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--incident-color) 15%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(13, 9, 7, 0.18);
+}
+
+.mastil-incident-panel.reward {
+  --incident-color: #f6d873;
+}
+
+.mastil-incident-panel.danger {
+  --incident-color: #ff8a6d;
+}
+
+.mastil-incident-panel strong {
+  color: color-mix(in srgb, var(--incident-color) 86%, #fff2bf);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-incident-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-incident-panel em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.mastil-incident-panel i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--incident-color), #ffe18a);
+  transition: width 220ms linear;
+}
+
 .mastil-war-contract {
   display: grid;
   gap: 5px;
@@ -1697,6 +1751,10 @@
 
 .mastil-event-morale strong {
   color: #f6d873;
+}
+
+.mastil-event-incident strong {
+  color: #ffe18a;
 }
 
 .mastil-event-site strong {
