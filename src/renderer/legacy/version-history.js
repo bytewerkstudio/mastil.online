@@ -2057,3 +2057,435 @@ const VERSION_HISTORY = {
         }
 
         // ... existing code ...
+
+    (function installMastilArchiveWindows() {
+        const factionIconClasses = {
+            england: 'mastil-icon-england',
+            spain: 'mastil-icon-spain',
+            maya: 'mastil-icon-maya',
+            abbasid: 'mastil-icon-abbasid',
+            hre: 'mastil-icon-hre'
+        };
+
+        const MASTIL_LORE = {
+            england: {
+                name: 'Ritter von Albion',
+                archive: 'Archiv der Tafelwacht',
+                motto: 'Halten, sammeln, dann mit voller Ordnung vorstoßen.',
+                region: 'Nebelmarken von Albion',
+                style: 'Defensives Reich mit starken Kernburgen und zuverlässigen Gegenstößen.',
+                power: 'Bessere Standhaftigkeit an wichtigen Knotenpunkten.',
+                risk: 'Langsamer Aufbau, wenn Handelswege früh verloren gehen.',
+                boss: 'Der Greifenmarschall',
+                color: '#2e5d88',
+                chapters: [
+                    {
+                        title: 'Der erste Schwur',
+                        text: 'Albion begann nicht als Königreich, sondern als ein Ring zerstrittener Burgen. Artus sammelte die kleineren Häuser nicht mit Drohung, sondern mit einem Eid: Kein Turm steht allein, solange eine Straße nach Hause führt.'
+                    },
+                    {
+                        title: 'Die Greifenstandarte',
+                        text: 'Eleonora Eisenherz verwandelte diesen Eid in Kriegsordnung. Unter ihrer Standarte hielten wenige Verteidiger ganze Täler, bis Verstärkung über die befestigten Wege kam.'
+                    },
+                    {
+                        title: 'Auf dem Spielfeld',
+                        text: 'Albion fühlt sich gut an, wenn du erst sichere Linien baust, dann gezielt planst und einen starken Gegenangriff aus mehreren Türmen auslöst.'
+                    }
+                ],
+                heroes: [
+                    {
+                        name: 'Artus der Einiger',
+                        relic: 'Kelch der Harmonie',
+                        story: 'Sein Wunder beruhigte verfeindete Häuser und machte aus alten Fehden Versorgungsbündnisse. In MASTIL steht Artus für stabile Fronten und kluge Bündelung deiner Kräfte.'
+                    },
+                    {
+                        name: 'Eleonora Eisenherz',
+                        relic: 'Greifenstandarte',
+                        story: 'Wenn die Front zu brechen drohte, hob Eleonora die Standarte über die Mauern. Ihre Legende passt zu Momenten, in denen ein einziger befestigter Turm eine ganze Welle aufhält.'
+                    },
+                    {
+                        name: 'Wilhelm der Seefahrer',
+                        relic: 'Kompass der Verlorenen Gezeiten',
+                        story: 'Wilhelm öffnete sichere Handelswege durch Nebel und Sturm. Seine Lehre: Wer Wege kontrolliert, kontrolliert das Tempo der Schlacht.'
+                    }
+                ]
+            },
+            spain: {
+                name: 'Die Solterraner',
+                archive: 'Chroniken von Esperia',
+                motto: 'Sonne, Tempo und ein Angriff, bevor der Feind atmet.',
+                region: 'Goldene Grenzlande',
+                style: 'Aggressive Expansion, starke Einnahmen und schneller Druck auf neutrale Festungen.',
+                power: 'Bessere Chancen, frühe Rohstofforte in eine Offensive zu verwandeln.',
+                risk: 'Überdehnung wird hart bestraft, wenn die Wege nicht gesichert sind.',
+                boss: 'Isabellas Sonnenkomtur',
+                color: '#b9483d',
+                chapters: [
+                    {
+                        title: 'Die Karten jenseits der Sonne',
+                        text: 'Die Solterraner glauben, dass jede Karte nur eine Einladung ist, weiterzugehen. Ferrando ließ neue Wege markieren, bevor seine Gegner überhaupt wussten, dass dort ein Pass existiert.'
+                    },
+                    {
+                        title: 'Das Reich der schnellen Banner',
+                        text: 'Isabella ordnete jedes eroberte Schloss in ein Netz aus Vorrat, Signalfeuern und Marschpunkten ein. So wurden kleine Siege zu einer Lawine.'
+                    },
+                    {
+                        title: 'Auf dem Spielfeld',
+                        text: 'Solterra belohnt mutige Spieler: früh neutrale Türme nehmen, Goldorte halten und mit Flanken verhindern, dass die KI sich sammelt.'
+                    }
+                ],
+                heroes: [
+                    {
+                        name: 'Ferrando El Navegante',
+                        relic: 'Astrolabium der Sternenpfade',
+                        story: 'Ferrando sah Routen dort, wo andere nur Risiko sahen. Seine Legende passt zum Kartenlesen: kurze Wege, schnelle Angriffe, keine verschwendete Bewegung.'
+                    },
+                    {
+                        name: 'Isabella La Conquistadora',
+                        relic: 'Zepter der Goldenen Sonne',
+                        story: 'Isabella machte aus Gold Disziplin. Im Spiel erinnert sie daran, dass Einkommen nur dann stark ist, wenn es sofort in Druck und Upgrades fließt.'
+                    }
+                ]
+            },
+            maya: {
+                name: 'Sternenleser von Yaxtun',
+                archive: 'Sternentafeln von Yaxtun',
+                motto: 'Wer den nächsten Zyklus kennt, verschwendet keine Truppe.',
+                region: 'Dschungel von Yaxtun',
+                style: 'Kontrolliertes Wachstum, gute Reaktion auf Ereignisse und starke Planung.',
+                power: 'Mehr Nutzen aus Zielen, Bosswarnungen und taktischen Markierungen.',
+                risk: 'Braucht Übersicht; chaotische Mehrfronten kosten schnell Momentum.',
+                boss: 'Der Jaguarschamane',
+                color: '#1f7a66',
+                chapters: [
+                    {
+                        title: 'Der Spiegel im Tempel',
+                        text: 'Pacal blickte in den Obsidian-Spiegel und sah keine Zukunft, sondern Muster. Die Sternenleser wurden groß, weil sie Angriffe erwarteten, bevor Trommeln erklangen.'
+                    },
+                    {
+                        title: 'Die Jade-Tafeln',
+                        text: 'Ixchel ordnete Ernten, Rituale und Verteidigung nach Zyklen. Ihre Städte wuchsen nicht zufällig: Jeder Weg, jede Pyramide, jeder Wachposten hatte einen Platz.'
+                    },
+                    {
+                        title: 'Auf dem Spielfeld',
+                        text: 'Yaxtun passt zu Spielern, die ruhig lesen, Ziele markieren und dann sauber reagieren. Lass die KI in ungünstige Wege laufen.'
+                    }
+                ],
+                heroes: [
+                    {
+                        name: 'Pacal der Himmelsdeuter',
+                        relic: 'Obsidian-Spiegel von Itzamna',
+                        story: 'Pacal gewann Schlachten oft vor dem ersten Angriff, weil er wusste, welche Straße wichtig werden würde. Seine Lehre ist Vorplanung.'
+                    },
+                    {
+                        name: 'Ixchel die Mondweberin',
+                        relic: 'Jade-Tafeln der Zyklen',
+                        story: 'Ixchel bewahrte Yaxtun vor Übermut. Im Spiel steht sie für Geduld: erst das Netz, dann der Schlag.'
+                    }
+                ]
+            },
+            abbasid: {
+                name: 'Kalifat von Al-Kimiya',
+                archive: 'Haus der Weisheit',
+                motto: 'Wissen ist eine Mauer, und eine gute Mauer gewinnt Zeit.',
+                region: 'Oasenringe von Al-Kimiya',
+                style: 'Technische Überlegenheit, starke Upgrades und robuste Verteidigung.',
+                power: 'Bessere Wirkung aus befestigten und spezialisierten Türmen.',
+                risk: 'Wenn der frühe Aufbau gestört wird, fehlen Reserven für lange Kriege.',
+                boss: 'Der Sandmechanikus',
+                color: '#b88734',
+                chapters: [
+                    {
+                        title: 'Die Stadt aus Licht und Zahlen',
+                        text: 'Al-Kimiya wurde um Bibliotheken, Werkstätten und Sternwarten gebaut. Wo andere nur Mauern sahen, berechneten seine Gelehrten Winkel, Vorrat und Reichweite.'
+                    },
+                    {
+                        title: 'Das Elixier der Beständigkeit',
+                        text: 'Zaynab machte Festungen haltbar, Brunnen sicher und Waffen verlässlich. Das Kalifat gewinnt nicht durch Hast, sondern durch bessere Vorbereitung.'
+                    },
+                    {
+                        title: 'Auf dem Spielfeld',
+                        text: 'Al-Kimiya ist stark, wenn du klug upgradest, Engstellen hältst und den Gegner an Mauern ausbluten lässt, bevor du vorrückst.'
+                    }
+                ],
+                heroes: [
+                    {
+                        name: 'Al-Mamun der Himmelsvermesser',
+                        relic: 'Astrolabium der Wahren Kurse',
+                        story: 'Al-Mamun machte Wissen zur Infrastruktur. In MASTIL bedeutet das: Wege verstehen, Risiken messen, dann handeln.'
+                    },
+                    {
+                        name: 'Zaynab die Alchemistin',
+                        relic: 'Elixier der Beständigkeit',
+                        story: 'Ihre Mauern hielten, weil sie nicht nur gebaut, sondern begriffen wurden. Sie steht für starke Verteidigung und sinnvolle Upgrades.'
+                    }
+                ]
+            },
+            hre: {
+                name: 'Aethelgardisches Reich',
+                archive: 'Reichsannalen von Aethelgard',
+                motto: 'Ordnung über Entfernung, Krone über Chaos.',
+                region: 'Nachtfestung und Kaiserstraße',
+                style: 'Ausgewogene Macht mit starker Kontrolle über zentrale Wege und große Karten.',
+                power: 'Gute Stabilität, wenn mehrere Fronten über ein Zentrum verbunden sind.',
+                risk: 'Verliert an Kraft, wenn das Reich in getrennte Inseln zerfällt.',
+                boss: 'Der Kronenbrecher',
+                color: '#6f638f',
+                chapters: [
+                    {
+                        title: 'Die Krone erwacht',
+                        text: 'Aethelgard war ein Mosaik aus stolzen Städten und misstrauischen Fürsten. Heinrichs Krone zwang sie nicht nieder; sie erinnerte sie daran, dass getrennte Banner einzeln fallen.'
+                    },
+                    {
+                        title: 'Der Codex der Waage',
+                        text: 'Theophanu gab dem Reich Regeln, auf die selbst Rivalen vertrauten. Mit ihr wurden Straßen sicherer, Steuern planbarer und Belagerungen seltener.'
+                    },
+                    {
+                        title: 'Auf dem Spielfeld',
+                        text: 'Aethelgard liebt Zentralität: Halte Kreuzungen, verbinde Burgen und führe Kriege nicht als einzelne Duelle, sondern als Reichssystem.'
+                    }
+                ],
+                heroes: [
+                    {
+                        name: 'Heinrich der Reichserneuerer',
+                        relic: 'Krone der Uralten Könige',
+                        story: 'Heinrich gewann Loyalität durch sichtbare Ordnung. Im Spiel steht er für starke Mitte und verlässliche Frontlinien.'
+                    },
+                    {
+                        name: 'Theophanu die Gesetzgeberin',
+                        relic: 'Zepter der Waage',
+                        story: 'Theophanu machte Chaos messbar und Streit entscheidbar. Ihre Lehre: Eine klare Regel im richtigen Moment spart mehr Truppen als ein großer Angriff.'
+                    }
+                ]
+            }
+        };
+
+        function compareVersionsDesc(a, b) {
+            const pa = a.split('.').map(Number);
+            const pb = b.split('.').map(Number);
+            for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+                const delta = (pb[i] || 0) - (pa[i] || 0);
+                if (delta !== 0) return delta;
+            }
+            return 0;
+        }
+
+        function openArchiveModal(modal) {
+            if (!modal) return;
+            modal.style.display = 'grid';
+            modal.scrollTop = 0;
+            modal.classList.add('mastil-window-open');
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'auto';
+        }
+
+        function closeArchiveModal(modal) {
+            if (!modal) return;
+            modal.style.display = 'none';
+            modal.classList.remove('mastil-window-open');
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+        }
+
+        function buildLoreHome() {
+            const factions = Object.entries(MASTIL_LORE).map(([id, lore]) => `
+                <button class="mastil-lore-route" onclick="showCivilizationLegend('${id}')">
+                    <span class="mastil-faction-icon ${factionIconClasses[id]}" aria-hidden="true"></span>
+                    <strong>${lore.name}</strong>
+                    <small>${lore.region}</small>
+                </button>
+            `).join('');
+
+            return `
+                <section class="mastil-lore-home">
+                    <span class="mastil-kicker">Reichsarchiv</span>
+                    <h3>Die Welt hinter den Wellen</h3>
+                    <p>MASTIL ist ein Krieg um Wege, Vorräte und alte Schwüre. Jede Fraktion betritt dieselbe Welt mit einer anderen Art zu denken: Albion hält Linien, Solterra drückt nach vorne, Yaxtun liest Muster, Al-Kimiya baut Überlegenheit und Aethelgard verbindet das Reich.</p>
+                    <div class="mastil-lore-routes">${factions}</div>
+                    <p class="mastil-scroll-hint">Wähle ein Reich, um seine Geschichte, Spielweise und Helden zu sehen.</p>
+                </section>
+            `;
+        }
+
+        function buildLoreContent(id, lore) {
+            const chapters = lore.chapters.map(chapter => `
+                <article class="mastil-lore-chapter">
+                    <h4>${chapter.title}</h4>
+                    <p>${chapter.text}</p>
+                </article>
+            `).join('');
+
+            const heroes = lore.heroes.map(hero => `
+                <div class="legend-accordion-item">
+                    <button class="legend-accordion-title" onclick="toggleLegendAccordion(this)">
+                        <span>${hero.name}</span>
+                        <small>${hero.relic}</small>
+                    </button>
+                    <div class="legend-accordion-panel">
+                        <p>${hero.story}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            return `
+                <section class="mastil-lore-hero" style="--lore-color:${lore.color}">
+                    <div class="mastil-lore-emblem mastil-faction-icon ${factionIconClasses[id]}" aria-hidden="true"></div>
+                    <div>
+                        <span>${lore.archive}</span>
+                        <h3>${lore.name}</h3>
+                        <p>${lore.motto}</p>
+                    </div>
+                </section>
+                <div class="mastil-lore-stats">
+                    <div><span>Region</span><strong>${lore.region}</strong></div>
+                    <div><span>Stil</span><strong>${lore.style}</strong></div>
+                    <div><span>Stärke</span><strong>${lore.power}</strong></div>
+                    <div><span>Risiko</span><strong>${lore.risk}</strong></div>
+                    <div><span>Boss</span><strong>${lore.boss}</strong></div>
+                </div>
+                <div class="mastil-lore-grid">${chapters}</div>
+                <section class="mastil-lore-chronicle">
+                    <div class="mastil-lore-section-head">
+                        <span>Helden & Wunder</span>
+                        <strong>Aufklappbare Chroniken</strong>
+                    </div>
+                    <div class="legends-accordion">${heroes}</div>
+                </section>
+            `;
+        }
+
+        function buildCreditHighlights() {
+            return [
+                ['Studio', 'Bytewerk Studio', 'Offizielle Website, Windows-Version, Web-Version und Spielausbau.'],
+                ['Spielsystem', 'Tower Conquest', 'Kampagne, Gefecht, KI, Wellen, Bosskämpfe, Moral und Kriegsereignisse.'],
+                ['Online', 'mastil.online', 'Website über GitHub Pages; Echtzeit-Mehrspieler über den separaten MASTIL-Server.'],
+                ['Design', 'MASTIL Welt', 'Weltkarte, Fraktionen, Hintergründe, Icons, Fenster, Menüs und Kartenstimmung.'],
+                ['Qualität', 'Getestete Builds', 'Lokale Prüfungen, Browser-Test und regelmäßige Veröffentlichung auf GitHub.'],
+                ['Entwicklung', 'H. Haqmal', 'Spielidee, Richtung, offizielle Veröffentlichung und Projektleitung.']
+            ].map(([label, title, text]) => `
+                <article class="mastil-credit-card">
+                    <span>${label}</span>
+                    <strong>${title}</strong>
+                    <p>${text}</p>
+                </article>
+            `).join('');
+        }
+
+        function buildVersionAccordion() {
+            const grouped = {};
+            Object.keys(VERSION_HISTORY).sort(compareVersionsDesc).forEach(version => {
+                const main = version.split('.')[0];
+                if (!grouped[main]) grouped[main] = [];
+                grouped[main].push(version);
+            });
+
+            return Object.keys(grouped).sort((a, b) => Number(b) - Number(a)).map(main => {
+                const minorGroups = {};
+                grouped[main].forEach(version => {
+                    const minor = version.split('.')[1] || '0';
+                    if (!minorGroups[minor]) minorGroups[minor] = [];
+                    minorGroups[minor].push(version);
+                });
+
+                const minors = Object.keys(minorGroups).sort((a, b) => Number(b) - Number(a)).map(minor => {
+                    const entries = minorGroups[minor].sort(compareVersionsDesc).map(version => `
+                        <div class="version-entry">
+                            <div class="version-number">Version ${version}</div>
+                            <ul>${VERSION_HISTORY[version].map(change => `<li>${change}</li>`).join('')}</ul>
+                        </div>
+                    `).join('');
+
+                    return `
+                        <div class="inner-accordion-item">
+                            <button class="inner-accordion-title" onclick="toggleInnerAccordion(this)">Version ${main}.${minor}</button>
+                            <div class="inner-accordion-panel">${entries}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="accordion-item">
+                        <button class="accordion-title" onclick="toggleAccordion(this)">Version ${main}</button>
+                        <div class="accordion-panel">
+                            <div class="inner-accordion-credits">${minors}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.renderCreditsAccordion = function renderCreditsAccordionModern() {
+            const modal = document.getElementById('credits-modal');
+            const content = modal ? modal.querySelector('.credits-content') : null;
+            if (!content) return;
+
+            const latestVersion = Object.keys(VERSION_HISTORY).sort(compareVersionsDesc)[0] || '2.6.32';
+            content.innerHTML = `
+                <section class="mastil-credit-hero">
+                    <span class="mastil-kicker">Offizielle Credits</span>
+                    <h2>MASTIL</h2>
+                    <p>Ein mittelalterliches Tower-Conquest-Spiel für Web und Windows, gebaut als offizielle Spielwelt von mastil.online.</p>
+                    <div class="mastil-credit-meta">
+                        <span>Live-Version ${latestVersion}</span>
+                        <span>Preisplan: Demo bis Welle 5, Vollversion 10,99 EUR</span>
+                    </div>
+                </section>
+                <section class="mastil-credit-grid">${buildCreditHighlights()}</section>
+                <section class="mastil-credit-note">
+                    <strong>Was ist MASTIL?</strong>
+                    <p>MASTIL verbindet Kartenkontrolle, Burgen, Türme, Wege, Bosswellen und taktische Befehle. Das Spiel wächst Schritt für Schritt zu einer größeren Welt mit Kampagne, Gefecht, Offline-KI und Online-Modus.</p>
+                </section>
+                <section class="mastil-version-section">
+                    <div class="mastil-lore-section-head">
+                        <span>Versionsarchiv</span>
+                        <strong>Änderungen und Ausbau</strong>
+                    </div>
+                    <div class="accordion-credits mastil-version-log">${buildVersionAccordion()}</div>
+                </section>
+                <div class="mastil-credit-signature">Developed by H. Haqmal · Bytewerk Studio</div>
+            `;
+        };
+
+        window.showCredits = function showCreditsModern() {
+            window.renderCreditsAccordion();
+            const modal = document.getElementById('credits-modal');
+            openArchiveModal(modal);
+            const content = modal ? modal.querySelector('.credits-content') : null;
+            if (content) content.scrollTop = 0;
+        };
+
+        window.closeCredits = function closeCreditsModern() {
+            closeArchiveModal(document.getElementById('credits-modal'));
+        };
+
+        window.showLegends = function showLegendsModern() {
+            const modal = document.getElementById('legends-modal');
+            const content = document.getElementById('legend-content');
+            if (content && !content.dataset.modernLoreReady) {
+                content.innerHTML = buildLoreHome();
+                content.dataset.modernLoreReady = 'home';
+                content.style.display = 'block';
+            }
+            openArchiveModal(modal);
+            if (content) content.scrollTop = 0;
+        };
+
+        window.closeLegends = function closeLegendsModern() {
+            closeArchiveModal(document.getElementById('legends-modal'));
+        };
+
+        window.showCivilizationLegend = function showCivilizationLegendModern(civId) {
+            const lore = MASTIL_LORE[civId];
+            const contentContainer = document.getElementById('legend-content');
+            if (!lore || !contentContainer) return;
+
+            document.querySelectorAll('.legend-button').forEach(btn => btn.classList.remove('active'));
+            const selectedButton = document.querySelector(`.legend-button[onclick*="${civId}"]`);
+            if (selectedButton) selectedButton.classList.add('active');
+
+            contentContainer.innerHTML = buildLoreContent(civId, lore);
+            contentContainer.dataset.modernLoreReady = civId;
+            contentContainer.style.display = 'block';
+            contentContainer.scrollTop = 0;
+        };
+    })();

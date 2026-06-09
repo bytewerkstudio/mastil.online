@@ -2277,6 +2277,10 @@ body:has(#game-container[style*="block"]) #info-panel {
   max-width: 1040px !important;
   max-height: 88vh !important;
   padding: 28px !important;
+  box-sizing: border-box !important;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto;
+  gap: 0;
+  overflow: hidden !important;
   color: var(--mastil-cream) !important;
   border: 1px solid rgba(226, 189, 90, 0.62) !important;
   border-radius: 8px !important;
@@ -2287,7 +2291,12 @@ body:has(#game-container[style*="block"]) #info-panel {
   z-index: 2400 !important;
 }
 
-#legends-modal h2 {
+#credits-modal {
+  grid-template-rows: minmax(0, 1fr) auto auto;
+}
+
+#legends-modal h2,
+#credits-modal h2 {
   margin-bottom: 12px !important;
   color: #f1cf6b !important;
   letter-spacing: 0 !important;
@@ -2344,13 +2353,16 @@ body:has(#game-container[style*="block"]) #info-panel {
 
 .civilization-legend {
   display: none;
-  max-height: min(48vh, 460px);
+  min-height: 0;
+  max-height: none;
   overflow: auto;
   padding: 18px !important;
   color: rgba(244, 230, 191, 0.86) !important;
   border: 1px solid rgba(226, 189, 90, 0.35) !important;
   border-radius: 8px !important;
   background: rgba(7, 5, 4, 0.48) !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.7) rgba(11, 7, 5, 0.48);
 }
 
 .civilization-legend h3 {
@@ -2381,6 +2393,314 @@ body:has(#game-container[style*="block"]) #info-panel {
   color: rgba(244, 230, 191, 0.82) !important;
   background: rgba(0, 0, 0, 0.2) !important;
   border-radius: 0 0 6px 6px;
+}
+
+#credits-modal .credits-content {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.7) rgba(11, 7, 5, 0.48);
+}
+
+#credits-modal .credits-content::-webkit-scrollbar,
+.civilization-legend::-webkit-scrollbar,
+#tutorial::-webkit-scrollbar,
+#options-modal::-webkit-scrollbar,
+#highscore-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+#credits-modal .credits-content::-webkit-scrollbar-track,
+.civilization-legend::-webkit-scrollbar-track,
+#tutorial::-webkit-scrollbar-track,
+#options-modal::-webkit-scrollbar-track,
+#highscore-modal::-webkit-scrollbar-track {
+  background: rgba(11, 7, 5, 0.5);
+  border-radius: 999px;
+}
+
+#credits-modal .credits-content::-webkit-scrollbar-thumb,
+.civilization-legend::-webkit-scrollbar-thumb,
+#tutorial::-webkit-scrollbar-thumb,
+#options-modal::-webkit-scrollbar-thumb,
+#highscore-modal::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(11, 7, 5, 0.5);
+  border-radius: 999px;
+  background: rgba(226, 189, 90, 0.78);
+}
+
+.mastil-kicker {
+  display: inline-block;
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-lore-home,
+.mastil-credit-hero,
+.mastil-credit-note,
+.mastil-version-section {
+  display: grid;
+  gap: 10px;
+}
+
+.mastil-lore-home h3,
+.mastil-credit-hero h2 {
+  margin: 0 !important;
+  color: #fff2bf !important;
+  font: 950 clamp(1.5rem, 3.2vw, 2.45rem)/1.05 Cinzel, Georgia, serif !important;
+}
+
+.mastil-lore-home p,
+.mastil-credit-hero p,
+.mastil-credit-note p,
+.mastil-lore-chapter p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.84);
+  font: 750 14px/1.58 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-routes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 4px;
+}
+
+.mastil-lore-route {
+  min-height: 120px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 12px 9px;
+  color: #22150c !important;
+  border: 1px solid rgba(226, 189, 90, 0.46) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, rgba(244, 230, 191, 0.94), rgba(197, 174, 126, 0.9)) !important;
+  text-align: center;
+}
+
+.mastil-lore-route .mastil-faction-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.mastil-lore-route strong {
+  font: 950 12px/1.15 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-lore-route small {
+  color: rgba(34, 21, 12, 0.68);
+  font: 800 10px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-scroll-hint {
+  padding: 9px 11px;
+  border: 1px dashed rgba(226, 189, 90, 0.32);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.mastil-lore-hero {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--lore-color) 58%, #e2bd5a);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 42px 38px, color-mix(in srgb, var(--lore-color) 24%, transparent), transparent 78px),
+    rgba(255, 255, 255, 0.05);
+}
+
+.mastil-lore-emblem {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 1px solid rgba(244, 230, 191, 0.68);
+  background-color: color-mix(in srgb, var(--lore-color) 55%, #d7ad48);
+}
+
+.mastil-lore-hero span,
+.mastil-lore-section-head span,
+.mastil-lore-stats span,
+.mastil-credit-card span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-lore-hero h3 {
+  margin: 3px 0 5px !important;
+  color: #fff2bf !important;
+  font: 950 clamp(1.45rem, 3vw, 2.2rem)/1.05 Cinzel, Georgia, serif !important;
+}
+
+.mastil-lore-hero p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.82);
+  font: 800 14px/1.4 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mastil-lore-stats div,
+.mastil-credit-card,
+.mastil-credit-note {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.mastil-lore-stats strong,
+.mastil-credit-card strong {
+  color: #fff2bf;
+  font: 900 12px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-grid,
+.mastil-credit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mastil-lore-chapter {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.mastil-lore-chapter h4 {
+  margin: 0;
+  color: #f4d77a;
+  font: 950 14px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-section-head {
+  display: grid;
+  gap: 3px;
+  margin: 14px 0 8px;
+}
+
+.mastil-lore-section-head strong {
+  color: #fff2bf;
+  font: 950 16px/1.2 "Segoe UI", sans-serif;
+}
+
+.legend-accordion-title {
+  display: flex !important;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 13px !important;
+}
+
+.legend-accordion-title span {
+  color: #fff2bf;
+  font-weight: 950;
+}
+
+.legend-accordion-title small {
+  color: rgba(244, 230, 191, 0.62);
+  font: 800 11px/1.2 "Segoe UI", sans-serif;
+  text-align: right;
+}
+
+.mastil-credit-hero {
+  padding: 16px;
+  border: 1px solid rgba(226, 189, 90, 0.36);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(226, 189, 90, 0.14), transparent 12rem),
+    rgba(255, 255, 255, 0.05);
+}
+
+.mastil-credit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mastil-credit-meta span,
+.mastil-credit-signature {
+  color: rgba(244, 230, 191, 0.76);
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 7px 10px;
+  font: 850 11px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-credit-card p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.76);
+  font: 750 12px/1.45 "Segoe UI", sans-serif;
+}
+
+.mastil-version-log {
+  display: grid;
+  gap: 7px;
+}
+
+#credits-modal .accordion-title,
+#credits-modal .inner-accordion-title {
+  width: 100%;
+  min-height: 42px;
+  color: #fff2bf !important;
+  border: 1px solid rgba(226, 189, 90, 0.24) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  text-align: left;
+  font: 900 13px/1.2 "Segoe UI", sans-serif !important;
+}
+
+#credits-modal .accordion-panel,
+#credits-modal .inner-accordion-panel {
+  color: rgba(244, 230, 191, 0.8) !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+  border-radius: 0 0 8px 8px;
+}
+
+#credits-modal .version-entry {
+  border-bottom: 1px solid rgba(226, 189, 90, 0.16);
+}
+
+#credits-modal .version-number {
+  color: #f4d77a !important;
+  font-weight: 950 !important;
+}
+
+.mastil-credit-signature {
+  display: block;
+  width: fit-content;
+  margin: 16px auto 0;
+  border-radius: 8px;
+}
+
+#tutorial,
+#options-modal,
+#highscore-modal {
+  max-height: min(88vh, 780px) !important;
+  overflow: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.7) rgba(11, 7, 5, 0.48);
 }
 
 @media (max-width: 720px) {
@@ -2591,6 +2911,7 @@ body:has(#game-container[style*="block"]) #info-panel {
   #legends-modal,
   #credits-modal {
     width: 94vw !important;
+    max-height: 90vh !important;
     padding: 18px !important;
   }
 
@@ -2599,6 +2920,44 @@ body:has(#game-container[style*="block"]) #info-panel {
   }
 
   .civilization-legend {
-    max-height: 46vh;
+    padding: 13px !important;
+  }
+
+  .mastil-lore-routes,
+  .mastil-lore-stats,
+  .mastil-lore-grid,
+  .mastil-credit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-lore-hero {
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 10px;
+    padding: 11px;
+  }
+
+  .mastil-lore-emblem {
+    width: 46px;
+    height: 46px;
+  }
+
+  .legend-accordion-title {
+    display: grid !important;
+    gap: 4px;
+  }
+
+  .legend-accordion-title small {
+    text-align: left;
+  }
+
+  .mastil-credit-meta {
+    display: grid;
+  }
+
+  #tutorial,
+  #options-modal,
+  #highscore-modal {
+    width: 94vw !important;
+    max-height: 90vh !important;
   }
 }
