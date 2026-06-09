@@ -433,6 +433,18 @@
       title: 'Belagerer',
       detail: 'Erste feindliche Stellung mit Belagerungsgerät gebrochen.'
     },
+    firstBattlePlan: {
+      title: 'Schlachtplan',
+      detail: 'Erstes wichtiges Ziel markiert.'
+    },
+    firstFlank: {
+      title: 'Flankenritt',
+      detail: 'Ersten Flankenangriff geführt.'
+    },
+    masterTactician: {
+      title: 'Feldherr',
+      detail: 'Fünf taktische Manöver in einer Partie befohlen.'
+    },
     siegeMaster: {
       title: 'Mauerbrecher',
       detail: 'Drei Belagerungen in einer Partie geführt.'
@@ -570,6 +582,8 @@
     abilities: 0,
     spoils: 0,
     sieges: 0,
+    plans: 0,
+    flanks: 0,
     enemyOrders: 0,
     veterans: 0
   };
@@ -790,7 +804,9 @@
   }
 
   function getCommandCooldownMs(key) {
+    if (key === 'plan') return 9000;
     if (key === 'assault') return 14000;
+    if (key === 'flank') return 18000;
     if (key === 'rally') return 11000;
     if (key === 'siege') return 22000;
     if (key === 'ability') return getFactionTrait().cooldown;
@@ -818,6 +834,14 @@
     const quarryDiscount = tower && tower.terrain === 'quarry' ? 0.86 : 1;
     const abbasidDiscount = getPlayerFactionId() === 'abbasid' ? 0.9 : 1;
     return Math.max(38, Math.floor((46 + level * 6 + currentWave * 3) * quarryDiscount * abbasidDiscount));
+  }
+
+  function getFlankCost(tower) {
+    const currentWave = Math.max(1, safe(() => wave, 1));
+    const level = tower ? tower.level || 1 : 1;
+    const roadDiscount = tower && tower.terrain === 'road' ? 0.86 : 1;
+    const signalDiscount = hasStrategicSite('royalroad') ? 0.9 : 1;
+    return Math.max(24, Math.floor((32 + level * 5 + currentWave * 2) * roadDiscount * signalDiscount));
   }
 
   function enrichFactionSelection() {
@@ -1419,6 +1443,8 @@
       ctx.setLineDash([]);
     }
 
+    drawTowerTacticalMarkers(tower, width, height);
+
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 18;
     ctx.shadowOffsetY = 10;
@@ -1581,6 +1607,58 @@
 
     drawTowerRoleDetails(tower, width, height, base);
     drawTowerBadges(tower, width, height, level);
+    ctx.restore();
+  }
+
+  function drawTowerTacticalMarkers(tower, width, height) {
+    const now = performance.now();
+    const marked = tower.mastilMarkedUntil && tower.mastilMarkedUntil > now;
+    const flanked = tower.flankedUntil && tower.flankedUntil > now;
+    const sieged = tower.siegedUntil && tower.siegedUntil > now;
+    const weak = Number(tower.siegeWeakness || 0) > 0;
+    if (!marked && !flanked && !sieged && !weak) return;
+
+    ctx.save();
+    ctx.shadowBlur = 0;
+    const pulse = 0.62 + Math.sin(now * 0.006) * 0.16;
+    const color = marked
+      ? tower.mastilMarkedKind === 'flank' ? '#8fc3f0' : '#f1cf6b'
+      : flanked ? '#8fc3f0' : '#ffbe67';
+    ctx.strokeStyle = rgba(color, marked || flanked ? pulse : 0.46);
+    ctx.lineWidth = marked || flanked ? 3.2 : 2;
+    ctx.setLineDash(marked ? [12, 7] : flanked ? [5, 7] : [3, 8]);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, width * (marked ? 1.14 : 1.04), height * (marked ? 0.86 : 0.78), 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (marked || flanked) {
+      ctx.fillStyle = 'rgba(18, 11, 7, 0.82)';
+      ctx.strokeStyle = rgba(color, 0.82);
+      ctx.lineWidth = 1.4;
+      roundRect(ctx, -31, -height * 0.98, 62, 18, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fff2bf';
+      ctx.font = '950 10px Segoe UI';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(flanked ? 'Flanke' : 'Ziel', 0, -height * 0.98 + 9);
+    }
+
+    if (weak || sieged) {
+      ctx.strokeStyle = rgba('#ffbe67', 0.74);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-width * 0.32, -height * 0.2);
+      ctx.lineTo(-width * 0.08, height * 0.04);
+      ctx.lineTo(-width * 0.2, height * 0.22);
+      ctx.moveTo(width * 0.28, -height * 0.26);
+      ctx.lineTo(width * 0.08, -height * 0.04);
+      ctx.lineTo(width * 0.22, height * 0.16);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 
@@ -2351,6 +2429,39 @@
         ctx.stroke();
         ctx.fillStyle = 'rgba(244, 230, 191, 0.18)';
         ctx.fill();
+      }
+
+      if (effect.type === 'plan' || effect.type === 'flank') {
+        const radius = 22 + ease * 34 * effect.size;
+        ctx.strokeStyle = rgba(effect.color, effect.type === 'flank' ? 0.88 : 0.78);
+        ctx.lineWidth = effect.type === 'flank' ? 3.2 : 2.8;
+        ctx.setLineDash(effect.type === 'flank' ? [6, 6] : [12, 7]);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.strokeStyle = rgba('#fff2bf', 0.7);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.72, 0);
+        ctx.lineTo(-radius * 0.28, 0);
+        ctx.moveTo(radius * 0.28, 0);
+        ctx.lineTo(radius * 0.72, 0);
+        ctx.moveTo(0, -radius * 0.72);
+        ctx.lineTo(0, -radius * 0.28);
+        ctx.moveTo(0, radius * 0.28);
+        ctx.lineTo(0, radius * 0.72);
+        ctx.stroke();
+
+        if (effect.type === 'flank') {
+          ctx.fillStyle = rgba(effect.color, 0.18);
+          ctx.beginPath();
+          ctx.moveTo(-radius * 0.58, -radius * 0.32);
+          ctx.quadraticCurveTo(0, -radius * 0.88, radius * 0.58, -radius * 0.32);
+          ctx.quadraticCurveTo(0, -radius * 0.48, -radius * 0.58, -radius * 0.32);
+          ctx.fill();
+        }
       }
 
       if (effect.type === 'upgrade' || effect.type === 'capture' || effect.type === 'fortify' || effect.type === 'achievement') {
@@ -3883,8 +3994,14 @@
           home.mastilVeteranRank = getTowerVeteranRank(previousHome);
           home.mastilVeteranCapacityApplied = 0;
           applyTowerVeteranBonus(home);
-        } else if (config.mode === 'skirmish' && node.role !== 'player') {
-          home.units = Math.min(home.maxUnits, Math.max(home.units, Math.floor(home.maxUnits * 0.54)));
+        } else if (config.mode === 'skirmish') {
+          const startRatioByDifficulty = { easy: 0.78, normal: 0.7, hard: 0.64, brutal: 0.58 };
+          const sizeBoost = config.size === 'war' ? 0.08 : config.size === 'large' ? 0.05 : 0.02;
+          const startRatio = Math.min(0.86, (startRatioByDifficulty[config.difficulty] || 0.68) + sizeBoost);
+          home.units = Math.min(home.maxUnits, Math.max(home.units, Math.floor(home.maxUnits * startRatio)));
+          if (config.size === 'war' || warPlan === WAR_PLANS.fortress) {
+            home.fortifiedUntil = Math.max(home.fortifiedUntil || 0, performance.now() + 16000);
+          }
         }
         towers.push(home);
         continue;
@@ -3920,8 +4037,10 @@
     window.MASTIL_ACTIVE_REGION = getActiveRegion();
     window.MASTIL_ACTIVE_BOSS_WAVE = bossWave;
     window.MASTIL_WAR_PLAN = warPlan.label;
-    const graceByDifficulty = { easy: 22000, normal: 17000, hard: 12500, brutal: 9000 };
-    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 15000) * warPlan.graceFactor : 12000);
+    const graceByDifficulty = { easy: 26000, normal: 20500, hard: 16500, brutal: 12200 };
+    const sizeGrace = { compact: 0.96, standard: 1.06, large: 1.2, war: 1.38 }[config.size] || 1;
+    const opponentGrace = 1 + Math.max(0, opponentCount - 1) * 0.08;
+    window.mastilAiGraceUntil = performance.now() + (config.mode === 'skirmish' ? (graceByDifficulty[config.difficulty] || 18000) * warPlan.graceFactor * sizeGrace * opponentGrace : 12000);
     enemyCommandState.readyAt.clear();
     enemyCommandState.lastOrderText = 'Feindliche Kommandanten sondieren die Front.';
     enemyCommandState.lastCommanderId = '';
@@ -3975,10 +4094,15 @@
       playSound('error');
       return;
     }
-    const target = targets
+    const marked = getMarkedBattleTarget();
+    const target = marked && targets.includes(marked) ? marked : targets
       .map((tower) => ({
         tower,
-        score: tower.units + Math.hypot(tower.x - source.x, tower.y - source.y) / 80
+        score:
+          tower.units +
+          Math.hypot(tower.x - source.x, tower.y - source.y) / 80 -
+          (tower.reconWeakness ? tower.reconWeakness * 7 : 0) -
+          (tower.flankedUntil && tower.flankedUntil > performance.now() ? 10 : 0)
       }))
       .sort((a, b) => a.score - b.score)[0].tower;
 
@@ -4009,24 +4133,197 @@
     if (matchStats.commands >= 3) {
       unlockAchievement('tacticalCommander');
     }
+    if ((matchStats.plans || 0) + (matchStats.flanks || 0) + matchStats.sieges >= 5) {
+      unlockAchievement('masterTactician');
+    }
   }
 
   function getNearestTargetFor(source, candidates) {
+    const marked = getMarkedBattleTarget();
     return candidates
       .map((tower) => ({
         tower,
         score:
           tower.units +
           Math.hypot(tower.x - source.x, tower.y - source.y) / 95 +
-          (tower.faction === safe(() => FACTIONS.NEUTRAL, 'neutral') ? 8 : 0)
+          (tower.faction === safe(() => FACTIONS.NEUTRAL, 'neutral') ? 8 : 0) -
+          (tower === marked ? 22 : 0)
       }))
       .sort((a, b) => a.score - b.score)[0]?.tower || null;
+  }
+
+  function getMarkedBattleTarget() {
+    const now = performance.now();
+    return safe(() => towers.find((tower) => {
+      if (!tower || tower.faction === FACTIONS.PLAYER) return false;
+      return tower.mastilMarkedUntil && tower.mastilMarkedUntil > now;
+    }), null);
+  }
+
+  function getPriorityBattleTarget(source, candidates = getAttackTargets()) {
+    if (!candidates.length) return null;
+    const marked = getMarkedBattleTarget();
+    if (marked && candidates.includes(marked)) return marked;
+
+    return candidates
+      .map((tower) => {
+        const distance = source ? Math.hypot(tower.x - source.x, tower.y - source.y) : 0;
+        const site = getStrategicSiteInfo(tower);
+        const strategicWeight = site && tower.faction !== safe(() => FACTIONS.PLAYER, 'player') ? 12 : 0;
+        const bossWeight = tower.boss ? 34 : 0;
+        const commanderWeight = tower.commander ? 18 : 0;
+        const vulnerable = tower.siegedUntil && tower.siegedUntil > performance.now() ? 16 : 0;
+        const roleWeight = tower.type === typeFromKey('gold') ? 8 : tower.type === typeFromKey('troop') ? 6 : 0;
+        return {
+          tower,
+          score:
+            distance / 82 +
+            tower.units * 0.62 +
+            (tower.level || 1) * 5 -
+            strategicWeight -
+            bossWeight -
+            commanderWeight -
+            vulnerable -
+            roleWeight
+        };
+      })
+      .sort((a, b) => a.score - b.score)[0]?.tower || null;
+  }
+
+  function markBattleTarget(source, target, kind = 'plan', duration = 22000) {
+    if (!target) return;
+    const now = performance.now();
+    target.mastilMarkedUntil = now + duration;
+    target.mastilMarkedKind = kind;
+    target.mastilMarkedBy = source ? source.mastilNodeIndex : null;
+    target.mastilMarkedAt = now;
+    spawnEffect(target.x, target.y, kind === 'flank' ? 'flank' : 'plan', {
+      color: kind === 'flank' ? '#8fc3f0' : '#f1cf6b',
+      text: kind === 'flank' ? 'Flanke' : 'Ziel',
+      duration: 1200,
+      size: target.boss ? 1.22 : 1
+    });
+  }
+
+  function markPriorityTarget() {
+    if (!isCommandReady('plan', getCommandCooldownMs('plan'), 'Schlachtplan')) return;
+
+    const source = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null) || selectStrongestTower();
+    const candidates = getAttackTargets();
+    if (!source || !candidates.length) {
+      commandCooldowns.delete('plan');
+      showEnhancementNotice('Kein Ziel für den Schlachtplan gefunden.');
+      playSound('error');
+      return;
+    }
+
+    const target = getPriorityBattleTarget(source, candidates);
+    if (!target) {
+      commandCooldowns.delete('plan');
+      showEnhancementNotice('Kein sinnvolles Ziel gefunden.');
+      playSound('error');
+      return;
+    }
+
+    markBattleTarget(source, target, 'plan', 24000);
+    target.reconWeakness = Math.min(2, (target.reconWeakness || 0) + 1);
+    matchStats.plans += 1;
+    recordTacticalCommand(`Schlachtplan: ${getTowerRoleName(target.type)} markiert`, 'site');
+    unlockAchievement('firstBattlePlan', { tower: target });
+    showEnhancementNotice(`Schlachtplan: ${getTowerTierName(target.level)} markiert. Angriff und Belagerung treffen besser.`);
+    playSound('select');
+  }
+
+  function flankingStrike() {
+    if (!isCommandReady('flank', getCommandCooldownMs('flank'), 'Flankenangriff')) return;
+
+    const own = getPlayerTowers().filter((tower) => tower.units >= Math.max(5, tower.maxUnits * 0.22));
+    const source = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null) || own[0] || selectStrongestTower();
+    const candidates = getAttackTargets();
+    if (!source || own.length < 2 || !candidates.length) {
+      commandCooldowns.delete('flank');
+      showEnhancementNotice('Flanke braucht mindestens zwei eigene Türme und ein Ziel.');
+      playSound('error');
+      return;
+    }
+
+    const target = getPriorityBattleTarget(source, candidates);
+    if (!target) {
+      commandCooldowns.delete('flank');
+      showEnhancementNotice('Kein Ziel für die Flanke gefunden.');
+      playSound('error');
+      return;
+    }
+
+    const cost = getFlankCost(source);
+    const currentGold = safe(() => gold, 0);
+    if (currentGold < cost) {
+      commandCooldowns.delete('flank');
+      showEnhancementNotice(`Flankenangriff benötigt ${cost} Gold.`);
+      playSound('error');
+      return;
+    }
+
+    const strikeSources = own
+      .map((tower) => ({ tower, distance: Math.hypot(tower.x - target.x, tower.y - target.y) }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, Math.min(3, own.length))
+      .map((entry) => entry.tower);
+
+    let sentTotal = 0;
+    strikeSources.forEach((tower, index) => {
+      const ratio = tower === source ? 0.34 : 0.24;
+      const amount = Math.max(1, Math.floor(tower.units * ratio));
+      if (amount <= 0) return;
+      sentTotal += amount;
+      safe(() => sendUnitsFromTower(tower, target, amount));
+      spawnEffect(tower.x, tower.y, 'attack', {
+        color: colorForFaction(tower.faction),
+        text: index === 0 ? 'Flanke' : `-${amount}`,
+        duration: 900,
+        size: 0.94
+      });
+    });
+
+    if (sentTotal <= 0) {
+      commandCooldowns.delete('flank');
+      showEnhancementNotice('Keine Truppen für die Flanke bereit.');
+      playSound('error');
+      return;
+    }
+
+    safe(() => {
+      gold -= cost;
+      updateUI();
+      hideTowerMenu();
+    });
+    const now = performance.now();
+    target.flankedUntil = now + 18000;
+    target.siegeWeakness = Math.min(4, (target.siegeWeakness || 0) + 1);
+    if (target.fortifiedUntil && target.fortifiedUntil > now) {
+      target.fortifiedUntil = Math.min(target.fortifiedUntil, now + 5600);
+    }
+    markBattleTarget(source, target, 'flank', 21000);
+
+    matchStats.flanks += 1;
+    recordTacticalCommand(`Flankenangriff: ${sentTotal} Truppen`, 'assault');
+    unlockAchievement('firstFlank', { tower: target });
+    spawnEffect(target.x, target.y, 'flank', {
+      color: '#8fc3f0',
+      text: `-${cost}G`,
+      duration: 1350,
+      size: target.boss ? 1.2 : 1
+    });
+    showEnhancementNotice(`Flankenangriff: ${sentTotal} Truppen setzen ${getTowerTierName(target.level)} unter Druck.`);
+    playSound('attack');
   }
 
   function getSiegeTargetFor(source) {
     const enemies = getEnemyTowers();
     const neutral = safe(() => towers.filter((tower) => tower.faction === FACTIONS.NEUTRAL), []);
     const candidates = enemies.length ? enemies : neutral;
+    const marked = getMarkedBattleTarget();
+    if (marked && candidates.includes(marked)) return marked;
     return candidates
       .map((tower) => {
         const distance = Math.hypot(tower.x - source.x, tower.y - source.y);
@@ -4116,7 +4413,10 @@
     const bossPenalty = target.boss ? 0.74 : 1;
     const terrainBonus = source.terrain === 'quarry' ? 1.18 : source.terrain === 'barracks' ? 1.08 : 1;
     const typeBonus = source.type === typeFromKey('watch') ? 1.12 : source.type === typeFromKey('troop') ? 1.08 : 1;
-    const rawDamage = Math.floor((5 + (source.level || 1) * 2 + Math.max(0, safe(() => wave, 1) - 1) * 0.5) * bossPenalty * terrainBonus * typeBonus * condition.siegePower);
+    const markedBonus = target.mastilMarkedUntil && target.mastilMarkedUntil > now ? 1.12 : 1;
+    const flankBonus = target.flankedUntil && target.flankedUntil > now ? 1.2 : 1;
+    const reconBonus = 1 + Math.min(0.14, Number(target.reconWeakness || 0) * 0.07);
+    const rawDamage = Math.floor((5 + (source.level || 1) * 2 + Math.max(0, safe(() => wave, 1) - 1) * 0.5) * bossPenalty * terrainBonus * typeBonus * markedBonus * flankBonus * reconBonus * condition.siegePower);
     const damage = Math.min(Math.max(0, Math.floor(target.units - 1)), Math.max(1, rawDamage));
     if (damage <= 0) {
       commandCooldowns.delete('siege');
@@ -4416,7 +4716,12 @@
             unit.sourceY = sourceTower.y;
             unit.mastilFormationSize = formationSize;
             unit.mastilLaunchAt = now;
-            unit.mastilLane = ((index % 5) - 2) * (formationSize >= 10 ? 2.2 : 1.4);
+            unit.mastilTactic = targetTower.flankedUntil && targetTower.flankedUntil > now
+              ? 'flank'
+              : targetTower.mastilMarkedUntil && targetTower.mastilMarkedUntil > now
+                ? 'marked'
+                : '';
+            unit.mastilLane = ((index % 5) - 2) * (unit.mastilTactic === 'flank' ? 3.1 : formationSize >= 10 ? 2.2 : 1.4);
           });
           spawnEffect(sourceTower.x, sourceTower.y, 'attack', {
             color: colorForFaction(sourceTower.faction),
@@ -4489,6 +4794,9 @@
           if (targetTower.siegedUntil && targetTower.siegedUntil > performance.now()) {
             terrainBlock = Math.max(0, terrainBlock - 0.08 - (targetTower.siegeWeakness || 0) * 0.025);
           }
+          if (targetTower.flankedUntil && targetTower.flankedUntil > performance.now()) {
+            terrainBlock = Math.max(0, terrainBlock - 0.07);
+          }
           const mayaBonus = targetTower.faction === safe(() => FACTIONS.PLAYER, 'player') &&
             getPlayerFactionId() === 'maya' &&
             (targetTower.terrain === 'forest' || targetTower.type === typeFromKey('watch'))
@@ -4505,6 +4813,22 @@
           }
         }
         const result = originalArrival.apply(this, arguments);
+        if (
+          unit &&
+          unit.mastilTactic === 'flank' &&
+          targetTower &&
+          targetTower.faction !== safe(() => FACTIONS.PLAYER, 'player') &&
+          targetTower.units > 1 &&
+          Math.random() < 0.18
+        ) {
+          targetTower.units = Math.max(1, targetTower.units - 1);
+          spawnEffect(targetTower.x, targetTower.y, 'impact', {
+            color: '#8fc3f0',
+            text: '-1',
+            duration: 520,
+            size: 0.64
+          });
+        }
         if (unit && targetTower && unit.faction !== beforeFaction) {
           const key = `${Math.round(targetTower.x)}:${Math.round(targetTower.y)}`;
           const now = performance.now();
@@ -4671,8 +4995,10 @@
     controls.id = 'mastil-game-controls';
     controls.innerHTML = `
       <button type="button" data-action="select" title="Wählt deinen stärksten Turm"><span class="mastil-command-icon mastil-icon-select" aria-hidden="true"></span><span>Stärkster</span></button>
+      <button type="button" data-action="plan" data-cooldown-key="plan" title="Markiert das wichtigste Ziel auf der Karte"><span class="mastil-command-icon mastil-icon-plan" aria-hidden="true"></span><span>Plan</span><small></small></button>
       <button type="button" data-action="attack" title="Sendet 50% zum schwächsten nahen Ziel"><span class="mastil-command-icon mastil-icon-attack" aria-hidden="true"></span><span>Schnell</span></button>
       <button type="button" data-action="assault" data-cooldown-key="assault" title="Mehrere eigene Türme greifen koordinierte Ziele an"><span class="mastil-command-icon mastil-icon-assault" aria-hidden="true"></span><span>Front</span><small></small></button>
+      <button type="button" data-action="flank" data-cooldown-key="flank" title="Mehrere Türme greifen ein markiertes Ziel von der Seite an"><span class="mastil-command-icon mastil-icon-flank" aria-hidden="true"></span><span>Flanke</span><small></small></button>
       <button type="button" data-action="rally" data-cooldown-key="rally" title="Sammelt Reserven am gewählten oder schwächsten Turm"><span class="mastil-command-icon mastil-icon-rally" aria-hidden="true"></span><span>Sammeln</span><small></small></button>
       <button type="button" data-action="siege" data-cooldown-key="siege" title="Belagert einen starken nahen Feindposten und schwächt seine Verteidigung"><span class="mastil-command-icon mastil-icon-siege" aria-hidden="true"></span><span>Belagern</span><small></small></button>
       <button type="button" data-action="upgrade" title="Verbessert den gewählten Turm"><span class="mastil-command-icon mastil-icon-upgrade" aria-hidden="true"></span><span>Ausbau</span></button>
@@ -4687,8 +5013,10 @@
       const button = event.target && event.target.closest ? event.target.closest('button[data-action]') : null;
       const action = button && button.dataset ? button.dataset.action : '';
       if (action === 'select') selectStrongestTower();
+      if (action === 'plan') markPriorityTarget();
       if (action === 'attack') quickAttackWeakest();
       if (action === 'assault') coordinatedAssault();
+      if (action === 'flank') flankingStrike();
       if (action === 'rally') rallyToSelectedTower();
       if (action === 'siege') launchSiegeStrike();
       if (action === 'upgrade') upgradeSelectedTower();
@@ -4719,6 +5047,12 @@
       const cost = getSiegeCost(selected || getPlayerTowers()[0]);
       siegeButton.title = `Belagerung: schwächt einen starken Feindposten. Kosten: ${cost} Gold.`;
     }
+    const flankButton = controls.querySelector('button[data-action="flank"]');
+    if (flankButton) {
+      const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
+      const cost = getFlankCost(selected || getPlayerTowers()[0]);
+      flankButton.title = `Flankenangriff: mehrere Türme setzen ein markiertes Ziel unter Druck. Kosten: ${cost} Gold.`;
+    }
     controls.querySelectorAll('button[data-cooldown-key]').forEach((button) => {
       const key = button.dataset.cooldownKey;
       const readyAt = commandCooldowns.get(key) || 0;
@@ -4748,6 +5082,10 @@
       <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Front</span>
         <span id="mastil-strategy-front">-</span>
+      </div>
+      <div class="mastil-strategy-row">
+        <span class="mastil-strategy-label">Ziel</span>
+        <span id="mastil-strategy-target">kein Ziel</span>
       </div>
       <div class="mastil-strategy-row">
         <span class="mastil-strategy-label">Druck</span>
@@ -4824,6 +5162,7 @@
         <span id="mastil-stat-captured">0 erobert</span>
         <span id="mastil-stat-upgrades">0 Ausbau</span>
         <span id="mastil-stat-commands">0 Befehle</span>
+        <span id="mastil-stat-maneuvers">0 Manöver</span>
         <span id="mastil-stat-spoils">0 Beute</span>
         <span id="mastil-stat-sieges">0 Belag.</span>
         <span id="mastil-stat-supply">0% Vers.</span>
@@ -4855,6 +5194,7 @@
     const domain = document.getElementById('mastil-strategy-domain');
     const mapNode = document.getElementById('mastil-strategy-map');
     const front = document.getElementById('mastil-strategy-front');
+    const targetNode = document.getElementById('mastil-strategy-target');
     const pressureNode = document.getElementById('mastil-strategy-pressure');
     const siteNode = document.getElementById('mastil-strategy-sites');
     const threatNode = document.getElementById('mastil-strategy-threat');
@@ -4863,7 +5203,7 @@
     const factionNode = document.getElementById('mastil-strategy-faction');
     const selectedNode = document.getElementById('mastil-strategy-selected');
     const adviceNode = document.getElementById('mastil-strategy-advice');
-    if (!domain || !mapNode || !front || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
+    if (!domain || !mapNode || !front || !targetNode || !pressureNode || !siteNode || !threatNode || !conditionNode || !supplyNode || !factionNode || !selectedNode || !adviceNode) return;
 
     domain.textContent = `${own.length} eigene | ${Math.floor(safe(() => gold, 0))} Gold`;
     const activeRegion = getActiveRegion();
@@ -4872,6 +5212,10 @@
     front.textContent = `${enemy.length} Gegner | ${neutral.length} neutral`;
     const threat = getEnemyThreatState(own, enemy);
     threatNode.textContent = threat.active ? `${threat.title} | ${threat.detail.split('.')[0]}` : 'keine Kommandantur';
+    const markedTarget = getMarkedBattleTarget();
+    targetNode.textContent = markedTarget
+      ? `${getTowerRoleName(markedTarget.type)} | ${getTowerTierName(markedTarget.level)} | ${Math.floor(markedTarget.units)} Truppen`
+      : 'kein Ziel markiert';
     const condition = getBattlefieldCondition();
     conditionNode.textContent = `${condition.title} | ${condition.short}`;
     const supply = computeSupplyState(own);
@@ -4934,6 +5278,7 @@
     const captured = document.getElementById('mastil-stat-captured');
     const upgrades = document.getElementById('mastil-stat-upgrades');
     const commands = document.getElementById('mastil-stat-commands');
+    const maneuvers = document.getElementById('mastil-stat-maneuvers');
     const spoils = document.getElementById('mastil-stat-spoils');
     const sieges = document.getElementById('mastil-stat-sieges');
     const supplyStat = document.getElementById('mastil-stat-supply');
@@ -4942,7 +5287,7 @@
     const threatStat = document.getElementById('mastil-stat-threat');
     const veteranStat = document.getElementById('mastil-stat-veterans');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !spoils || !sieges || !supplyStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -4994,6 +5339,7 @@
     captured.textContent = `${matchStats.captured} erobert`;
     upgrades.textContent = `${matchStats.upgrades} Ausbau`;
     commands.textContent = `${matchStats.commands} Befehle`;
+    maneuvers.textContent = `${matchStats.plans + matchStats.flanks} Manöver`;
     spoils.textContent = `${matchStats.spoils} Beute`;
     sieges.textContent = `${matchStats.sieges} Belag.`;
     supplyStat.textContent = `${Math.round(supply.ratio * 100)}% Vers.`;

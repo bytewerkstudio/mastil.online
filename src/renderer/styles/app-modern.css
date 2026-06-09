@@ -1305,7 +1305,7 @@
   transform: translateX(-50%);
   z-index: 1550;
   display: none;
-  grid-template-columns: repeat(10, minmax(64px, 1fr));
+  grid-template-columns: repeat(12, minmax(58px, 1fr));
   gap: 7px;
   width: min(1040px, calc(100vw - 28px));
   padding: 8px;
@@ -2003,6 +2003,21 @@ body:has(#game-container[style*="block"]) #info-panel {
   border-radius: 3px;
 }
 
+.mastil-icon-plan::before {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #1c1007;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-icon-plan::after {
+  width: 14px;
+  height: 2px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: 0 0 0 0 #1c1007;
+}
+
 .mastil-icon-attack::after {
   width: 8px;
   height: 8px;
@@ -2015,11 +2030,22 @@ body:has(#game-container[style*="block"]) #info-panel {
 }
 
 .mastil-icon-assault::after,
+.mastil-icon-flank::after,
 .mastil-icon-rally::after {
   width: 8px;
   height: 8px;
   clip-path: polygon(0 0, 100% 50%, 0 100%);
   transform: translate(8%, -50%);
+}
+
+.mastil-icon-flank::before {
+  width: 16px;
+  height: 14px;
+  border: 2px solid #1c1007;
+  border-top-color: transparent;
+  border-radius: 0 0 14px 14px;
+  background: transparent;
+  transform: translate(-50%, -38%);
 }
 
 .mastil-icon-rally::before {
