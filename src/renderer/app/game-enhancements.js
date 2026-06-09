@@ -1477,6 +1477,7 @@
     }
 
     drawTowerTacticalMarkers(tower, width, height);
+    drawTargetRecommendationCue(tower, width, height);
     drawTowerUpgradeCue(tower, width, height);
 
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
@@ -1681,6 +1682,39 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(preview.enoughGold ? 'L+' : `${Math.round(preview.progress * 100)}%`, badgeX, badgeY + 0.5);
+    ctx.restore();
+  }
+
+  function drawTargetRecommendationCue(tower, width, height) {
+    const recommendation = getRecommendedTargetForSelected();
+    if (!recommendation || recommendation.tower !== tower || !recommendation.evaluation) return;
+    if (tower.mastilMarkedUntil && tower.mastilMarkedUntil > performance.now()) return;
+
+    const { evaluation } = recommendation;
+    const now = performance.now();
+    const pulse = 0.62 + Math.sin(now * 0.005) * 0.18;
+    const color = evaluation.chance >= 1 ? '#ffe18a' : evaluation.chance >= 0.72 ? '#8fc3f0' : '#ffb17e';
+
+    ctx.save();
+    ctx.strokeStyle = rgba(color, 0.76);
+    ctx.lineWidth = evaluation.chance >= 1 ? 3.2 : 2.4;
+    ctx.setLineDash(evaluation.chance >= 1 ? [12, 6] : [5, 6]);
+    ctx.beginPath();
+    ctx.ellipse(0, height * 0.08, width * (1.16 + pulse * 0.08), height * (0.82 + pulse * 0.06), 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = 'rgba(18, 11, 7, 0.84)';
+    ctx.strokeStyle = rgba(color, 0.86);
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, -42, -height * 1.2, 84, 20, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = '950 10px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(evaluation.label, 0, -height * 1.2 + 10);
     ctx.restore();
   }
 
@@ -4574,6 +4608,79 @@
     return safe(() => towers.filter((tower) => tower.faction !== FACTIONS.PLAYER), []);
   }
 
+  function getBestSourceTower() {
+    return getPlayerTowers()
+      .filter((tower) => tower.units > 1)
+      .sort((a, b) => (b.units + (b.level || 1) * 2) - (a.units + (a.level || 1) * 2))[0] || null;
+  }
+
+  function getTargetEvaluation(source, tower) {
+    if (!source || !tower || tower.faction === safe(() => FACTIONS.PLAYER, 'player')) return null;
+    const distance = Math.hypot(tower.x - source.x, tower.y - source.y);
+    const marked = getMarkedBattleTarget();
+    const attackAmount = Math.max(1, Math.floor((source.units || 0) * 0.5));
+    const defense = Math.max(1, (tower.units || 0) + (tower.level || 1) * 1.5);
+    const chance = attackAmount / defense;
+    const site = getStrategicSiteInfo(tower);
+    const vulnerable = tower.siegedUntil && tower.siegedUntil > performance.now();
+    const flanked = tower.flankedUntil && tower.flankedUntil > performance.now();
+    const recon = Number(tower.reconWeakness || 0);
+    const roleValue = tower.type === typeFromKey('gold') ? 8 : tower.type === typeFromKey('troop') ? 7 : tower.type === typeFromKey('watch') ? 5 : 3;
+    const strategicWeight = site ? site.weight || 8 : 6;
+    const score =
+      distance / 82 +
+      (tower.units || 0) * 0.62 +
+      (tower.level || 1) * 5 -
+      strategicWeight -
+      roleValue -
+      (tower.boss ? 34 : 0) -
+      (tower.commander ? 18 : 0) -
+      (vulnerable ? 16 : 0) -
+      (flanked ? 10 : 0) -
+      recon * 7 -
+      (tower === marked ? 22 : 0);
+
+    let reason = site ? `${site.title} sichern` : 'kurzer Weg';
+    if (tower.boss) reason = 'Boss brechen';
+    else if (tower.commander) reason = 'Kommandoposten schwächen';
+    else if (vulnerable || flanked || recon) reason = 'verwundbares Ziel';
+    else if (tower.faction === safe(() => FACTIONS.NEUTRAL, 'neutral') && getPlayerTowers().length < 3) reason = 'frühe Expansion';
+    else if (tower.type === typeFromKey('gold')) reason = 'Goldquelle sichern';
+    else if (tower.type === typeFromKey('troop')) reason = 'Truppenstandort sichern';
+    else if (distance < getConnectionThreshold() * 0.76) reason = 'kurzer Angriffspfad';
+
+    const label = chance >= 1.1 ? 'Sturmbar' : chance >= 0.72 ? 'Riskant' : 'Stark';
+    return {
+      score,
+      reason,
+      chance,
+      label,
+      attackAmount,
+      distance
+    };
+  }
+
+  function getRecommendedTargetFor(source, candidates = getAttackTargets()) {
+    if (!source || !candidates.length) return null;
+    const marked = getMarkedBattleTarget();
+    const evaluated = candidates
+      .map((tower) => ({ tower, evaluation: getTargetEvaluation(source, tower) }))
+      .filter((entry) => entry.evaluation)
+      .sort((a, b) => a.evaluation.score - b.evaluation.score);
+    if (!evaluated.length) return null;
+    if (marked) {
+      const markedEntry = evaluated.find((entry) => entry.tower === marked);
+      if (markedEntry) return markedEntry;
+    }
+    return evaluated[0];
+  }
+
+  function getRecommendedTargetForSelected() {
+    const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
+    const source = selected || getBestSourceTower();
+    return getRecommendedTargetFor(source);
+  }
+
   function getEnemyFaction(index, opponentCount) {
     const factions = safe(() => [FACTIONS.ENEMY_1, FACTIONS.ENEMY_2, FACTIONS.ENEMY_3], ['enemy1', 'enemy2', 'enemy3']);
     return factions[index % Math.max(1, Math.min(opponentCount, factions.length))];
@@ -4759,24 +4866,20 @@
       playSound('error');
       return;
     }
-    const marked = getMarkedBattleTarget();
-    const target = marked && targets.includes(marked) ? marked : targets
-      .map((tower) => ({
-        tower,
-        score:
-          tower.units +
-          Math.hypot(tower.x - source.x, tower.y - source.y) / 80 -
-          (tower.reconWeakness ? tower.reconWeakness * 7 : 0) -
-          (tower.flankedUntil && tower.flankedUntil > performance.now() ? 10 : 0)
-      }))
-      .sort((a, b) => a.score - b.score)[0].tower;
+    const recommendation = getRecommendedTargetFor(source, targets);
+    const target = recommendation ? recommendation.tower : null;
+    if (!target) {
+      showEnhancementNotice('Kein sinnvolles Ziel gefunden.');
+      playSound('error');
+      return;
+    }
 
     const amount = Math.max(1, Math.floor(source.units * 0.5));
     safe(() => sendUnitsFromTower(source, target, amount));
     unlockAchievement('firstCommand', { tower: source });
     spawnEffect(source.x, source.y, 'attack', { color: colorForFaction(source.faction), text: `-${amount}` });
     spawnEffect(target.x, target.y, 'impact', { color: '#f1cf6b', duration: 650, size: 0.75 });
-    showEnhancementNotice(`Schnellangriff: ${amount} Einheiten entsandt.`);
+    showEnhancementNotice(`Schnellangriff: ${amount} Einheiten. ${recommendation.evaluation.reason}.`);
   }
 
   function isCommandReady(key, cooldownMs, label) {
@@ -4826,33 +4929,7 @@
   }
 
   function getPriorityBattleTarget(source, candidates = getAttackTargets()) {
-    if (!candidates.length) return null;
-    const marked = getMarkedBattleTarget();
-    if (marked && candidates.includes(marked)) return marked;
-
-    return candidates
-      .map((tower) => {
-        const distance = source ? Math.hypot(tower.x - source.x, tower.y - source.y) : 0;
-        const site = getStrategicSiteInfo(tower);
-        const strategicWeight = site && tower.faction !== safe(() => FACTIONS.PLAYER, 'player') ? 12 : 0;
-        const bossWeight = tower.boss ? 34 : 0;
-        const commanderWeight = tower.commander ? 18 : 0;
-        const vulnerable = tower.siegedUntil && tower.siegedUntil > performance.now() ? 16 : 0;
-        const roleWeight = tower.type === typeFromKey('gold') ? 8 : tower.type === typeFromKey('troop') ? 6 : 0;
-        return {
-          tower,
-          score:
-            distance / 82 +
-            tower.units * 0.62 +
-            (tower.level || 1) * 5 -
-            strategicWeight -
-            bossWeight -
-            commanderWeight -
-            vulnerable -
-            roleWeight
-        };
-      })
-      .sort((a, b) => a.score - b.score)[0]?.tower || null;
+    return getRecommendedTargetFor(source, candidates)?.tower || null;
   }
 
   function markBattleTarget(source, target, kind = 'plan', duration = 22000) {
@@ -5728,6 +5805,20 @@
       abilityButton.title = `${trait.ability}: ${trait.passive}`;
       abilityButton.style.setProperty('--faction-accent', trait.color);
     }
+    const recommendation = getRecommendedTargetForSelected();
+    const planButton = controls.querySelector('button[data-action="plan"]');
+    if (planButton) {
+      planButton.title = recommendation
+        ? `Markiert empfohlenes Ziel: ${getTowerTierName(recommendation.tower.level)} (${recommendation.evaluation.reason}).`
+        : 'Markiert das wichtigste Ziel auf der Karte.';
+    }
+    const attackButton = controls.querySelector('button[data-action="attack"]');
+    if (attackButton) {
+      attackButton.classList.toggle('ready', Boolean(recommendation && recommendation.evaluation.chance >= 0.72));
+      attackButton.title = recommendation
+        ? `Schnellangriff auf ${getTowerTierName(recommendation.tower.level)}: ${recommendation.evaluation.label}, ${recommendation.evaluation.reason}.`
+        : 'Sendet 50% zum besten nahen Ziel.';
+    }
     const siegeButton = controls.querySelector('button[data-action="siege"]');
     if (siegeButton) {
       const selected = safe(() => selectedTower && selectedTower.faction === FACTIONS.PLAYER ? selectedTower : null, null);
@@ -5938,9 +6029,14 @@
     const threat = getEnemyThreatState(own, enemy);
     threatNode.textContent = threat.active ? `${threat.title} | ${threat.detail.split('.')[0]}` : 'keine Kommandantur';
     const markedTarget = getMarkedBattleTarget();
-    targetNode.textContent = markedTarget
-      ? `${getTowerRoleName(markedTarget.type)} | ${getTowerTierName(markedTarget.level)} | ${Math.floor(markedTarget.units)} Truppen`
-      : 'kein Ziel markiert';
+    if (markedTarget) {
+      targetNode.textContent = `${getTowerRoleName(markedTarget.type)} | ${getTowerTierName(markedTarget.level)} | ${Math.floor(markedTarget.units)} Truppen`;
+    } else {
+      const recommendation = getRecommendedTargetForSelected();
+      targetNode.textContent = recommendation
+        ? `Empfohlen: ${getTowerRoleName(recommendation.tower.type)} | ${recommendation.evaluation.label} | ${recommendation.evaluation.reason}`
+        : 'kein Ziel markiert';
+    }
     const moraleInfo = getMoraleInfo(warMorale);
     moraleNode.textContent = `${moraleInfo.short} | ${Math.round(warMorale)}%`;
     const condition = getBattlefieldCondition();

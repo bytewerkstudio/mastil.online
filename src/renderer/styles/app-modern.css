@@ -2492,6 +2492,13 @@ body:has(#game-container[style*="block"]) #info-panel {
   border-color: rgba(142, 195, 240, 0.5);
 }
 
+#mastil-game-controls button[data-action="attack"].ready {
+  border-color: rgba(142, 195, 240, 0.78);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(142, 195, 240, 0.28), transparent 46%),
+    linear-gradient(180deg, #dfc36e, #8a641f);
+}
+
 #mastil-game-controls button.off {
   color: rgba(244, 230, 191, 0.82);
   background: rgba(255, 255, 255, 0.08);
