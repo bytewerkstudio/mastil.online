@@ -1,9 +1,9 @@
 ﻿console.log('Script geladen');
-        // Game version information - Update auf 2.6.51
+        // Game version information - Update auf 2.6.52
         const GAME_VERSION = {
     major: 2,
     minor: 6,
-    patch: 51,
+    patch: 52,
     build: 0,
     toString: function() {
         return `${this.major}.${this.minor}.${this.patch}.${this.build}`;
@@ -52,6 +52,11 @@ let currentQuality = 'MEDIUM';
 let lastQualityCheck = 0;
 
 const VERSION_HISTORY = {
+    "2.6.52": [
+        "Turm- und Schlossgrafik erweitert: Ausbaustufen zeigen jetzt Brueckenstufen, Rollen-Wappen, Zitadellenbalkon, Veteranenkranz und Versorgungsbogen",
+        "Erfahrene und stark ausgebaute Spielertuerme koennen beim Angriff Eliteverstaerkung mitschicken, wenn noch Truppen verfuegbar sind",
+        "Die Angriffsprognose zeigt Elite-Boni sichtbar an, damit Ausbau, Rollenwahl und Veteranenrang im Kampf besser lesbar werden"
+    ],
     "2.6.51": [
         "Schlachtfelder wirken jetzt lebendiger: Nebel, Frost, Sandsturm, Nachtregen und Aschefall werden im Kampf sichtbar gezeichnet",
         "Die Atmosphaere bleibt flackerarm, weil Partikel deterministisch laufen und die Kartenbasis weiter gecacht bleibt",

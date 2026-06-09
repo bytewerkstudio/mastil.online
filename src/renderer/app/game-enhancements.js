@@ -2125,6 +2125,7 @@
     }
 
     drawTowerUpgradeArchitecture(tower, width, height, mainW, mainH, base, faction, level, visualTier);
+    drawTowerCitadelIdentity(tower, width, height, mainW, mainH, base, faction, level, visualTier);
 
     if (level >= 5) {
       ctx.strokeStyle = 'rgba(255, 226, 136, 0.72)';
@@ -2656,6 +2657,109 @@
     ctx.fillStyle = rgba(shade(base, 92), 0.94);
     roundRect(ctx, -width * 0.2, -height * 0.86, width * 0.4, height * 0.08, 5);
     ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTowerCitadelIdentity(tower, width, height, mainW, mainH, base, faction, level, visualTier) {
+    const roleAccent = getTowerRoleAccent(tower.type || 'normal');
+    const veteran = getTowerVeteranInfo(tower);
+    const lightStone = shade(base, faction === 'neutral' ? 36 : 86);
+    const darkStone = shade(base, -56);
+
+    ctx.save();
+    ctx.shadowBlur = 0;
+
+    if (level >= 2 || tower.mastilCastleSite) {
+      const stepCount = tower.mastilCastleSite ? 4 : 3;
+      ctx.fillStyle = 'rgba(22, 14, 9, 0.64)';
+      for (let i = 0; i < stepCount; i += 1) {
+        const stepW = mainW * (0.55 + i * 0.18);
+        const stepY = mainH * (0.3 + i * 0.062);
+        roundRect(ctx, -stepW / 2, stepY, stepW, 4.5, 2.2);
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = rgba(roleAccent, 0.42);
+      ctx.lineWidth = 1.35;
+      ctx.beginPath();
+      ctx.moveTo(-mainW * 0.18, mainH * 0.32);
+      ctx.lineTo(0, mainH * 0.18);
+      ctx.lineTo(mainW * 0.18, mainH * 0.32);
+      ctx.stroke();
+    }
+
+    if (level >= 3) {
+      ctx.strokeStyle = rgba(lightStone, 0.38);
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i += 1) {
+        const x = -mainW * 0.28 + i * mainW * 0.28;
+        ctx.beginPath();
+        ctx.moveTo(x, -mainH * 0.5);
+        ctx.lineTo(x + mainW * 0.12, -mainH * 0.36);
+        ctx.lineTo(x - mainW * 0.02, -mainH * 0.2);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = rgba(darkStone, 0.76);
+      roundRect(ctx, -mainW * 0.1, -mainH * 0.22, mainW * 0.2, mainH * 0.16, 5);
+      ctx.fill();
+      ctx.strokeStyle = rgba(roleAccent, 0.58);
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      drawTowerRoleIcon(tower.type || 'normal', 0, -mainH * 0.14, roleAccent);
+    }
+
+    if (level >= 5) {
+      const balconyW = mainW * 0.58;
+      const balconyY = -mainH * 0.57;
+      const balcony = ctx.createLinearGradient(-balconyW / 2, balconyY, balconyW / 2, balconyY + 18);
+      balcony.addColorStop(0, rgba(lightStone, 0.68));
+      balcony.addColorStop(1, rgba(darkStone, 0.72));
+      ctx.fillStyle = balcony;
+      roundRect(ctx, -balconyW / 2, balconyY, balconyW, 16, 5);
+      ctx.fill();
+      ctx.strokeStyle = rgba('#f4e6bf', 0.34);
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+
+      ctx.fillStyle = rgba(roleAccent, 0.86);
+      for (let i = -2; i <= 2; i += 1) {
+        ctx.beginPath();
+        ctx.arc(i * balconyW * 0.18, balconyY + 8, i === 0 ? 3.5 : 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (visualTier >= 4 || veteran) {
+      const ringColor = veteran ? veteran.color : roleAccent;
+      ctx.strokeStyle = rgba(ringColor, veteran ? 0.74 : 0.5);
+      ctx.lineWidth = veteran ? 2 : 1.3;
+      ctx.beginPath();
+      ctx.ellipse(0, -mainH * 0.68, width * 0.52, height * 0.12, 0, Math.PI * 1.05, Math.PI * 1.95);
+      ctx.stroke();
+
+      const marks = veteran ? getTowerVeteranRank(tower) + 2 : 4;
+      ctx.fillStyle = rgba(ringColor, 0.9);
+      for (let i = 0; i < marks; i += 1) {
+        const t = marks === 1 ? 0.5 : i / (marks - 1);
+        const angle = Math.PI * (1.08 + t * 0.84);
+        const px = Math.cos(angle) * width * 0.52;
+        const py = -mainH * 0.68 + Math.sin(angle) * height * 0.12;
+        ctx.beginPath();
+        ctx.arc(px, py, veteran ? 2.8 : 2.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (tower.mastilRoadHub || tower.supplyLinked) {
+      ctx.strokeStyle = tower.supplyLinked ? 'rgba(255, 242, 190, 0.58)' : rgba(roleAccent, 0.32);
+      ctx.lineWidth = tower.supplyLinked ? 2.2 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-width * 0.62, height * 0.42);
+      ctx.quadraticCurveTo(0, height * 0.52, width * 0.62, height * 0.42);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 
@@ -6144,6 +6248,30 @@
     return safe(() => towers.filter((tower) => tower.faction !== FACTIONS.PLAYER), []);
   }
 
+  function getTowerAssaultBonus(source, target, plannedAmount = 0) {
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    if (!source || !target || source.faction !== playerFaction || target.faction === source.faction) return 0;
+
+    const level = Number(source.level) || 1;
+    const veteran = getTowerVeteranRank(source);
+    const planned = Math.max(0, Math.floor(plannedAmount || 0));
+    const available = Math.max(0, Math.floor(source.units || 0));
+    let bonus = 0;
+
+    if (level >= 5) bonus += 1;
+    if (level >= 7) bonus += 1;
+    if (source.mastilCastleSite) bonus += 1;
+    if (source.type === typeFromKey('troop')) bonus += 1;
+    if (source.type === typeFromKey('watch') && (target.commander || target.boss || target.mastilMarkedUntil > performance.now())) bonus += 1;
+    if (veteran) bonus += Math.min(2, veteran);
+
+    if (target.siegedUntil && target.siegedUntil > performance.now()) bonus += 1;
+    if (target.flankedUntil && target.flankedUntil > performance.now()) bonus += 1;
+
+    const cap = Math.min(5, Math.max(0, available - planned));
+    return Math.max(0, Math.min(cap, bonus));
+  }
+
   function getBestSourceTower() {
     return getPlayerTowers()
       .filter((tower) => tower.units > 1)
@@ -6154,7 +6282,9 @@
     if (!source || !tower || tower.faction === safe(() => FACTIONS.PLAYER, 'player')) return null;
     const distance = Math.hypot(tower.x - source.x, tower.y - source.y);
     const marked = getMarkedBattleTarget();
-    const attackAmount = Math.max(1, Math.floor((source.units || 0) * 0.5));
+    const baseAttackAmount = Math.max(1, Math.floor((source.units || 0) * 0.5));
+    const assaultBonus = getTowerAssaultBonus(source, tower, baseAttackAmount);
+    const attackAmount = baseAttackAmount + assaultBonus;
     const defense = Math.max(1, (tower.units || 0) + (tower.level || 1) * 1.5);
     const chance = attackAmount / defense;
     const site = getStrategicSiteInfo(tower);
@@ -6192,6 +6322,7 @@
       chance,
       label,
       attackAmount,
+      assaultBonus,
       distance
     };
   }
@@ -6255,7 +6386,8 @@
     const controlY = midY + ux * bend - 20;
     const chanceText = formatAttackChance(evaluation);
     const targetName = getTowerTierName(target.level);
-    const pillWidth = Math.min(226, Math.max(172, targetName.length * 8 + 104));
+    const bonusText = evaluation.assaultBonus ? ` +${evaluation.assaultBonus} Elite` : '';
+    const pillWidth = Math.min(264, Math.max(190, targetName.length * 8 + (bonusText ? 142 : 112)));
     const pillHeight = 62;
     const panelX = Math.max(pillWidth / 2 + 10, Math.min(safe(() => gameWidth, 1280) - pillWidth / 2 - 10, controlX));
     const panelY = Math.max(44, Math.min(safe(() => gameHeight, 720) - pillHeight - 20, controlY - pillHeight / 2));
@@ -6309,7 +6441,7 @@
 
     ctx.fillStyle = 'rgba(244, 230, 191, 0.78)';
     ctx.font = '800 11px "Segoe UI", sans-serif';
-    ctx.fillText(`${evaluation.attackAmount} Truppen | ${evaluation.reason}`, panelX - pillWidth / 2 + 12, panelY + 43);
+    ctx.fillText(`${evaluation.attackAmount} Truppen${bonusText} | ${evaluation.reason}`, panelX - pillWidth / 2 + 12, panelY + 43);
 
     ctx.textAlign = 'center';
     ctx.fillStyle = rgba(color, 0.94);
@@ -7628,7 +7760,11 @@
         let requested = Math.max(0, Math.floor(unitCount || 0));
         if (sourceTower && sourceTower.terrain === 'road') requested = Math.ceil(requested * 1.08);
         if (sourceTower && sourceTower.terrain === 'barracks') requested += requested >= 6 ? 1 : 0;
+        const requestedBeforeElite = requested;
+        const assaultBonus = getTowerAssaultBonus(sourceTower, targetTower, requestedBeforeElite);
+        requested += assaultBonus;
         const sent = Math.max(0, Math.min(requested, available));
+        const eliteSent = Math.max(0, sent - requestedBeforeElite);
         const beforeUnitCount = safe(() => units.length, 0);
         const result = originalSendUnits.call(this, sourceTower, targetTower, sent);
         if (sourceTower && targetTower && sent > 0) {
@@ -7664,6 +7800,14 @@
             duration: 780,
             size: Math.min(1.6, 0.85 + sent / 28)
           });
+          if (eliteSent > 0) {
+            spawnEffect(sourceTower.x, sourceTower.y - 16, 'morale', {
+              color: '#ffe18a',
+              text: `+${eliteSent} Elite`,
+              duration: 920,
+              size: 0.78 + Math.min(0.28, eliteSent * 0.06)
+            });
+          }
           spawnEffect(sourceTower.x, sourceTower.y, 'commandTrail', {
             color: colorForFaction(sourceTower.faction),
             targetX: targetTower.x,
@@ -7681,9 +7825,12 @@
           if (sourceTower.faction === safe(() => FACTIONS.PLAYER, 'player')) {
             unlockAchievement('firstCommand', { tower: sourceTower });
             addTowerRenown(sourceTower, sent >= 8 ? 2 : 1, 'Befehl');
+            if (eliteSent > 0) addTowerRenown(sourceTower, 1, 'Elite');
             if (sent >= 12 && now - lastFormationEventAt > 6500) {
               lastFormationEventAt = now;
-              pushEvent(`Heerzug: ${sent} Einheiten marschieren`, 'assault');
+              pushEvent(eliteSent > 0
+                ? `Eliteheerzug: ${sent} Einheiten marschieren (+${eliteSent})`
+                : `Heerzug: ${sent} Einheiten marschieren`, 'assault');
             }
           }
           playSound('attack');
