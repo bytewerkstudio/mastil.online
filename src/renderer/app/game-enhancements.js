@@ -246,6 +246,38 @@
     { threshold: 18, title: 'Veteran', mark: 'II', color: '#f4d77a' },
     { threshold: 34, title: 'Legendär', mark: 'III', color: '#ffb17e' }
   ];
+  const STAR_COUNCIL_PERKS = [
+    {
+      id: 'treasury',
+      stars: 3,
+      title: 'Kronkasse',
+      detail: 'Startet Kampagnen mit zusätzlichem Gold für frühe Ausbauten.'
+    },
+    {
+      id: 'vanguard',
+      stars: 6,
+      title: 'Vorhut',
+      detail: 'Eigene Startburgen erhalten sofort mehr Truppen.'
+    },
+    {
+      id: 'bulwark',
+      stars: 9,
+      title: 'Sternenwall',
+      detail: 'Startburgen beginnen mit längerem Schutz.'
+    },
+    {
+      id: 'warCouncil',
+      stars: 12,
+      title: 'Kriegsrat',
+      detail: 'Die KI gibt dir im Kampagnenstart mehr Aufbauzeit.'
+    },
+    {
+      id: 'realmLegend',
+      stars: 15,
+      title: 'Reichslegende',
+      detail: 'Die Kronburg beginnt mit Ruhm und zusätzlicher Reserve.'
+    }
+  ];
   const SIZE_LIMITS = { compact: 10, standard: 14, large: 18, war: 21, epic: 24 };
   const SKIRMISH_FORMATIONS = {
     compact: {
@@ -874,7 +906,8 @@
     goals: 0,
     convoys: 0,
     reserves: 0,
-    commandChains: 0
+    commandChains: 0,
+    starCouncilPerks: 0
   };
   const enemyCommandState = {
     readyAt: new Map(),
@@ -1474,6 +1507,26 @@
 
   function getCampaignProgress() {
     return readCampaignProgress();
+  }
+
+  function getStarCouncilState(progress = readCampaignProgress()) {
+    const regionStars = progress && progress.regions && typeof progress.regions === 'object'
+      ? Object.values(progress.regions).reduce((sum, entry) => sum + Math.max(0, Math.min(3, Number(entry.stars) || 0)), 0)
+      : 0;
+    const stars = Math.max(0, Number(progress && progress.totalStars) || 0, regionStars);
+    const perks = STAR_COUNCIL_PERKS.map((perk) => ({
+      ...perk,
+      unlocked: stars >= perk.stars,
+      remaining: Math.max(0, perk.stars - stars)
+    }));
+
+    return {
+      stars,
+      maxStars: WORLD_REGIONS.length * 3,
+      unlocked: perks.filter((perk) => perk.unlocked),
+      next: perks.find((perk) => !perk.unlocked) || null,
+      perks
+    };
   }
 
   function colorForFaction(faction) {
@@ -4210,6 +4263,7 @@
         <span><strong>${matchStats.convoys}</strong> Konvois</span>
         <span><strong>${matchStats.reserves}</strong> Reserven</span>
         <span><strong>${matchStats.commandChains}</strong> Ketten</span>
+        <span><strong>${matchStats.starCouncilPerks}</strong> Sternenrat</span>
         <span><strong>${matchStats.veterans}</strong> Veteranenrang</span>
         <span><strong>${matchStats.lost}</strong> verloren</span>
         <span><strong>${unlockedAchievements.size}/${TOTAL_ACHIEVEMENTS}</strong> Auszeichnungen</span>
@@ -4357,6 +4411,7 @@
     matchStats.convoys = 0;
     matchStats.reserves = 0;
     matchStats.commandChains = 0;
+    matchStats.starCouncilPerks = 0;
     commandChainState.kind = '';
     commandChainState.label = '';
     commandChainState.at = 0;
@@ -5402,6 +5457,62 @@
     return boss;
   }
 
+  function applyStarCouncilStartBonus(options = {}) {
+    if (options.preserveHome) return null;
+    const config = getMatchConfig();
+    if (config.mode === 'skirmish') return null;
+
+    const council = getStarCouncilState();
+    if (!council.unlocked.length) return null;
+
+    const own = getPlayerTowers();
+    if (!own.length) return null;
+
+    const now = performance.now();
+    const home = own.find((tower) => tower.terrain === 'keep') || own[0];
+    const goldPerk = council.unlocked.find((perk) => perk.id === 'treasury');
+
+    if (goldPerk) {
+      const goldBonus = 36 + Math.min(24, Math.floor(council.stars / 3) * 4);
+      safe(() => {
+        gold += goldBonus;
+        updateUI();
+      });
+      spawnEffect(home.x, home.y, 'gold', { color: '#f3cf69', text: `+${goldBonus}`, duration: 900, size: 0.82 });
+    }
+
+    if (council.unlocked.some((perk) => perk.id === 'vanguard')) {
+      own.forEach((tower) => {
+        tower.units = Math.min(tower.maxUnits, tower.units + 2);
+        spawnEffect(tower.x, tower.y, 'achievement', { color: '#8fc3f0', text: '+2', duration: 840, size: 0.68 });
+      });
+    }
+
+    if (council.unlocked.some((perk) => perk.id === 'bulwark')) {
+      own.forEach((tower) => {
+        tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, now + 17000);
+      });
+      spawnEffect(home.x, home.y, 'shield', { color: '#b7d394', text: 'Wall', duration: 980, size: 0.84 });
+    }
+
+    if (council.unlocked.some((perk) => perk.id === 'warCouncil')) {
+      window.mastilAiGraceUntil = Math.max(now + 6000, (window.mastilAiGraceUntil || now) + 6000);
+    }
+
+    if (council.unlocked.some((perk) => perk.id === 'realmLegend')) {
+      if (home) {
+        home.units = Math.min(home.maxUnits, home.units + 3);
+        addTowerRenown(home, 5, 'Sternenrat');
+        spawnEffect(home.x, home.y, 'achievement', { color: '#fff2bf', text: 'Legende', duration: 1100, size: 0.92 });
+      }
+    }
+
+    matchStats.starCouncilPerks = Math.max(matchStats.starCouncilPerks || 0, council.unlocked.length);
+    pushEvent(`Sternenrat: ${council.unlocked.length}/${STAR_COUNCIL_PERKS.length} Segen aktiv`, 'achievement');
+    showEnhancementNotice(`Sternenrat aktiv: ${council.unlocked.map((perk) => perk.title).join(', ')}`);
+    return council;
+  }
+
   function applyFactionStartBonus(options = {}) {
     if (options.preserveHome) return;
     const factionId = getPlayerFactionId();
@@ -5452,6 +5563,7 @@
     }
 
     pushEvent(`${trait.short}: ${trait.passive}`, 'edict');
+    applyStarCouncilStartBonus(options);
   }
 
   function reduceCommandCooldowns(ms) {
@@ -9390,6 +9502,7 @@
     unlockAchievement,
     getAchievementProgress,
     getCampaignProgress,
+    getStarCouncilState,
     getBattleDebug,
     getBossCommandPanelState,
     spawnEffect

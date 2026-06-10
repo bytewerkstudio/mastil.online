@@ -241,6 +241,38 @@
     plan: 'balanced',
     color: '#2f6fa5'
   };
+  const STAR_COUNCIL_PERKS = [
+    {
+      id: 'treasury',
+      stars: 3,
+      title: 'Kronkasse',
+      detail: 'Startgold für frühe Ausbauten'
+    },
+    {
+      id: 'vanguard',
+      stars: 6,
+      title: 'Vorhut',
+      detail: 'Mehr Truppen auf Startburgen'
+    },
+    {
+      id: 'bulwark',
+      stars: 9,
+      title: 'Sternenwall',
+      detail: 'Startschutz für die Front'
+    },
+    {
+      id: 'warCouncil',
+      stars: 12,
+      title: 'Kriegsrat',
+      detail: 'Mehr Zeit vor KI-Druck'
+    },
+    {
+      id: 'realmLegend',
+      stars: 15,
+      title: 'Reichslegende',
+      detail: 'Ruhm und Reserve für die Kronburg'
+    }
+  ];
   const START_MENU_ITEMS = {
     campaign: {
       label: 'Kampagne gegen KI',
@@ -433,6 +465,14 @@
           <div class="mastil-progress-track" aria-hidden="true"><span id="mastil-campaign-progress-fill"></span></div>
           <div class="mastil-campaign-region-grid" id="mastil-campaign-region-grid"></div>
         </div>
+        <div class="mastil-star-council" id="mastil-star-council">
+          <div class="mastil-star-council-head">
+            <span>Sternenrat</span>
+            <strong id="mastil-star-council-title">0 Sterne aktiv</strong>
+            <small id="mastil-star-council-detail">Sterne schalten Startboni für die Kampagne frei.</small>
+          </div>
+          <div class="mastil-star-council-grid" id="mastil-star-council-grid"></div>
+        </div>
         <div class="mastil-progress-overview">
           <span id="mastil-progress-count">0/0 freigeschaltet</span>
           <div class="mastil-progress-track" aria-hidden="true"><span id="mastil-progress-fill"></span></div>
@@ -463,6 +503,10 @@
     const count = byId('mastil-progress-count');
     const fill = byId('mastil-progress-fill');
     const grid = byId('mastil-awards-grid');
+    const starCouncil = getStarCouncilOverview();
+    const starTitle = byId('mastil-star-council-title');
+    const starDetail = byId('mastil-star-council-detail');
+    const starGrid = byId('mastil-star-council-grid');
     if (campaignTitle && campaign.current) {
       campaignTitle.textContent = `${campaign.current.region.title} | ${campaign.totalStars}/${campaign.maxStars} Sterne`;
     }
@@ -479,6 +523,23 @@
           <small>${regionState.label} | Wellen ${region.waves}</small>
           <small>${regionState.bestScore ? `${regionState.bestScore.toLocaleString('de-DE')} Ruhm` : `${regionState.plays} Einsätze`}</small>
           <em>${region.goal}</em>
+        </article>
+      `).join('');
+    }
+    if (starTitle) {
+      starTitle.textContent = `${starCouncil.unlocked.length}/${STAR_COUNCIL_PERKS.length} Segen aktiv | ${starCouncil.stars}/${starCouncil.maxStars} Sterne`;
+    }
+    if (starDetail) {
+      starDetail.textContent = starCouncil.next
+        ? `Nächster Segen: ${starCouncil.next.title} in ${starCouncil.next.remaining} Stern${starCouncil.next.remaining === 1 ? '' : 'en'}.`
+        : 'Alle Sternenrat-Segen sind aktiv und wirken beim Kampagnenstart.';
+    }
+    if (starGrid) {
+      starGrid.innerHTML = starCouncil.perks.map((perk) => `
+        <article class="mastil-star-perk ${perk.unlocked ? 'unlocked' : 'locked'}">
+          <span>${perk.stars} Sterne</span>
+          <strong>${perk.title}</strong>
+          <small>${perk.unlocked ? perk.detail : `Noch ${perk.remaining} Stern${perk.remaining === 1 ? '' : 'e'}`}</small>
         </article>
       `).join('');
     }
@@ -613,6 +674,30 @@
       maxStars,
       cleared,
       ratio: maxStars ? totalStars / maxStars : 0
+    };
+  }
+
+  function getStarCouncilOverview() {
+    if (window.MastilGameEnhancements && typeof window.MastilGameEnhancements.getStarCouncilState === 'function') {
+      return window.MastilGameEnhancements.getStarCouncilState();
+    }
+    const stored = getStoredCampaignProgress();
+    const regionStars = stored.regions && typeof stored.regions === 'object'
+      ? Object.values(stored.regions).reduce((sum, entry) => sum + Math.max(0, Math.min(3, Number(entry.stars) || 0)), 0)
+      : 0;
+    const stars = Math.max(0, Number(stored.totalStars) || 0, regionStars);
+    const perks = STAR_COUNCIL_PERKS.map((perk) => ({
+      ...perk,
+      unlocked: stars >= perk.stars,
+      remaining: Math.max(0, perk.stars - stars)
+    }));
+
+    return {
+      stars,
+      maxStars: WORLD_REGIONS.length * 3,
+      unlocked: perks.filter((perk) => perk.unlocked),
+      next: perks.find((perk) => !perk.unlocked) || null,
+      perks
     };
   }
 
@@ -1182,6 +1267,8 @@
     const online = byId('mastil-menu-online-state');
     const skirmish = byId('mastil-menu-skirmish-state');
     const skirmishDetail = byId('mastil-menu-skirmish-detail');
+    const councilState = byId('mastil-menu-council-state');
+    const councilDetail = byId('mastil-menu-council-detail');
     const footer = byId('mastil-menu-footer-state');
     const briefingTitle = byId('mastil-menu-briefing-title');
     const briefingCopy = byId('mastil-menu-briefing-copy');
@@ -1199,6 +1286,7 @@
     const savedDifficulty = SKIRMISH_DIFFICULTIES[saved.difficulty] || SKIRMISH_DIFFICULTIES.normal;
     const savedPlan = SKIRMISH_PLANS[saved.plan] || SKIRMISH_PLANS.balanced;
     const savedScenario = SKIRMISH_SCENARIOS[saved.scenario] || SKIRMISH_SCENARIOS.training;
+    const starCouncil = getStarCouncilOverview();
 
     if (current) current.textContent = `${region.title} | ${progress.label} | ${campaign.totalStars}/${campaign.maxStars} Sterne`;
     if (boss) boss.textContent = `Bestwelle ${bestWave} | Ziel: ${region.goal} | Boss: ${region.boss}`;
@@ -1206,6 +1294,12 @@
     if (online) online.textContent = getBackendStatusText();
     if (skirmish) skirmish.textContent = `${savedScenario.label} | ${savedSize.label}`;
     if (skirmishDetail) skirmishDetail.textContent = `${savedRegion.title}, ${saved.opponents} KI, ${savedDifficulty.label}, ${savedPlan.label}`;
+    if (councilState) councilState.textContent = `${starCouncil.unlocked.length}/${STAR_COUNCIL_PERKS.length} Segen aktiv`;
+    if (councilDetail) {
+      councilDetail.textContent = starCouncil.next
+        ? `${starCouncil.stars}/${starCouncil.maxStars} Sterne | nächster Segen: ${starCouncil.next.title}`
+        : `${starCouncil.stars}/${starCouncil.maxStars} Sterne | alle Startboni aktiv`;
+    }
     if (briefingTitle) briefingTitle.textContent = `${region.title}: ${region.goal}`;
     if (briefingCopy) briefingCopy.textContent = `${MENU_BRIEFINGS[region.id] || region.terrain} Belohnung: ${region.reward}.`;
     if (briefingWave) briefingWave.textContent = `Wellen ${region.waves} | ${progress.stars}/3 Sterne`;
@@ -1229,6 +1323,7 @@
     setMenuDetail('online', `${getBackendStatusText()}: Duellräume über den MASTIL-Server.`);
     setMenuDetail('map', `Weltpfad: ${campaign.totalStars}/${campaign.maxStars} Sterne. ${region.title} ist dein aktueller Einsatz.`);
     setMenuDetail('legends', `Story, Reiche und Bossfronten aus ${region.title} nachlesen.`);
+    setMenuDetail('progress', `Sternenrat: ${starCouncil.unlocked.length}/${STAR_COUNCIL_PERKS.length} Segen, ${starCouncil.stars}/${starCouncil.maxStars} Sterne.`);
 
     const menu = document.querySelector('#start-screen .menu-container');
     if (menu) {
@@ -1384,6 +1479,11 @@
           <span>Freischaltung</span>
           <strong id="mastil-menu-license-state">Demo bis Welle 5</strong>
           <small>Kauf und Aktivierung bleiben im Spielmenü erreichbar.</small>
+        </article>
+        <article>
+          <span>Sternenrat</span>
+          <strong id="mastil-menu-council-state">0/5 Segen aktiv</strong>
+          <small id="mastil-menu-council-detail">Sterne schalten Kampagnen-Startboni frei.</small>
         </article>
         <article>
           <span>Web-Status</span>
