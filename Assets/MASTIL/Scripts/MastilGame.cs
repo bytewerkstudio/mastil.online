@@ -11,6 +11,7 @@ namespace Mastil
         {
             MainMenu,
             WorldMap,
+            SkirmishSetup,
             Battle,
             Options,
             Result
@@ -66,11 +67,35 @@ namespace Mastil
             public bool Unlocked;
         }
 
+        private sealed class BattleMap
+        {
+            public string Name = "";
+            public string Size = "";
+            public string Description = "";
+            public int ExtraNeutral;
+            public int ExtraEnemy;
+            public float GoldMultiplier = 1f;
+            public Color GroundA;
+            public Color GroundB;
+            public Color WaterColor;
+        }
+
+        private sealed class FloatingText
+        {
+            public string Text = "";
+            public Vector2 Position;
+            public Color Color;
+            public float Age;
+            public float Lifetime = 1.8f;
+        }
+
         private ScreenMode mode = ScreenMode.MainMenu;
         private readonly List<Tower> towers = new List<Tower>();
         private readonly List<Road> roads = new List<Road>();
         private readonly List<UnitGroup> units = new List<UnitGroup>();
         private readonly List<Region> regions = new List<Region>();
+        private readonly List<BattleMap> battleMaps = new List<BattleMap>();
+        private readonly List<FloatingText> floatingTexts = new List<FloatingText>();
         private readonly Dictionary<string, Texture2D> textureCache = new Dictionary<string, Texture2D>();
 
         private Texture2D pixel = null;
@@ -79,6 +104,7 @@ namespace Mastil
         private Texture2D battleTexture = null;
         private Texture2D panelTexture = null;
         private Texture2D selectedTexture = null;
+        private Texture2D brandIcon = null;
 
         private GUIStyle titleStyle = null;
         private GUIStyle subtitleStyle = null;
@@ -102,6 +128,17 @@ namespace Mastil
         private Color enemyColor = new Color(0.92f, 0.22f, 0.16f);
         private Vector2 legendScroll;
         private bool showGrid = true;
+        private bool campaignBattle = true;
+        private int mapChoice;
+        private float tacticCooldown;
+        private string currentMapName = "Tal der Kronen";
+        private AudioSource audioSource = null;
+        private AudioClip clickClip = null;
+        private AudioClip attackClip = null;
+        private AudioClip upgradeClip = null;
+        private AudioClip captureClip = null;
+        private AudioClip winClip = null;
+        private AudioClip loseClip = null;
 
         private const int BaseScreenWidth = 1600;
         private const int BaseScreenHeight = 900;
@@ -112,16 +149,20 @@ namespace Mastil
             QualitySettings.vSyncCount = 1;
             CreateTextures();
             CreateRegions();
+            CreateBattleMaps();
+            CreateAudio();
         }
 
         private void Update()
         {
             pulse += Time.deltaTime;
+            UpdateFloatingTexts(Time.deltaTime);
             if (mode != ScreenMode.Battle)
             {
                 return;
             }
 
+            tacticCooldown = Mathf.Max(0f, tacticCooldown - Time.deltaTime);
             UpdateEconomy(Time.deltaTime);
             UpdateUnits(Time.deltaTime);
             UpdateAi(Time.deltaTime);
@@ -148,6 +189,9 @@ namespace Mastil
                 case ScreenMode.WorldMap:
                     DrawWorldMap(canvas);
                     break;
+                case ScreenMode.SkirmishSetup:
+                    DrawSkirmishSetup(canvas);
+                    break;
                 case ScreenMode.Battle:
                     DrawBattle(canvas);
                     break;
@@ -168,6 +212,10 @@ namespace Mastil
             Rect left = new Rect(84, 84, 560, canvas.height - 140);
             GUI.Label(new Rect(left.x, left.y, left.width, 76), "MASTIL", titleStyle);
             GUI.Label(new Rect(left.x + 4, left.y + 82, left.width, 82), "Burgen, Wege und Reiche im taktischen Gefecht", subtitleStyle);
+            if (brandIcon != null)
+            {
+                GUI.DrawTexture(new Rect(left.x + 388, left.y + 4, 136, 136), brandIcon, ScaleMode.ScaleToFit, true);
+            }
 
             GUI.Label(new Rect(left.x + 4, left.y + 172, left.width, 118),
                 "Waehle dein Reich, erobere Tuerme entlang echter Wege und fuehre deine Truppen gegen die KI. Diese Unity-Version ist der neue spielbare Kern fuer Windows.",
@@ -176,17 +224,21 @@ namespace Mastil
             float buttonY = left.y + 328;
             if (GUI.Button(new Rect(left.x, buttonY, 360, 58), "Kampagne starten", buttonStyle))
             {
+                PlaySound(clickClip, 0.55f);
+                campaignBattle = true;
                 mode = ScreenMode.WorldMap;
             }
 
             if (GUI.Button(new Rect(left.x, buttonY + 76, 360, 54), "Gefecht gegen KI", buttonStyle))
             {
-                chosenRegion = 0;
-                StartBattle();
+                PlaySound(clickClip, 0.55f);
+                campaignBattle = false;
+                mode = ScreenMode.SkirmishSetup;
             }
 
             if (GUI.Button(new Rect(left.x, buttonY + 148, 360, 54), "Einstellungen", ghostButtonStyle))
             {
+                PlaySound(clickClip, 0.4f);
                 mode = ScreenMode.Options;
             }
 
@@ -230,6 +282,7 @@ namespace Mastil
 
                 if (GUI.Button(node, GUIContent.none, GUIStyle.none))
                 {
+                    PlaySound(clickClip, 0.35f);
                     chosenRegion = i;
                 }
             }
@@ -243,11 +296,77 @@ namespace Mastil
 
             if (GUI.Button(new Rect(78, canvas.height - 156, 250, 54), "Zurueck", ghostButtonStyle))
             {
+                PlaySound(clickClip, 0.35f);
                 mode = ScreenMode.MainMenu;
             }
 
             if (GUI.Button(new Rect(348, canvas.height - 156, 300, 54), "Gebiet spielen", buttonStyle))
             {
+                PlaySound(clickClip, 0.55f);
+                campaignBattle = true;
+                mapChoice = Mathf.Clamp(chosenRegion / 2, 0, battleMaps.Count - 1);
+                StartBattle();
+            }
+        }
+
+        private void DrawSkirmishSetup(Rect canvas)
+        {
+            GUI.DrawTexture(canvas, mapTexture, ScaleMode.StretchToFill);
+            DrawVignette(canvas);
+
+            GUI.Label(new Rect(72, 46, 780, 76), "Gefecht gegen KI", titleStyle);
+            GUI.Label(new Rect(78, 126, 860, 44), "Trainiere, fuehre Kriege und waehle die Karte vor dem Start.", subtitleStyle);
+
+            Rect mapPanel = new Rect(78, 210, canvas.width - 156, 330);
+            DrawPanel(mapPanel, new Color(0.02f, 0.05f, 0.06f, 0.78f));
+            GUI.Label(new Rect(mapPanel.x + 28, mapPanel.y + 22, mapPanel.width - 56, 34), "Karte waehlen", subtitleStyle);
+
+            float cardWidth = (mapPanel.width - 86) / Mathf.Max(1, battleMaps.Count);
+            for (int i = 0; i < battleMaps.Count; i++)
+            {
+                BattleMap battleMap = battleMaps[i];
+                Rect card = new Rect(mapPanel.x + 28 + i * (cardWidth + 14), mapPanel.y + 82, cardWidth, 210);
+                DrawPanel(card, i == mapChoice ? new Color(0.12f, 0.27f, 0.23f, 0.90f) : new Color(0.05f, 0.09f, 0.10f, 0.82f));
+                GUI.Label(new Rect(card.x + 18, card.y + 18, card.width - 36, 30), battleMap.Name, bodyStyle);
+                GUI.Label(new Rect(card.x + 18, card.y + 56, card.width - 36, 24), $"Groesse: {battleMap.Size}", smallStyle);
+                GUI.Label(new Rect(card.x + 18, card.y + 90, card.width - 36, 74), battleMap.Description, smallStyle);
+                Color old = GUI.color;
+                GUI.color = Color.Lerp(battleMap.GroundA, battleMap.GroundB, 0.45f);
+                GUI.DrawTexture(new Rect(card.x + 18, card.y + 164, card.width - 36, 20), pixel);
+                GUI.color = old;
+
+                if (GUI.Button(card, GUIContent.none, GUIStyle.none))
+                {
+                    PlaySound(clickClip, 0.35f);
+                    mapChoice = i;
+                }
+            }
+
+            Rect settings = new Rect(78, 574, canvas.width - 156, 184);
+            DrawPanel(settings, new Color(0.02f, 0.05f, 0.06f, 0.82f));
+            GUI.Label(new Rect(settings.x + 28, settings.y + 18, 240, 32), "Kriegsregeln", subtitleStyle);
+            GUI.Label(new Rect(settings.x + 28, settings.y + 70, 180, 26), "Schwierigkeit", bodyStyle);
+
+            DrawDifficultyButton(new Rect(settings.x + 220, settings.y + 62, 150, 44), "Leicht", 0);
+            DrawDifficultyButton(new Rect(settings.x + 386, settings.y + 62, 150, 44), "Normal", 1);
+            DrawDifficultyButton(new Rect(settings.x + 552, settings.y + 62, 150, 44), "Schwer", 2);
+
+            GUI.Label(new Rect(settings.x + 28, settings.y + 124, 180, 26), "Reichsfarbe", bodyStyle);
+            DrawColorButton(new Rect(settings.x + 220, settings.y + 118, 78, 38), new Color(0.25f, 0.74f, 1.0f));
+            DrawColorButton(new Rect(settings.x + 314, settings.y + 118, 78, 38), new Color(0.25f, 0.92f, 0.48f));
+            DrawColorButton(new Rect(settings.x + 408, settings.y + 118, 78, 38), new Color(1.0f, 0.72f, 0.22f));
+            DrawColorButton(new Rect(settings.x + 502, settings.y + 118, 78, 38), new Color(0.72f, 0.44f, 1.0f));
+
+            if (GUI.Button(new Rect(canvas.width - 648, canvas.height - 96, 240, 54), "Zurueck", ghostButtonStyle))
+            {
+                PlaySound(clickClip, 0.35f);
+                mode = ScreenMode.MainMenu;
+            }
+
+            if (GUI.Button(new Rect(canvas.width - 380, canvas.height - 96, 300, 54), "Gefecht starten", buttonStyle))
+            {
+                PlaySound(clickClip, 0.6f);
+                campaignBattle = false;
                 StartBattle();
             }
         }
@@ -268,8 +387,9 @@ namespace Mastil
             GUI.Label(new Rect(side.x + 22, side.y + 20, side.width - 44, 44), "Gefecht", subtitleStyle);
             GUI.Label(new Rect(side.x + 22, side.y + 72, side.width - 44, 30), $"Gold: {Mathf.FloorToInt(gold)}", bodyStyle);
             GUI.Label(new Rect(side.x + 22, side.y + 108, side.width - 44, 30), $"Schwierigkeit: {DifficultyName()}", smallStyle);
+            GUI.Label(new Rect(side.x + 22, side.y + 132, side.width - 44, 24), $"{currentMapName} | {(campaignBattle ? "Kampagne" : "Freies Gefecht")}", smallStyle);
 
-            Rect status = new Rect(side.x + 22, side.y + 156, side.width - 44, 106);
+            Rect status = new Rect(side.x + 22, side.y + 164, side.width - 44, 106);
             DrawPanel(status, new Color(0.06f, 0.10f, 0.10f, 0.72f));
             if (selectedTower != null)
             {
@@ -284,7 +404,7 @@ namespace Mastil
 
             bool canAttack = selectedTower != null && selectedTower.Owner == Faction.Player && selectedTower.Units >= 12;
             GUI.enabled = canAttack;
-            if (GUI.Button(new Rect(side.x + 22, side.y + 286, side.width - 44, 48), "Angriff auf naechstes Ziel", buttonStyle))
+            if (GUI.Button(new Rect(side.x + 22, side.y + 292, side.width - 44, 48), "Angriff auf naechstes Ziel", buttonStyle))
             {
                 if (selectedTower != null)
                 {
@@ -300,19 +420,37 @@ namespace Mastil
             bool canUpgrade = selectedTower != null && selectedTower.Owner == Faction.Player && gold >= UpgradeCost(selectedTower) && selectedTower.Level < 5;
             GUI.enabled = canUpgrade;
             string upgradeText = selectedTower == null ? "Upgrade" : $"Upgrade ({UpgradeCost(selectedTower)} Gold)";
-            if (GUI.Button(new Rect(side.x + 22, side.y + 348, side.width - 44, 48), upgradeText, buttonStyle))
+            if (GUI.Button(new Rect(side.x + 22, side.y + 354, side.width - 44, 46), upgradeText, buttonStyle))
             {
                 UpgradeSelectedTower();
             }
             GUI.enabled = true;
 
-            if (GUI.Button(new Rect(side.x + 22, side.y + 416, side.width - 44, 44), "Weltkarte", ghostButtonStyle))
+            bool canRally = selectedTower != null && selectedTower.Owner == Faction.Player && tacticCooldown <= 0f && gold >= 45;
+            GUI.enabled = canRally;
+            if (GUI.Button(new Rect(side.x + 22, side.y + 414, side.width - 44, 44), tacticCooldown <= 0f ? "Banner sammeln (45 Gold)" : $"Banner bereit in {Mathf.CeilToInt(tacticCooldown)}s", ghostButtonStyle))
             {
+                RallySelectedTower();
+            }
+            GUI.enabled = true;
+
+            bool canFortify = selectedTower != null && selectedTower.Owner == Faction.Player && gold >= 35 && selectedTower.Units < selectedTower.MaxUnits;
+            GUI.enabled = canFortify;
+            if (GUI.Button(new Rect(side.x + 22, side.y + 470, side.width - 44, 44), "Festung versorgen (35 Gold)", ghostButtonStyle))
+            {
+                FortifySelectedTower();
+            }
+            GUI.enabled = true;
+
+            if (GUI.Button(new Rect(side.x + 22, side.y + 534, side.width - 44, 42), "Weltkarte", ghostButtonStyle))
+            {
+                PlaySound(clickClip, 0.35f);
                 mode = ScreenMode.WorldMap;
             }
 
-            if (GUI.Button(new Rect(side.x + 22, side.y + 472, side.width - 44, 44), "Neues Gefecht", ghostButtonStyle))
+            if (GUI.Button(new Rect(side.x + 22, side.y + 588, side.width - 44, 42), "Neues Gefecht", ghostButtonStyle))
             {
+                PlaySound(clickClip, 0.35f);
                 StartBattle();
             }
 
@@ -320,7 +458,7 @@ namespace Mastil
             DrawPanel(help, new Color(0.05f, 0.08f, 0.09f, 0.74f));
             GUI.Label(new Rect(help.x + 16, help.y + 14, help.width - 32, 32), "Spielregeln", bodyStyle);
             GUI.Label(new Rect(help.x + 16, help.y + 50, help.width - 32, 86),
-                "Eigene Tuerme erzeugen Gold und Soldaten. Angriffe laufen nur ueber Wege. Upgrades geben mehr Kapazitaet, Produktion und ein neues Burgen-Design.",
+                "Eigene Tuerme erzeugen Gold und Soldaten. Angriffe laufen nur ueber Wege. Banner sammeln ruft Reserve, Versorgung fuellt wichtige Burgen auf.",
                 smallStyle);
 
             if (!string.IsNullOrEmpty(battleMessage))
@@ -433,6 +571,11 @@ namespace Mastil
             {
                 DrawTower(tower, map);
             }
+
+            foreach (FloatingText text in floatingTexts)
+            {
+                DrawFloatingText(text, map);
+            }
         }
 
         private void HandleBattleInput(Rect map)
@@ -453,6 +596,7 @@ namespace Mastil
             {
                 selectedTower = clicked;
                 battleMessage = $"{clicked.Name} ausgewaehlt.";
+                PlaySound(clickClip, 0.25f);
                 current.Use();
                 return;
             }
@@ -466,6 +610,7 @@ namespace Mastil
                 else
                 {
                     battleMessage = "Dieses Ziel ist nicht direkt verbunden.";
+                    PlaySound(clickClip, 0.18f);
                 }
 
                 current.Use();
@@ -477,9 +622,14 @@ namespace Mastil
             towers.Clear();
             roads.Clear();
             units.Clear();
+            floatingTexts.Clear();
             selectedTower = null;
-            gold = 110;
+            BattleMap battleMap = battleMaps[Mathf.Clamp(mapChoice, 0, battleMaps.Count - 1)];
+            currentMapName = battleMap.Name;
+            battleTexture = MakeBattleTexture(1280, 720);
+            gold = Mathf.RoundToInt(110 * battleMap.GoldMultiplier);
             aiTimer = 3.0f;
+            tacticCooldown = 0f;
             battleMessage = "Erobere die verbundenen Tuerme.";
 
             float enemyBoost = difficulty * 0.15f;
@@ -490,6 +640,36 @@ namespace Mastil
             AddTower("Nordturm", Faction.Neutral, new Vector2(0.60f, 0.74f), 2, 34, false, "Signalfeuer");
             AddTower("Rotwacht", Faction.Enemy, new Vector2(0.70f, 0.35f), 2, Mathf.RoundToInt(34 * (1f + enemyBoost)), false, "Belagerungsturm");
             AddTower("Dunkelburg", Faction.Enemy, new Vector2(0.82f, 0.58f), 3, Mathf.RoundToInt(54 * (1f + enemyBoost)), true, "Feindschloss");
+
+            if (battleMap.ExtraNeutral >= 1)
+            {
+                Tower southGate = AddTower("Suedtor", Faction.Neutral, new Vector2(0.45f, 0.24f), 1, 24, false, "Handelsturm");
+                Link(1, southGate.Id);
+                Link(southGate.Id, 3);
+                Link(southGate.Id, 5);
+            }
+
+            if (battleMap.ExtraNeutral >= 2)
+            {
+                Tower highWatch = AddTower("Hochwacht", Faction.Neutral, new Vector2(0.54f, 0.86f), 2, 38, false, "Bergwacht");
+                Link(2, highWatch.Id);
+                Link(highWatch.Id, 4);
+                Link(highWatch.Id, 6);
+            }
+
+            if (battleMap.ExtraEnemy >= 1)
+            {
+                Tower ashFort = AddTower("Aschenfort", Faction.Enemy, new Vector2(0.90f, 0.28f), 2, Mathf.RoundToInt(42 * (1f + enemyBoost)), true, "Vorburg");
+                Link(5, ashFort.Id);
+                Link(6, ashFort.Id);
+            }
+
+            if (battleMap.ExtraEnemy >= 2)
+            {
+                Tower kingWall = AddTower("Koenigswall", Faction.Enemy, new Vector2(0.92f, 0.74f), 4, Mathf.RoundToInt(66 * (1f + enemyBoost)), true, "Bosswall");
+                Link(6, kingWall.Id);
+                Link(4, kingWall.Id);
+            }
 
             Link(0, 1);
             Link(0, 2);
@@ -502,13 +682,15 @@ namespace Mastil
             Link(3, 6);
 
             selectedTower = towers[0];
+            PlaySound(clickClip, 0.45f);
+            AddFloatingText("Krieg beginnt", selectedTower.Position, new Color(1f, 0.84f, 0.42f));
             mode = ScreenMode.Battle;
         }
 
-        private void AddTower(string name, Faction owner, Vector2 position, int level, int unitsCount, bool castle, string role)
+        private Tower AddTower(string name, Faction owner, Vector2 position, int level, int unitsCount, bool castle, string role)
         {
             int maxUnits = castle ? 70 + level * 18 : 42 + level * 12;
-            towers.Add(new Tower
+            Tower tower = new Tower
             {
                 Id = towers.Count,
                 Name = name,
@@ -519,7 +701,9 @@ namespace Mastil
                 MaxUnits = maxUnits,
                 Castle = castle,
                 Role = role
-            });
+            };
+            towers.Add(tower);
+            return tower;
         }
 
         private void Link(int a, int b)
@@ -592,6 +776,8 @@ namespace Mastil
                 target.Owner = group.Owner;
                 target.Units = Mathf.Min(target.MaxUnits, Mathf.Abs(target.Units) + 4);
                 battleMessage = group.Owner == Faction.Player ? $"{target.Name} erobert." : $"{target.Name} verloren.";
+                AddFloatingText(group.Owner == Faction.Player ? "Erobert" : "Verloren", target.Position, OwnerColor(group.Owner));
+                PlaySound(captureClip, group.Owner == Faction.Player ? 0.65f : 0.45f);
                 if (group.Owner == Faction.Player)
                 {
                     selectedTower = target;
@@ -682,6 +868,8 @@ namespace Mastil
             });
 
             battleMessage = source.Owner == Faction.Player ? $"{sent} Soldaten marschieren." : "Der Feind rueckt vor.";
+            AddFloatingText($"-{sent}", source.Position, OwnerColor(source.Owner));
+            PlaySound(source.Owner == Faction.Player ? attackClip : clickClip, source.Owner == Faction.Player ? 0.55f : 0.22f);
         }
 
         private void UpgradeSelectedTower()
@@ -708,6 +896,45 @@ namespace Mastil
             }
 
             battleMessage = $"{selectedTower.Name} wurde ausgebaut.";
+            AddFloatingText("Upgrade", selectedTower.Position, new Color(1f, 0.82f, 0.35f));
+            PlaySound(upgradeClip, 0.65f);
+        }
+
+        private void RallySelectedTower()
+        {
+            if (selectedTower == null || selectedTower.Owner != Faction.Player || gold < 45 || tacticCooldown > 0f)
+            {
+                return;
+            }
+
+            gold -= 45;
+            tacticCooldown = 18f;
+            int reserve = 18 + selectedTower.Level * 5 + (selectedTower.Castle ? 8 : 0);
+            selectedTower.Units = Mathf.Min(selectedTower.MaxUnits, selectedTower.Units + reserve);
+            battleMessage = $"Reserve sammelt sich bei {selectedTower.Name}.";
+            AddFloatingText($"+{reserve} Reserve", selectedTower.Position, new Color(0.75f, 1f, 0.72f));
+            PlaySound(captureClip, 0.45f);
+        }
+
+        private void FortifySelectedTower()
+        {
+            if (selectedTower == null || selectedTower.Owner != Faction.Player || gold < 35)
+            {
+                return;
+            }
+
+            int missing = selectedTower.MaxUnits - selectedTower.Units;
+            if (missing <= 0)
+            {
+                return;
+            }
+
+            gold -= 35;
+            int supply = Mathf.Min(missing, 14 + selectedTower.Level * 4);
+            selectedTower.Units += supply;
+            battleMessage = $"{selectedTower.Name} wird versorgt.";
+            AddFloatingText($"+{supply}", selectedTower.Position, new Color(0.68f, 0.90f, 1f));
+            PlaySound(upgradeClip, 0.35f);
         }
 
         private int UpgradeCost(Tower tower)
@@ -729,12 +956,14 @@ namespace Mastil
             {
                 resultTitle = "Niederlage";
                 resultText = "Dein letztes Banner ist gefallen. Verstaerke frueh deine Wege und greife nicht zu tief in feindliches Gebiet an.";
+                PlaySound(loseClip, 0.70f);
                 mode = ScreenMode.Result;
             }
             else if (!enemyAlive)
             {
                 resultTitle = "Sieg";
                 resultText = "Mastil haelt stand. Du hast die feindlichen Burgen erobert und die Strassen wieder verbunden.";
+                PlaySound(winClip, 0.78f);
                 mode = ScreenMode.Result;
             }
         }
@@ -804,6 +1033,133 @@ namespace Mastil
             });
         }
 
+        private void CreateBattleMaps()
+        {
+            battleMaps.Clear();
+            battleMaps.Add(new BattleMap
+            {
+                Name = "Tal der Kronen",
+                Size = "Klein",
+                Description = "Schneller Einstieg mit klaren Wegen und wenig Fronten.",
+                ExtraNeutral = 0,
+                ExtraEnemy = 0,
+                GoldMultiplier = 1.0f,
+                GroundA = new Color(0.14f, 0.31f, 0.22f),
+                GroundB = new Color(0.45f, 0.50f, 0.27f),
+                WaterColor = new Color(0.10f, 0.23f, 0.32f, 0.42f)
+            });
+            battleMaps.Add(new BattleMap
+            {
+                Name = "Brueckenbruch",
+                Size = "Mittel",
+                Description = "Mehr Wege, ein Suedtor und gefaehrliche Flanken.",
+                ExtraNeutral = 1,
+                ExtraEnemy = 1,
+                GoldMultiplier = 1.15f,
+                GroundA = new Color(0.20f, 0.27f, 0.24f),
+                GroundB = new Color(0.50f, 0.43f, 0.25f),
+                WaterColor = new Color(0.08f, 0.25f, 0.35f, 0.55f)
+            });
+            battleMaps.Add(new BattleMap
+            {
+                Name = "Koenigswall",
+                Size = "Gross",
+                Description = "Viele Tuerme, zwei feindliche Burgen und ein langer Krieg.",
+                ExtraNeutral = 2,
+                ExtraEnemy = 2,
+                GoldMultiplier = 1.30f,
+                GroundA = new Color(0.12f, 0.18f, 0.24f),
+                GroundB = new Color(0.38f, 0.32f, 0.24f),
+                WaterColor = new Color(0.07f, 0.12f, 0.18f, 0.48f)
+            });
+        }
+
+        private void CreateAudio()
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.volume = 0.75f;
+            clickClip = CreateToneClip("mastil-click", 520f, 0.06f, 0.22f);
+            attackClip = CreateToneClip("mastil-attack", 180f, 0.18f, 0.40f);
+            upgradeClip = CreateToneClip("mastil-upgrade", 680f, 0.24f, 0.36f);
+            captureClip = CreateToneClip("mastil-capture", 390f, 0.34f, 0.42f);
+            winClip = CreateChordClip("mastil-victory", new[] { 392f, 494f, 587f }, 0.55f, 0.40f);
+            loseClip = CreateChordClip("mastil-defeat", new[] { 220f, 185f, 147f }, 0.65f, 0.36f);
+        }
+
+        private AudioClip CreateToneClip(string name, float frequency, float duration, float volume)
+        {
+            const int sampleRate = 44100;
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            float[] data = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                float t = i / (float)sampleRate;
+                float envelope = Mathf.Sin(Mathf.Clamp01(i / (float)samples) * Mathf.PI);
+                float wave = Mathf.Sin(2f * Mathf.PI * frequency * t) * 0.70f;
+                wave += Mathf.Sin(2f * Mathf.PI * frequency * 1.5f * t) * 0.22f;
+                data[i] = wave * envelope * volume;
+            }
+
+            AudioClip clip = AudioClip.Create(name, samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        private AudioClip CreateChordClip(string name, float[] frequencies, float duration, float volume)
+        {
+            const int sampleRate = 44100;
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            float[] data = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                float t = i / (float)sampleRate;
+                float envelope = Mathf.Sin(Mathf.Clamp01(i / (float)samples) * Mathf.PI);
+                float sum = 0f;
+                foreach (float frequency in frequencies)
+                {
+                    sum += Mathf.Sin(2f * Mathf.PI * frequency * t);
+                }
+
+                data[i] = sum / Mathf.Max(1, frequencies.Length) * envelope * volume;
+            }
+
+            AudioClip clip = AudioClip.Create(name, samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        private void PlaySound(AudioClip clip, float volume)
+        {
+            if (audioSource != null && clip != null)
+            {
+                audioSource.PlayOneShot(clip, volume);
+            }
+        }
+
+        private void AddFloatingText(string text, Vector2 position, Color color)
+        {
+            floatingTexts.Add(new FloatingText
+            {
+                Text = text,
+                Position = position,
+                Color = color,
+                Age = 0f
+            });
+        }
+
+        private void UpdateFloatingTexts(float dt)
+        {
+            for (int i = floatingTexts.Count - 1; i >= 0; i--)
+            {
+                floatingTexts[i].Age += dt;
+                if (floatingTexts[i].Age >= floatingTexts[i].Lifetime)
+                {
+                    floatingTexts.RemoveAt(i);
+                }
+            }
+        }
+
         private void CreateTextures()
         {
             pixel = MakeTexture(1, 1, (x, y) => Color.white);
@@ -812,6 +1168,7 @@ namespace Mastil
             menuTexture = MakeGradient(1280, 720, new Color(0.02f, 0.06f, 0.07f), new Color(0.11f, 0.17f, 0.16f), true);
             mapTexture = MakeWorldTexture(1280, 720);
             battleTexture = MakeBattleTexture(1280, 720);
+            brandIcon = Resources.Load<Texture2D>("mastil-icon");
         }
 
         private void CreateStyles()
@@ -889,7 +1246,17 @@ namespace Mastil
 
             if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             {
+                PlaySound(clickClip, 0.30f);
                 playerColor = color;
+            }
+        }
+
+        private void DrawDifficultyButton(Rect rect, string label, int value)
+        {
+            if (GUI.Button(rect, label, difficulty == value ? buttonStyle : ghostButtonStyle))
+            {
+                PlaySound(clickClip, 0.35f);
+                difficulty = value;
             }
         }
 
@@ -995,6 +1362,22 @@ namespace Mastil
                 alignment = TextAnchor.MiddleCenter,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = Color.white }
+            });
+        }
+
+        private void DrawFloatingText(FloatingText text, Rect map)
+        {
+            float t = Mathf.Clamp01(text.Age / text.Lifetime);
+            Vector2 pos = WorldToScreen(text.Position, map);
+            pos.y -= 40f + t * 42f;
+            Color color = text.Color;
+            color.a = 1f - t;
+
+            GUI.Label(new Rect(pos.x - 84, pos.y - 18, 168, 36), text.Text, new GUIStyle(bodyStyle)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = color }
             });
         }
 
@@ -1138,18 +1521,25 @@ namespace Mastil
 
         private Texture2D MakeBattleTexture(int width, int height)
         {
+            BattleMap battleMap = battleMaps.Count > 0 ? battleMaps[Mathf.Clamp(mapChoice, 0, battleMaps.Count - 1)] : null;
             return MakeTexture(width, height, (x, y) =>
             {
                 float nx = x / (float)width;
                 float ny = y / (float)height;
                 float ridge = Mathf.PerlinNoise(nx * 3.3f + 4f, ny * 3.1f + 2f);
                 float field = Mathf.PerlinNoise(nx * 12f, ny * 10f) * 0.12f;
-                Color low = new Color(0.16f, 0.30f, 0.22f, 1f);
-                Color high = new Color(0.43f, 0.48f, 0.28f, 1f);
+                Color low = battleMap != null ? battleMap.GroundA : new Color(0.16f, 0.30f, 0.22f, 1f);
+                Color high = battleMap != null ? battleMap.GroundB : new Color(0.43f, 0.48f, 0.28f, 1f);
                 Color baseColor = Color.Lerp(low, high, ridge * 0.7f + field);
-                if (ny > 0.72f && nx < 0.45f)
+                if ((ny > 0.72f && nx < 0.45f) || (mapChoice == 1 && Mathf.Abs(nx - ny) < 0.08f))
                 {
-                    baseColor = Color.Lerp(baseColor, new Color(0.12f, 0.23f, 0.31f, 1f), 0.35f);
+                    Color water = battleMap != null ? battleMap.WaterColor : new Color(0.12f, 0.23f, 0.31f, 1f);
+                    baseColor = Color.Lerp(baseColor, water, mapChoice == 1 ? 0.48f : 0.35f);
+                }
+
+                if (mapChoice == 2 && ridge > 0.72f)
+                {
+                    baseColor = Color.Lerp(baseColor, new Color(0.55f, 0.54f, 0.47f, 1f), 0.38f);
                 }
 
                 return baseColor;

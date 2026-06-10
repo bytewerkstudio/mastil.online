@@ -1,6 +1,7 @@
 using System.IO;
 using Mastil;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -10,6 +11,7 @@ namespace Mastil.Editor
     public static class MastilProjectSetup
     {
         public const string ScenePath = "Assets/MASTIL/Scenes/Main.unity";
+        private const string IconPath = "Assets/MASTIL/Resources/mastil-icon.png";
 
         public static void Setup()
         {
@@ -54,9 +56,30 @@ namespace Mastil.Editor
             PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
             PlayerSettings.runInBackground = false;
             PlayerSettings.SplashScreen.show = false;
+            ApplyApplicationIcon();
 
             AssetDatabase.SaveAssets();
             Debug.Log("MASTIL Unity project setup complete.");
+        }
+
+        private static void ApplyApplicationIcon()
+        {
+            Texture2D icon = AssetDatabase.LoadAssetAtPath<Texture2D>(IconPath);
+            if (icon == null)
+            {
+                Debug.LogWarning($"MASTIL icon was not found at {IconPath}.");
+                return;
+            }
+
+            TextureImporter importer = AssetImporter.GetAtPath(IconPath) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.mipmapEnabled = true;
+                importer.SaveAndReimport();
+            }
+
+            PlayerSettings.SetIcons(NamedBuildTarget.Standalone, new[] { icon }, IconKind.Application);
         }
     }
 }
