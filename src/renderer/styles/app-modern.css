@@ -2948,6 +2948,59 @@
   box-shadow: inset 0 0 20px color-mix(in srgb, var(--morale-color) 18%, transparent);
 }
 
+.mastil-war-goal {
+  --war-goal-color: #f4d77a;
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 9px;
+  color: rgba(244, 230, 191, 0.88);
+  border: 1px solid color-mix(in srgb, var(--war-goal-color) 48%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--war-goal-color) 16%, transparent), rgba(47, 111, 165, 0.08)),
+    rgba(13, 9, 7, 0.2);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.16);
+}
+
+.mastil-war-goal.complete {
+  border-color: color-mix(in srgb, var(--war-goal-color) 74%, #fff2bf);
+  box-shadow:
+    inset 0 0 22px color-mix(in srgb, var(--war-goal-color) 16%, transparent),
+    0 0 18px rgba(246, 216, 115, 0.1);
+}
+
+.mastil-war-goal strong {
+  color: color-mix(in srgb, var(--war-goal-color) 86%, #fff2bf);
+  font: 950 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-war-goal span,
+.mastil-war-goal small {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-war-goal small {
+  color: color-mix(in srgb, var(--war-goal-color) 70%, rgba(244, 230, 191, 0.82));
+}
+
+.mastil-war-goal em {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.36);
+}
+
+.mastil-war-goal i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--war-goal-color), #fff2bf);
+  transition: width 240ms ease;
+}
+
 .mastil-incident-panel {
   --incident-color: #d8c49a;
   display: grid;
@@ -3228,6 +3281,10 @@
 
 .mastil-event-site strong {
   color: #9ed6a2;
+}
+
+.mastil-event-goal strong {
+  color: #f6d873;
 }
 
 .mastil-event-veteran strong {

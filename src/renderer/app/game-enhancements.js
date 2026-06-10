@@ -702,6 +702,14 @@
       title: 'Zitadellenbrecher',
       detail: 'Die Endboss-Schlacht im Gefechtsmodus gewonnen.'
     },
+    warGoalFulfilled: {
+      title: 'Kriegsziel erfüllt',
+      detail: 'Ein großes regionales Kriegsziel abgeschlossen.'
+    },
+    warGoalMaster: {
+      title: 'Reichsstratege',
+      detail: 'Drei große Kriegsziele in einer Partie abgeschlossen.'
+    },
     contractMaster: {
       title: 'Auftragsherr',
       detail: 'Drei Kriegsaufträge in einer Partie erfüllt.'
@@ -775,6 +783,7 @@
   const matchAchievements = new Set();
   const unlockedAchievements = new Set(loadAchievementIds());
   const completedContracts = new Set();
+  const completedWarGoals = new Set();
   const COMMAND_HOTKEYS = {
     ' ': 'council',
     '1': 'select',
@@ -860,6 +869,7 @@
     bossOrders: 0,
     veterans: 0,
     contracts: 0,
+    goals: 0,
     convoys: 0,
     reserves: 0,
     commandChains: 0
@@ -3980,6 +3990,7 @@
       matchStats.moraleAids * 85 +
       matchStats.warEvents * 210 -
       matchStats.incidentFailures * 120 +
+      matchStats.goals * 340 +
       matchStats.contracts * 190 +
       matchStats.convoys * 130 +
       matchStats.reserves * 105 +
@@ -4048,6 +4059,7 @@
         <span><strong>${matchStats.warEvents}</strong> Ereignisse</span>
         <span><strong>${matchStats.enemyOrders}</strong> Feindbefehle</span>
         <span><strong>${matchStats.bossOrders}</strong> Bossbefehle</span>
+        <span><strong>${matchStats.goals}</strong> Kriegsziele</span>
         <span><strong>${matchStats.contracts}</strong> Aufträge</span>
         <span><strong>${matchStats.convoys}</strong> Konvois</span>
         <span><strong>${matchStats.reserves}</strong> Reserven</span>
@@ -4135,6 +4147,7 @@
     resetBossCommandState();
     matchAchievements.clear();
     completedContracts.clear();
+    completedWarGoals.clear();
     matchSummarySaved = false;
     skirmishVictoryShown = false;
     safe(() => {
@@ -4193,6 +4206,7 @@
     matchStats.bossOrders = 0;
     matchStats.veterans = 0;
     matchStats.contracts = 0;
+    matchStats.goals = 0;
     matchStats.convoys = 0;
     matchStats.reserves = 0;
     matchStats.commandChains = 0;
@@ -5664,6 +5678,266 @@
       detail: 'Bereite die nächste Welle vor.',
       progress: 1
     };
+  }
+
+  function getOwnedCount(own, predicate) {
+    return own.filter((tower) => tower && predicate(tower)).length;
+  }
+
+  function createWarGoalState(goal) {
+    const rawProgress = clamp(Number(goal.progress) || 0, 0, 1);
+    const rewarded = completedWarGoals.has(goal.id);
+    const completed = rewarded || rawProgress >= 1;
+    return {
+      ...goal,
+      progress: completed ? 1 : rawProgress,
+      completed,
+      ready: rawProgress >= 1 && !rewarded,
+      reward: goal.reward || 'Belohnung: Befehle schneller bereit',
+      rewardType: goal.rewardType || 'command'
+    };
+  }
+
+  function getWarGoalState(own, enemy, neutral) {
+    const currentTowers = safe(() => towers, []);
+    const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
+    const config = getMatchConfig();
+    const scenario = getSkirmishScenario(config);
+    const plan = getWarPlan(config);
+    const region = getActiveRegion();
+    const now = performance.now();
+    const strategic = computeStrategicSiteState(currentTowers);
+    const supply = computeSupplyState(own);
+    const routes = computeRouteControlState(currentTowers);
+    const front = computeFrontPressure(own, enemy);
+    const economyHeld = getOwnedCount(own, (tower) => tower.terrain === 'market' || tower.terrain === 'quarry' || tower.type === typeFromKey('gold'));
+    const fortifiedHeld = getOwnedCount(own, (tower) => (tower.fortifiedUntil || 0) > now || tower.supplyLinked || (tower.frontPressure || 0) < 0.48);
+    const keySites = currentTowers.filter((tower) => tower.mastilSkirmishObjective || tower.mastilRoadHub || tower.mastilCastleSite || tower.terrain === 'keep');
+    const keyHeld = keySites.filter((tower) => tower.faction === playerFaction).length;
+    const strongholds = currentTowers.filter((tower) => tower.mastilCastleSite || tower.boss || tower.terrain === 'keep');
+    const strongHeld = strongholds.filter((tower) => tower.faction === playerFaction).length;
+    const activeBoss = enemy.find((tower) => tower.boss || tower.bossName);
+
+    if (!own.length) {
+      return createWarGoalState({
+        id: 'hold-last-banner',
+        title: 'Kriegsziel: Banner retten',
+        detail: 'Halte mindestens einen eigenen Turm, damit das Reich weiterkämpfen kann.',
+        reward: 'Belohnung: Notreserve',
+        rewardType: 'reserves',
+        progress: 0
+      });
+    }
+
+    if (config.mode === 'skirmish') {
+      if (scenario.id === 'boss' || plan === WAR_PLANS.conquest) {
+        const target = Math.min(4, Math.max(2, strongholds.length));
+        return createWarGoalState({
+          id: `skirmish-citadel-${config.mapId || region.id}`,
+          title: 'Kriegsziel: Zitadellenring',
+          detail: `${strongHeld}/${target} Festungen gehalten. Breche die Endlinie und sichere die Burgen.`,
+          reward: 'Belohnung: Zitadellenreserve',
+          rewardType: 'fortress',
+          progress: strongHeld / Math.max(1, target),
+          targetTower: activeBoss || strongholds.find((tower) => tower.faction !== playerFaction) || own[0]
+        });
+      }
+
+      if (scenario.id === 'siege' || plan === WAR_PLANS.fortress) {
+        const fortressTarget = Math.min(2, strongholds.length || 2);
+        const siegeProgress = Math.min(1, matchStats.sieges / 3);
+        const fortressProgress = Math.min(1, strongHeld / Math.max(1, fortressTarget));
+        return createWarGoalState({
+          id: `skirmish-siege-${config.mapId || region.id}`,
+          title: 'Kriegsziel: Mauerkrieg',
+          detail: `${matchStats.sieges}/3 Belagerungen, ${strongHeld}/${fortressTarget} Festungen. Zermürbe die KI-Burgen.`,
+          reward: 'Belohnung: Belagerungen schneller bereit',
+          rewardType: 'siege',
+          progress: siegeProgress * 0.55 + fortressProgress * 0.45,
+          targetTower: strongholds.find((tower) => tower.faction !== playerFaction) || enemy[0] || own[0]
+        });
+      }
+
+      if (scenario.id === 'trade' || plan === WAR_PLANS.economy) {
+        const routeTarget = Math.min(4, routes.total || 4);
+        const routeProgress = Math.min(1, routes.secured / Math.max(1, routeTarget));
+        const economyProgress = Math.min(1, economyHeld / 3);
+        return createWarGoalState({
+          id: `skirmish-trade-${config.mapId || region.id}`,
+          title: 'Kriegsziel: Handelsmacht',
+          detail: `${economyHeld}/3 Wirtschaftsorte, ${routes.secured}/${routeTarget} Wege. Baue ein tragfähiges Reich.`,
+          reward: 'Belohnung: Reichsschatz',
+          rewardType: 'gold',
+          progress: economyProgress * 0.58 + routeProgress * 0.42,
+          targetTower: currentTowers.find((tower) => (tower.terrain === 'market' || tower.terrain === 'quarry') && tower.faction !== playerFaction) || own[0]
+        });
+      }
+
+      if (scenario.id === 'shadow' || plan === WAR_PLANS.raiders) {
+        const responseCount = matchStats.counters + matchStats.flanks + matchStats.reserves;
+        const defenseProgress = Math.min(1, responseCount / 3);
+        const supplyProgress = Math.min(1, supply.ratio / 0.84);
+        return createWarGoalState({
+          id: `skirmish-raiders-${config.mapId || region.id}`,
+          title: 'Kriegsziel: Linien halten',
+          detail: `${Math.round(supply.ratio * 100)}% Versorgung, ${responseCount}/3 Gegenmanöver. Lass die Räuber ins Leere laufen.`,
+          reward: 'Belohnung: schnelle Gegenbefehle',
+          rewardType: 'command',
+          progress: supplyProgress * 0.66 + defenseProgress * 0.34,
+          targetTower: supply.weakest || front.hottest || own[0]
+        });
+      }
+
+      const target = Math.min(4, Math.max(2, keySites.length));
+      return createWarGoalState({
+        id: `skirmish-field-${config.mapId || region.id}`,
+        title: 'Kriegsziel: Feldherrschaft',
+        detail: `${keyHeld}/${target} Schlüsselorte gehalten. Sichere Kreuzungen, Burgen und Zielpunkte.`,
+        reward: 'Belohnung: Feldreserven',
+        rewardType: 'reserves',
+        progress: keyHeld / Math.max(1, target),
+        targetTower: keySites.find((tower) => tower.faction !== playerFaction) || own[0]
+      });
+    }
+
+    if (region.id === 'grenzlande') {
+      const routeTarget = Math.min(5, routes.total || 5);
+      const supplyProgress = Math.min(1, supply.ratio / 0.82);
+      const routeProgress = Math.min(1, routes.secured / Math.max(1, routeTarget));
+      return createWarGoalState({
+        id: 'campaign-grenzlande-roadwatch',
+        title: 'Kriegsziel: Grenzstraßen',
+        detail: `${routes.secured}/${routeTarget} Wege, ${Math.round(supply.ratio * 100)}% Versorgung. Halte die kalte Front geschlossen.`,
+        reward: 'Belohnung: Marschbefehle',
+        rewardType: 'command',
+        progress: routeProgress * 0.52 + supplyProgress * 0.48,
+        targetTower: routes.next?.tower || supply.weakest || own[0]
+      });
+    }
+
+    if (region.id === 'wuestenreich') {
+      const economyProgress = Math.min(1, economyHeld / 3);
+      const spoilsProgress = Math.min(1, matchStats.spoils / 3);
+      return createWarGoalState({
+        id: 'campaign-wuestenreich-sandschatz',
+        title: 'Kriegsziel: Sandschatz',
+        detail: `${economyHeld}/3 Märkte oder Steinbrüche, ${matchStats.spoils}/3 Beuten. Nutze die Wüste als Kriegskasse.`,
+        reward: 'Belohnung: großer Goldzug',
+        rewardType: 'gold',
+        progress: economyProgress * 0.55 + spoilsProgress * 0.45,
+        targetTower: currentTowers.find((tower) => (tower.terrain === 'market' || tower.terrain === 'quarry') && tower.faction !== playerFaction) || own[0]
+      });
+    }
+
+    if (region.id === 'nachtfestung') {
+      const protectedTarget = Math.min(4, Math.max(2, own.length));
+      const responseCount = matchStats.counters + matchStats.breaches + matchStats.fortified;
+      const protectedProgress = Math.min(1, fortifiedHeld / protectedTarget);
+      const counterProgress = Math.min(1, responseCount / 4);
+      return createWarGoalState({
+        id: 'campaign-nachtfestung-schattenwall',
+        title: 'Kriegsziel: Schattenwall',
+        detail: `${fortifiedHeld}/${protectedTarget} Linien gesichert, ${responseCount}/4 Reaktionen. Überstehe den Nachtkrieg.`,
+        reward: 'Belohnung: befestigte Linie',
+        rewardType: 'fortress',
+        progress: protectedProgress * 0.56 + counterProgress * 0.44,
+        targetTower: front.hottest || supply.weakest || own[0]
+      });
+    }
+
+    if (region.id === 'endboss') {
+      const target = Math.min(4, Math.max(2, strongholds.length));
+      const bossProgress = activeBoss ? 0 : 1;
+      return createWarGoalState({
+        id: 'campaign-endboss-kaisersturz',
+        title: 'Kriegsziel: Kaisersturz',
+        detail: `${strongHeld}/${target} Endfestungen, Boss ${activeBoss ? 'aktiv' : 'gebrochen'}. Öffne den Weg zur Zitadelle.`,
+        reward: 'Belohnung: letzter Heerbann',
+        rewardType: 'victory',
+        progress: Math.min(1, (strongHeld / Math.max(1, target)) * 0.72 + bossProgress * 0.28),
+        targetTower: activeBoss || strongholds.find((tower) => tower.faction !== playerFaction) || own[0]
+      });
+    }
+
+    const target = Math.min(3, Math.max(1, strategic.total));
+    return createWarGoalState({
+      id: 'campaign-startgebiet-kronlande',
+      title: 'Kriegsziel: Kronlande sichern',
+      detail: `${strategic.heldCount}/${target} strategische Orte. Baue ein stabiles Startreich auf.`,
+      reward: 'Belohnung: Startreserve',
+      rewardType: 'reserves',
+      progress: strategic.heldCount / Math.max(1, target),
+      targetTower: strategic.nextTarget?.tower || neutral[0] || enemy[0] || own[0]
+    });
+  }
+
+  function grantWarGoalReward(goal, own) {
+    if (!goal || !goal.ready || completedWarGoals.has(goal.id)) return;
+    completedWarGoals.add(goal.id);
+    matchStats.goals += 1;
+
+    const anchor = goal.targetTower || own[0];
+    let message = goal.title.replace(/^Kriegsziel:\s*/, '');
+    if (goal.rewardType === 'gold') {
+      const bonus = 88 + Math.max(0, safe(() => wave, 1) - 1) * 8 + Math.min(40, matchStats.contracts * 8);
+      safe(() => {
+        gold += bonus;
+        updateUI();
+      });
+      message += `: +${bonus} Gold`;
+    } else if (goal.rewardType === 'reserves') {
+      own.slice(0, 6).forEach((tower) => {
+        const amount = 3 + Math.min(4, Math.floor((tower.level || 1) / 2));
+        tower.units = Math.min(tower.maxUnits, tower.units + amount);
+        spawnEffect(tower.x, tower.y, 'achievement', { color: '#8fc3f0', text: `+${amount}`, duration: 950, size: 0.78 });
+      });
+      message += ': Reserven eintreffen';
+    } else if (goal.rewardType === 'siege') {
+      reduceCommandCooldowns(9000);
+      safe(() => {
+        gold += 42;
+        updateUI();
+      });
+      message += ': Belagerungsgerät bereit';
+    } else if (goal.rewardType === 'fortress') {
+      own.slice().sort((a, b) => (b.frontPressure || 0) - (a.frontPressure || 0)).slice(0, 4).forEach((tower) => {
+        tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + 22000);
+        tower.units = Math.min(tower.maxUnits, tower.units + 2);
+        addTowerRenown(tower, 3, 'Kriegsziel');
+        spawnEffect(tower.x, tower.y, 'shield', { color: '#ffe18a', text: 'Wall', duration: 1000, size: 0.82 });
+      });
+      message += ': Linie befestigt';
+    } else if (goal.rewardType === 'victory') {
+      reduceCommandCooldowns(11000);
+      warMorale = clamp(warMorale + 9, 0, 100);
+      own.forEach((tower) => {
+        tower.units = Math.min(tower.maxUnits, tower.units + 3);
+        spawnEffect(tower.x, tower.y, 'morale', { color: '#ffb17e', text: '+Heerbann', duration: 980, size: 0.78 });
+      });
+      message += ': letzter Heerbann';
+    } else {
+      reduceCommandCooldowns(8500);
+      warMorale = clamp(warMorale + 4, 0, 100);
+      message += ': Befehle schneller bereit';
+    }
+
+    if (anchor && typeof anchor.x === 'number') {
+      spawnEffect(anchor.x, anchor.y, 'achievement', {
+        color: '#f6d873',
+        text: 'Kriegsziel',
+        duration: 1450,
+        size: 1.18
+      });
+    }
+    pushEvent(`Kriegsziel erfüllt: ${message}`, 'goal');
+    showEnhancementNotice(`Kriegsziel erfüllt: ${message}`);
+    playSound('achievement');
+    unlockAchievement('warGoalFulfilled', { tower: anchor || own[0] });
+    if (matchStats.goals >= 3) unlockAchievement('warGoalMaster', { tower: anchor || own[0] });
+  }
+
+  function applyWarGoalReward(goal, own) {
+    grantWarGoalReward(goal, own);
   }
 
   function getWarContractState(own, enemy, neutral) {
@@ -8490,6 +8764,12 @@
         <span id="mastil-morale-detail">Das Reich sammelt sich.</span>
         <em><i id="mastil-morale-progress"></i></em>
       </div>
+      <div class="mastil-war-goal" id="mastil-war-goal">
+        <strong id="mastil-war-goal-title">Kriegsziel</strong>
+        <span id="mastil-war-goal-detail">Sichere die Karte Schritt für Schritt.</span>
+        <small id="mastil-war-goal-reward">Belohnung: Feldreserven</small>
+        <em><i id="mastil-war-goal-progress"></i></em>
+      </div>
       <div class="mastil-incident-panel" id="mastil-incident-panel">
         <strong id="mastil-incident-title">Kriegsereignis</strong>
         <span id="mastil-incident-detail">Keine besondere Chance aktiv.</span>
@@ -8530,6 +8810,7 @@
         <span id="mastil-stat-edicts">0 Edikte</span>
         <span id="mastil-stat-threat">0 Feind / 0 Boss</span>
         <span id="mastil-stat-veterans">0 Vet.</span>
+        <span id="mastil-stat-goals">0 Ziele</span>
         <span id="mastil-stat-awards">0 Ausz.</span>
       </div>
       <div class="mastil-event-list" id="mastil-event-list"></div>
@@ -8643,7 +8924,9 @@
     const enemy = currentTowers.filter((tower) => tower.faction !== playerFaction && tower.faction !== neutralFaction);
     const neutral = currentTowers.filter((tower) => tower.faction === neutralFaction);
     const objective = getObjectiveState(own, enemy, neutral);
+    const warGoal = getWarGoalState(own, enemy, neutral);
     const contract = getWarContractState(own, enemy, neutral);
+    applyWarGoalReward(warGoal, own);
     applyWarContractRewards(own, enemy, neutral);
 
     const title = document.getElementById('mastil-objective-title');
@@ -8660,6 +8943,11 @@
     const moraleTitle = document.getElementById('mastil-morale-title');
     const moraleDetail = document.getElementById('mastil-morale-detail');
     const moraleProgress = document.getElementById('mastil-morale-progress');
+    const warGoalBox = document.getElementById('mastil-war-goal');
+    const warGoalTitle = document.getElementById('mastil-war-goal-title');
+    const warGoalDetail = document.getElementById('mastil-war-goal-detail');
+    const warGoalReward = document.getElementById('mastil-war-goal-reward');
+    const warGoalProgress = document.getElementById('mastil-war-goal-progress');
     const incidentBox = document.getElementById('mastil-incident-panel');
     const incidentTitle = document.getElementById('mastil-incident-title');
     const incidentDetail = document.getElementById('mastil-incident-detail');
@@ -8692,8 +8980,9 @@
     const edicts = document.getElementById('mastil-stat-edicts');
     const threatStat = document.getElementById('mastil-stat-threat');
     const veteranStat = document.getElementById('mastil-stat-veterans');
+    const goalStat = document.getElementById('mastil-stat-goals');
     const awards = document.getElementById('mastil-stat-awards');
-    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !eventStat || !spoils || !sieges || !breaches || !counters || !supplyStat || !routeStat || !frontStat || !edicts || !threatStat || !veteranStat || !awards) return;
+    if (!title || !detail || !progress || !captured || !upgrades || !commands || !maneuvers || !moraleStat || !eventStat || !spoils || !sieges || !breaches || !counters || !supplyStat || !routeStat || !frontStat || !edicts || !threatStat || !veteranStat || !goalStat || !awards) return;
 
     title.textContent = objective.title;
     detail.textContent = objective.detail;
@@ -8734,6 +9023,22 @@
       moraleTitle.textContent = `Kriegslaune: ${morale.title}`;
       moraleDetail.textContent = morale.detail;
       moraleProgress.style.width = `${Math.round(morale.ratio * 100)}%`;
+    }
+    if (warGoalBox && warGoalTitle && warGoalDetail && warGoalReward && warGoalProgress) {
+      const goalColor = {
+        gold: '#f0c85c',
+        reserves: '#8fc3f0',
+        siege: '#ffb17e',
+        fortress: '#ffe18a',
+        victory: '#ff8a6d',
+        command: '#9ed6a2'
+      }[warGoal.rewardType] || '#f4d77a';
+      warGoalBox.style.setProperty('--war-goal-color', goalColor);
+      warGoalBox.classList.toggle('complete', warGoal.completed);
+      warGoalTitle.textContent = warGoal.completed ? `${warGoal.title} gesichert` : warGoal.title;
+      warGoalDetail.textContent = warGoal.detail;
+      warGoalReward.textContent = warGoal.completed ? `${warGoal.reward} erhalten` : warGoal.reward;
+      warGoalProgress.style.width = `${Math.round(warGoal.progress * 100)}%`;
     }
     if (incidentBox && incidentTitle && incidentDetail && incidentProgress) {
       const incident = getWarIncidentPanelState();
@@ -8789,6 +9094,7 @@
     edicts.textContent = `${matchStats.edicts} Edikte`;
     threatStat.textContent = `${matchStats.enemyOrders} Feind / ${matchStats.bossOrders} Boss`;
     veteranStat.textContent = `${matchStats.veterans} Vet.`;
+    goalStat.textContent = `${matchStats.goals} Ziele`;
     awards.textContent = `${matchAchievements.size} Ausz.`;
 
     if (supply.linked >= 4) {
