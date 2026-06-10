@@ -1045,7 +1045,7 @@
         <div class="mastil-menu-badges" aria-label="Spielstatus">
           <small>Offline spielbar</small>
           <small id="mastil-menu-footer-state">Demo aktiv</small>
-          <small>Windows-Download</small>
+          <small id="mastil-menu-platform-state">Browser-Spiel</small>
         </div>
       `;
       menu.prepend(header);
@@ -1125,9 +1125,9 @@
           <small>Kauf und Aktivierung bleiben im Spielmenü erreichbar.</small>
         </article>
         <article>
-          <span>Online-Basis</span>
-          <strong id="mastil-menu-online-state">Offline bereit</strong>
-          <small>mastil.online hostet den Download, der MASTIL-Server spaeter die Duelle.</small>
+          <span>Web-Status</span>
+          <strong id="mastil-menu-web-state">Live spielbar</strong>
+          <small id="mastil-menu-web-detail">Offline-Cache wird vorbereitet.</small>
         </article>
         <article>
           <span>Gefechtsplan</span>
@@ -1193,7 +1193,7 @@
       footer.className = 'mastil-menu-footer';
       footer.innerHTML = `
         <span>MASTIL Weltstatus</span>
-        <strong>mastil.online fuer Download, MASTIL-Server spaeter fuer Online-Spiel</strong>
+        <strong id="mastil-menu-web-footer">mastil.online ist als Web-Spiel live. MASTIL-Server spaeter fuer Online-Spiel</strong>
       `;
       menu.appendChild(footer);
     }

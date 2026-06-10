@@ -10,6 +10,7 @@ const required = [
   'src/renderer/app/audio-engine.js',
   'src/renderer/app/game-enhancements.js',
   'src/renderer/app/web-config.js',
+  'src/renderer/app/browser-compat.js',
   'src/renderer/app/online-client.js',
   'src/renderer/admin/admin.html',
   'server/src/index.cjs',
@@ -30,7 +31,7 @@ if (missing.length) {
 }
 
 const index = fs.readFileSync(path.join(root, 'src/renderer/index.html'), 'utf8');
-for (const marker of ['legacy-game.js', 'audio-engine.js', 'game-enhancements.js', 'web-config.js', 'app-shell.js', 'online-client.js']) {
+for (const marker of ['legacy-game.js', 'audio-engine.js', 'game-enhancements.js', 'web-config.js', 'browser-compat.js', 'app-shell.js', 'online-client.js']) {
   if (!index.includes(marker)) {
     console.error(`index.html marker missing: ${marker}`);
     process.exit(1);

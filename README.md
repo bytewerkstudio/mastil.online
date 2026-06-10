@@ -37,6 +37,7 @@ Run `npm run build:web` to create `dist-web`. This folder is the official `masti
 - `mastil.online` opens a MASTIL portal with a clear `Spiel starten` button.
 - The game is published at `src/renderer/index.html` inside the GitHub Pages build.
 - Offline gegen KI works as a static browser game without a backend server.
+- The web build includes a manifest and service worker so modern browsers can keep the core game shell and artwork available after the first visit.
 - GitHub Pages hosts only static files. Online 1v1, buying and license activation need a public MASTIL backend later, for example `api.mastil.online`.
 - Windows EXE and installer support remain part of the Electron project and can be released separately.
 
