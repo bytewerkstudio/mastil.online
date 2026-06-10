@@ -533,6 +533,7 @@
   setWorldImage('../../assets/backgrounds/worlds/world-01-startgebiet.png');
   const ACHIEVEMENTS_KEY = 'mastil-achievements';
   const HIGHSCORES_KEY = 'highscores';
+  const CAMPAIGN_PROGRESS_KEY = 'mastil-campaign-progress';
   const ACHIEVEMENTS = {
     firstCommand: {
       title: 'Feldbefehl',
@@ -758,6 +759,7 @@
   let minimapEnabled = true;
   let effectsReady = false;
   let matchSummarySaved = false;
+  let lastCampaignProgressUpdate = null;
   let skirmishVictoryShown = false;
   let lastImpactSoundAt = 0;
   let lastStrategyUpdate = 0;
@@ -1368,6 +1370,110 @@
       detail: achievement.detail,
       unlocked: unlockedAchievements.has(id)
     }));
+  }
+
+  function createEmptyCampaignProgress() {
+    return {
+      version: 1,
+      bestWave: 1,
+      totalStars: 0,
+      updatedAt: '',
+      regions: {}
+    };
+  }
+
+  function readCampaignProgress() {
+    const saved = readJsonStorage(CAMPAIGN_PROGRESS_KEY, null);
+    const progress = saved && typeof saved === 'object' ? saved : createEmptyCampaignProgress();
+    const regions = progress.regions && typeof progress.regions === 'object' ? progress.regions : {};
+    return {
+      ...createEmptyCampaignProgress(),
+      ...progress,
+      bestWave: Math.max(1, Number(progress.bestWave) || 1),
+      totalStars: Math.max(0, Number(progress.totalStars) || 0),
+      regions
+    };
+  }
+
+  function getRegionStarTarget(region) {
+    const span = Math.max(1, region.waves[1] - region.waves[0] + 1);
+    return {
+      first: region.waves[0],
+      middle: region.waves[0] + Math.max(1, Math.ceil(span * 0.55)) - 1,
+      clear: region.waves[1]
+    };
+  }
+
+  function calculateCampaignStarsForRegion(region, reachedWave, score = 0) {
+    const target = getRegionStarTarget(region);
+    let stars = 0;
+    if (reachedWave >= target.first) stars = 1;
+    if (reachedWave >= target.middle || score >= target.middle * 1100) stars = Math.max(stars, 2);
+    if (reachedWave >= target.clear || score >= target.clear * 1250) stars = Math.max(stars, 3);
+    return Math.max(0, Math.min(3, stars));
+  }
+
+  function updateCampaignProgress(score) {
+    const config = getMatchConfig();
+    if (config.mode === 'skirmish') return null;
+
+    const reachedWave = Math.max(matchStats.waves, safe(() => wave, 1));
+    const progress = readCampaignProgress();
+    const previousBestWave = progress.bestWave;
+    const previousStars = progress.totalStars || 0;
+    const previousRegions = progress.regions || {};
+    const nowIso = new Date().toISOString();
+    let newlyCleared = null;
+    let improvedRegion = null;
+
+    WORLD_REGIONS.forEach((region) => {
+      if (reachedWave < region.waves[0]) return;
+      const regionWave = Math.min(reachedWave, region.waves[1]);
+      const existing = previousRegions[region.id] || {};
+      const stars = Math.max(Number(existing.stars) || 0, calculateCampaignStarsForRegion(region, regionWave, score));
+      const bestWave = Math.max(Number(existing.bestWave) || 0, regionWave);
+      const bestScore = Math.max(Number(existing.bestScore) || 0, score);
+      const cleared = bestWave >= region.waves[1] || stars >= 3;
+      const plays = Math.max(0, Number(existing.plays) || 0) + (region.id === getRegionForWave(reachedWave).id ? 1 : 0);
+
+      previousRegions[region.id] = {
+        id: region.id,
+        title: region.title,
+        bestWave,
+        bestScore,
+        stars,
+        cleared,
+        plays,
+        lastPlayedAt: region.id === getRegionForWave(reachedWave).id ? nowIso : existing.lastPlayedAt || nowIso,
+        bestMorale: Math.max(Number(existing.bestMorale) || 0, Math.round(matchStats.maxMorale || 0)),
+        bestGoals: Math.max(Number(existing.bestGoals) || 0, matchStats.goals || 0),
+        bestCaptures: Math.max(Number(existing.bestCaptures) || 0, matchStats.captured || 0)
+      };
+
+      if (cleared && !existing.cleared) newlyCleared = region;
+      if (!improvedRegion && (stars > (Number(existing.stars) || 0) || bestWave > (Number(existing.bestWave) || 0))) {
+        improvedRegion = region;
+      }
+    });
+
+    progress.bestWave = Math.max(previousBestWave, reachedWave);
+    progress.updatedAt = nowIso;
+    progress.regions = previousRegions;
+    progress.totalStars = Object.values(previousRegions).reduce((sum, entry) => sum + Math.max(0, Math.min(3, Number(entry.stars) || 0)), 0);
+    writeJsonStorage(CAMPAIGN_PROGRESS_KEY, progress);
+
+    return {
+      progress,
+      reachedWave,
+      newBestWave: progress.bestWave > previousBestWave,
+      starsGained: Math.max(0, progress.totalStars - previousStars),
+      newlyCleared,
+      improvedRegion: improvedRegion || getRegionForWave(reachedWave)
+    };
+  }
+
+  function getCampaignProgress() {
+    return readCampaignProgress();
   }
 
   function colorForFaction(faction) {
@@ -4005,7 +4111,7 @@
   }
 
   function saveMatchScore(score) {
-    if (matchSummarySaved) return;
+    if (matchSummarySaved) return lastCampaignProgressUpdate;
     matchSummarySaved = true;
 
     const existing = readJsonStorage(HIGHSCORES_KEY, []);
@@ -4019,6 +4125,45 @@
     });
     highscores.sort((a, b) => Number(b.score) - Number(a.score));
     writeJsonStorage(HIGHSCORES_KEY, highscores.slice(0, 25));
+    lastCampaignProgressUpdate = updateCampaignProgress(score);
+    return lastCampaignProgressUpdate;
+  }
+
+  function renderSummaryStars(stars) {
+    return `<span class="mastil-summary-stars" aria-label="${stars} von 3 Sternen">${[0, 1, 2].map((index) => `<i class="${index < stars ? 'filled' : ''}"></i>`).join('')}</span>`;
+  }
+
+  function renderCampaignSummary(update) {
+    if (!update) {
+      const config = getMatchConfig();
+      if (config.mode === 'skirmish') {
+        return `
+          <div class="mastil-summary-campaign skirmish">
+            <span>Gefechtswertung</span>
+            <strong>Training gegen KI</strong>
+            <small>Gefechte verbessern Ruhm und Auszeichnungen; Kampagnensterne werden im Feldzug verdient.</small>
+          </div>
+        `;
+      }
+      return '';
+    }
+
+    const region = update.improvedRegion || getRegionForWave(update.reachedWave);
+    const saved = update.progress.regions[region.id] || {};
+    const detail = update.newlyCleared
+      ? `${update.newlyCleared.title} gesichert`
+      : update.newBestWave
+        ? `Neue Bestwelle ${update.progress.bestWave}`
+        : 'Kampagne gespeichert';
+    const stars = Math.max(0, Math.min(3, Number(saved.stars) || 0));
+    return `
+      <div class="mastil-summary-campaign">
+        <span>Kampagne</span>
+        <strong>${region.title}: ${detail}</strong>
+        ${renderSummaryStars(stars)}
+        <small>${update.starsGained > 0 ? `+${update.starsGained} Stern${update.starsGained === 1 ? '' : 'e'} verdient` : `${update.progress.totalStars} Sterne gesamt`} | Welle ${update.reachedWave}</small>
+      </div>
+    `;
   }
 
   function renderMatchSummary() {
@@ -4026,7 +4171,7 @@
     if (!screen) return;
 
     const score = calculateMatchScore();
-    saveMatchScore(score);
+    const campaignUpdate = saveMatchScore(score);
 
     let summary = document.getElementById('mastil-match-summary');
     if (!summary) {
@@ -4045,6 +4190,7 @@
         <span>Ruhm</span>
         <strong>${score.toLocaleString('de-DE')}</strong>
       </div>
+      ${renderCampaignSummary(campaignUpdate)}
       <div class="mastil-summary-grid">
         <span><strong>${Math.max(matchStats.waves, safe(() => wave, 1))}</strong> Welle</span>
         <span><strong>${matchStats.captured}</strong> erobert</span>
@@ -4149,6 +4295,7 @@
     completedContracts.clear();
     completedWarGoals.clear();
     matchSummarySaved = false;
+    lastCampaignProgressUpdate = null;
     skirmishVictoryShown = false;
     safe(() => {
       const screen = document.getElementById('game-over');
@@ -9242,6 +9389,7 @@
     fortifySelectedTower,
     unlockAchievement,
     getAchievementProgress,
+    getCampaignProgress,
     getBattleDebug,
     getBossCommandPanelState,
     spawnEffect

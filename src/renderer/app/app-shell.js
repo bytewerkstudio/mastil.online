@@ -4,6 +4,7 @@
     licenseActive: false
   };
   const SKIRMISH_KEY = 'mastil-skirmish-config';
+  const CAMPAIGN_PROGRESS_KEY = 'mastil-campaign-progress';
   const WORLD_REGIONS = [
     {
       id: 'startgebiet',
@@ -476,6 +477,7 @@
           <strong>${region.title}</strong>
           ${renderCampaignStars(regionState.stars)}
           <small>${regionState.label} | Wellen ${region.waves}</small>
+          <small>${regionState.bestScore ? `${regionState.bestScore.toLocaleString('de-DE')} Ruhm` : `${regionState.plays} Einsätze`}</small>
           <em>${region.goal}</em>
         </article>
       `).join('');
@@ -524,30 +526,56 @@
   }
 
   function getBestWave() {
+    const campaign = getStoredCampaignProgress();
     try {
       const highscores = JSON.parse(localStorage.getItem('highscores') || '[]');
-      return Array.isArray(highscores)
+      const highscoreBest = Array.isArray(highscores)
         ? highscores.reduce((best, entry) => Math.max(best, Number(entry.wave) || 1), 1)
         : 1;
+      return Math.max(highscoreBest, Number(campaign.bestWave) || 1);
     } catch {
-      return 1;
+      return Math.max(1, Number(campaign.bestWave) || 1);
     }
   }
 
+  function getStoredCampaignProgress() {
+    if (window.MastilGameEnhancements && typeof window.MastilGameEnhancements.getCampaignProgress === 'function') {
+      return window.MastilGameEnhancements.getCampaignProgress();
+    }
+    try {
+      const raw = localStorage.getItem(CAMPAIGN_PROGRESS_KEY);
+      const saved = raw ? JSON.parse(raw) : null;
+      if (saved && typeof saved === 'object') {
+        return {
+          bestWave: Math.max(1, Number(saved.bestWave) || 1),
+          totalStars: Math.max(0, Number(saved.totalStars) || 0),
+          regions: saved.regions && typeof saved.regions === 'object' ? saved.regions : {}
+        };
+      }
+    } catch {
+      // Alte oder beschädigte Speicherdaten werden ignoriert.
+    }
+    return { bestWave: 1, totalStars: 0, regions: {} };
+  }
+
   function getRegionCampaignState(region, bestWave = getBestWave()) {
+    const stored = getStoredCampaignProgress();
+    const savedRegion = stored.regions && stored.regions[region.id] ? stored.regions[region.id] : null;
     const range = parseRegionWaveRange(region);
     const span = Math.max(1, range.end - range.start + 1);
-    const reached = Math.max(0, Math.min(span, bestWave - range.start + 1));
+    const regionBestWave = Math.max(Number(savedRegion && savedRegion.bestWave) || 0, Math.min(bestWave, range.end));
+    const reached = Math.max(0, Math.min(span, regionBestWave - range.start + 1));
     const ratio = Math.max(0, Math.min(1, reached / span));
-    const cleared = bestWave >= range.end;
-    const active = bestWave >= range.start && !cleared;
-    const unlocked = state.licenseActive || range.start <= 5 || bestWave >= range.start;
-    const label = cleared ? 'Gesichert' : active ? 'Aktiv' : unlocked ? 'Bereit' : 'Verschlossen';
-    const stars = cleared
+    const computedStars = bestWave >= range.end
       ? 3
-      : active
+      : bestWave >= range.start
         ? Math.max(1, Math.min(2, Math.ceil(ratio * 3)))
         : 0;
+    const stars = Math.max(computedStars, Math.max(0, Math.min(3, Number(savedRegion && savedRegion.stars) || 0)));
+    const cleared = Boolean(savedRegion && savedRegion.cleared) || stars >= 3 || bestWave >= range.end;
+    const active = bestWave >= range.start && !cleared;
+    const unlocked = state.licenseActive || range.start <= 5 || bestWave >= range.start || Boolean(savedRegion);
+    const label = cleared ? 'Gesichert' : active ? 'Aktiv' : unlocked ? 'Bereit' : 'Verschlossen';
     const nextWave = cleared ? range.end : Math.max(range.start, Math.min(range.end, bestWave + 1));
 
     return {
@@ -561,7 +589,10 @@
       unlocked,
       nextWave,
       wavesDone: reached,
-      wavesTotal: span
+      wavesTotal: span,
+      bestWave: regionBestWave,
+      bestScore: Number(savedRegion && savedRegion.bestScore) || 0,
+      plays: Number(savedRegion && savedRegion.plays) || 0
     };
   }
 
@@ -930,6 +961,7 @@
             <em>${region.tactic}</em>
             ${renderCampaignStars(progress.stars)}
             <b>${progress.label}</b>
+            <small>Bestwelle: ${progress.bestWave || 0} | Ruhm: ${progress.bestScore ? progress.bestScore.toLocaleString('de-DE') : '-'}</small>
             <small>Boss: ${region.boss}</small>
             <small>Belohnung: ${region.reward}</small>
             <i class="mastil-world-card-progress" aria-hidden="true"></i>

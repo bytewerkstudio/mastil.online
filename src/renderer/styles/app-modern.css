@@ -3562,6 +3562,59 @@
   font: 950 26px/1 "Segoe UI", sans-serif;
 }
 
+.mastil-summary-campaign {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px;
+  color: rgba(244, 230, 191, 0.86);
+  border: 1px solid rgba(142, 195, 240, 0.34);
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, rgba(47, 111, 165, 0.16), rgba(226, 189, 90, 0.08)),
+    rgba(255, 255, 255, 0.045);
+}
+
+.mastil-summary-campaign.skirmish {
+  border-color: rgba(158, 214, 162, 0.32);
+  background:
+    linear-gradient(135deg, rgba(158, 214, 162, 0.12), rgba(142, 195, 240, 0.08)),
+    rgba(255, 255, 255, 0.04);
+}
+
+.mastil-summary-campaign span {
+  color: rgba(226, 189, 90, 0.9);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-summary-campaign strong {
+  color: #fff2bf;
+  font: 900 14px/1.16 "Segoe UI", sans-serif;
+}
+
+.mastil-summary-campaign small {
+  color: rgba(244, 230, 191, 0.72);
+  font: 760 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-summary-stars {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.mastil-summary-stars i {
+  width: 12px;
+  height: 12px;
+  clip-path: polygon(50% 0%, 62% 35%, 99% 35%, 69% 56%, 82% 92%, 50% 70%, 18% 92%, 31% 56%, 1% 35%, 38% 35%);
+  background: rgba(244, 230, 191, 0.26);
+}
+
+.mastil-summary-stars i.filled {
+  background: linear-gradient(180deg, #fff2bf, #e2bd5a 62%, #9b6d25);
+  box-shadow: 0 0 10px rgba(226, 189, 90, 0.34);
+}
+
 .mastil-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
