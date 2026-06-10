@@ -247,6 +247,48 @@
     { threshold: 34, title: 'Legendär', mark: 'III', color: '#ffb17e' }
   ];
   const SIZE_LIMITS = { compact: 10, standard: 14, large: 18, war: 21, epic: 24 };
+  const SKIRMISH_FORMATIONS = {
+    compact: {
+      startRank: 0,
+      sideStarts: [],
+      enemyForward: [8],
+      strongholds: [9],
+      objectives: [4, 6, 7],
+      extraLinks: [[4, 8], [7, 10]]
+    },
+    standard: {
+      startRank: 1,
+      sideStarts: [],
+      enemyForward: [8, 10],
+      strongholds: [11, 12],
+      objectives: [4, 6, 7, 9],
+      extraLinks: [[4, 8], [6, 10], [7, 12]]
+    },
+    large: {
+      startRank: 1,
+      sideStarts: [],
+      enemyForward: [8, 10, 15, 16],
+      strongholds: [11, 12, 16],
+      objectives: [4, 6, 7, 13, 14],
+      extraLinks: [[13, 4], [14, 7], [15, 6], [16, 7], [17, 3], [18, 5]]
+    },
+    war: {
+      startRank: 1,
+      sideStarts: [20],
+      enemyForward: [8, 10, 15, 16, 19],
+      strongholds: [11, 12, 19],
+      objectives: [4, 6, 7, 13, 14, 20],
+      extraLinks: [[20, 4], [20, 13], [13, 6], [14, 7], [15, 9], [16, 9]]
+    },
+    epic: {
+      startRank: 2,
+      sideStarts: [20, 21],
+      enemyForward: [8, 10, 15, 16, 19, 22, 23],
+      strongholds: [11, 12, 19, 22, 23],
+      objectives: [4, 6, 7, 13, 14, 17, 18, 20, 21],
+      extraLinks: [[20, 4], [21, 4], [13, 6], [14, 7], [17, 3], [18, 5], [22, 9], [23, 9]]
+    }
+  };
   const DIFFICULTY = {
     easy: { gold: 155, enemyUnits: 0.48, enemyLevel: 0, label: 'Training' },
     normal: { gold: 130, enemyUnits: 0.62, enemyLevel: 0, label: 'Normal' },
@@ -926,12 +968,44 @@
     return SKIRMISH_SCENARIOS[config.scenario] || SKIRMISH_SCENARIOS.training;
   }
 
+  function getSkirmishFormation(config) {
+    return SKIRMISH_FORMATIONS[config.size] || SKIRMISH_FORMATIONS.standard;
+  }
+
+  function hasNodeIndex(list, index) {
+    return Array.isArray(list) && list.includes(Number(index));
+  }
+
   function isSkirmishSideStartNode(node, config) {
-    if (!node || config.mode !== 'skirmish' || node.role !== 'neutral') return false;
+    if (!node || config.mode !== 'skirmish') return false;
     const index = Number(node.index);
-    if (config.size === 'war') return index === 20;
-    if (config.size === 'epic') return index === 20 || index === 21;
-    return false;
+    const formation = getSkirmishFormation(config);
+    return Boolean(node.skirmishSideStart || hasNodeIndex(formation.sideStarts, index));
+  }
+
+  function getSkirmishExtraLinks(config) {
+    if (!config || config.mode !== 'skirmish') return [];
+    const formation = getSkirmishFormation(config);
+    const plan = getWarPlan(config);
+    const scenario = getSkirmishScenario(config);
+    const links = [...(formation.extraLinks || [])];
+    if (plan === WAR_PLANS.raiders || scenario.shadowBias) links.push([8, 9], [10, 9], [15, 8], [16, 10]);
+    if (plan === WAR_PLANS.fortress || scenario.fortressBias) links.push([11, 19], [12, 19], [22, 19], [23, 19]);
+    if (plan === WAR_PLANS.economy || scenario.tradeBias) links.push([6, 13], [7, 14], [18, 14]);
+    if (plan === WAR_PLANS.conquest || scenario.bossAtStart) links.push([22, 11], [23, 12], [20, 21]);
+    return links;
+  }
+
+  function getMapLinksForConfig(config = getMatchConfig()) {
+    const seen = new Set();
+    return [...MAP_LINKS, ...getSkirmishExtraLinks(config)].filter(([a, b]) => {
+      const left = Math.min(a, b);
+      const right = Math.max(a, b);
+      const key = `${left}:${right}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   function getMapNodeForConfig(baseNode, index, config, waveNumber) {
@@ -959,6 +1033,34 @@
 
     if (config.mode === 'skirmish') {
       const scenario = getSkirmishScenario(config);
+      const formation = getSkirmishFormation(config);
+      const isSideStart = hasNodeIndex(formation.sideStarts, index);
+      const isForwardCamp = hasNodeIndex(formation.enemyForward, index);
+      const isStronghold = hasNodeIndex(formation.strongholds, index);
+      const isObjective = hasNodeIndex(formation.objectives, index);
+
+      node.skirmishObjective = isObjective;
+      node.skirmishStronghold = isStronghold;
+      node.skirmishForwardCamp = isForwardCamp;
+      node.skirmishSideStart = isSideStart;
+
+      if (isSideStart) {
+        node.role = 'player';
+        node.type = index % 2 === 0 ? 'watch' : 'gold';
+        node.terrain = 'keep';
+      } else if (isForwardCamp && node.role !== 'player') {
+        node.role = 'enemy';
+        node.type = index % 2 === 0 ? 'troop' : 'watch';
+        node.terrain = index % 3 === 0 ? 'road' : node.terrain;
+      }
+      if (isStronghold && node.role !== 'player') {
+        node.terrain = 'keep';
+        node.type = node.role === 'enemy' ? 'watch' : node.type;
+      }
+      if (isObjective && node.role === 'neutral' && node.terrain === 'road') {
+        node.type = 'watch';
+      }
+
       if (plan === WAR_PLANS.raiders && node.role === 'enemy') {
         node.type = 'troop';
         node.terrain = index % 2 ? 'forest' : 'road';
@@ -992,6 +1094,10 @@
         node.terrain = index % 2 === 0 ? 'forest' : node.terrain;
         node.type = node.role === 'enemy' ? 'troop' : node.type;
       }
+      if (scenario.bossAtStart && (isForwardCamp || isStronghold) && node.role === 'enemy') {
+        node.terrain = 'keep';
+        node.type = index % 2 === 0 ? 'watch' : 'normal';
+      }
     }
 
     if (profileId === 'wuestenreich' && node.role !== 'player' && index % 4 === 0) {
@@ -1015,7 +1121,7 @@
     towerList.forEach((tower) => {
       if (typeof tower.mastilNodeIndex === 'number') byIndex.set(tower.mastilNodeIndex, tower);
     });
-    return MAP_LINKS
+    return getMapLinksForConfig()
       .map(([a, b]) => [byIndex.get(a), byIndex.get(b)])
       .filter(([a, b]) => a && b);
   }
@@ -6466,12 +6572,15 @@
   function applyBattleSiteBonus(tower, node, faction, unitFactor) {
     if (!tower || !node) return tower;
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
-    const isCastleSite = node.terrain === 'keep' || node.rank >= 9;
-    const isRoadHub = MAP_LINKS.filter(([a, b]) => a === node.index || b === node.index).length >= 3;
+    const isCastleSite = node.terrain === 'keep' || node.rank >= 9 || node.skirmishStronghold;
+    const isRoadHub = getMapLinksForConfig().filter(([a, b]) => a === node.index || b === node.index).length >= 3;
 
     tower.mastilCastleSite = isCastleSite;
     tower.mastilRoadHub = isRoadHub;
     tower.mastilBattleRole = node.role;
+    tower.mastilSkirmishObjective = Boolean(node.skirmishObjective);
+    tower.mastilForwardCamp = Boolean(node.skirmishForwardCamp);
+    tower.mastilSideStart = Boolean(node.skirmishSideStart);
 
     if (isCastleSite) {
       const capBonus = node.rank >= 9 ? 7 : 4;
@@ -6482,6 +6591,23 @@
         tower.units = Math.max(tower.units, Math.floor(tower.maxUnits * unitFactor));
       }
       tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + (node.rank >= 9 ? 22000 : 14000));
+    }
+
+    if (node.skirmishObjective) {
+      tower.maxUnits += node.role === 'enemy' ? 3 : 2;
+      tower.units = Math.min(tower.maxUnits, tower.units + (faction === playerFaction ? 2 : 1));
+    }
+
+    if (node.skirmishForwardCamp && faction !== playerFaction) {
+      tower.maxUnits += 3;
+      tower.units = Math.max(tower.units, Math.floor(tower.maxUnits * Math.min(0.96, unitFactor + 0.08)));
+      tower.fortifiedUntil = Math.max(tower.fortifiedUntil || 0, performance.now() + 12000);
+    }
+
+    if (node.skirmishSideStart && faction === playerFaction) {
+      tower.maxUnits += 4;
+      tower.units = Math.min(tower.maxUnits, tower.units + 3);
+      tower.supplyRoot = true;
     }
 
     if (isRoadHub && !isCastleSite) {
@@ -6532,8 +6658,9 @@
     const scenarioBossWave = config.mode === 'skirmish' && scenario.bossAtStart;
     const activeBossWave = bossWave || scenarioBossWave;
     const limit = SIZE_LIMITS[config.size] || SIZE_LIMITS.standard;
+    const formation = config.mode === 'skirmish' ? getSkirmishFormation(config) : SKIRMISH_FORMATIONS.standard;
     const skirmishStartRank = config.mode === 'skirmish'
-      ? ({ compact: 0, standard: 1, large: 1, war: 2, epic: 2 }[config.size] || 1)
+      ? formation.startRank
       : 0;
     const playerFaction = safe(() => FACTIONS.PLAYER, 'player');
     const neutralFaction = safe(() => FACTIONS.NEUTRAL, 'neutral');

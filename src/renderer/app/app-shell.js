@@ -118,6 +118,48 @@
     [0, 20], [20, 1], [20, 13], [0, 21], [21, 2], [21, 14],
     [15, 22], [22, 8], [22, 11], [22, 19], [16, 23], [23, 10], [23, 12], [23, 19]
   ];
+  const SKIRMISH_FORMATIONS = {
+    compact: {
+      startRank: 0,
+      sideStarts: [],
+      enemyForward: [8],
+      strongholds: [9],
+      objectives: [4, 6, 7],
+      extraLinks: [[4, 8], [7, 10]]
+    },
+    standard: {
+      startRank: 1,
+      sideStarts: [],
+      enemyForward: [8, 10],
+      strongholds: [11, 12],
+      objectives: [4, 6, 7, 9],
+      extraLinks: [[4, 8], [6, 10], [7, 12]]
+    },
+    large: {
+      startRank: 1,
+      sideStarts: [],
+      enemyForward: [8, 10, 15, 16],
+      strongholds: [11, 12, 16],
+      objectives: [4, 6, 7, 13, 14],
+      extraLinks: [[13, 4], [14, 7], [15, 6], [16, 7], [17, 3], [18, 5]]
+    },
+    war: {
+      startRank: 1,
+      sideStarts: [20],
+      enemyForward: [8, 10, 15, 16, 19],
+      strongholds: [11, 12, 19],
+      objectives: [4, 6, 7, 13, 14, 20],
+      extraLinks: [[20, 4], [20, 13], [13, 6], [14, 7], [15, 9], [16, 9]]
+    },
+    epic: {
+      startRank: 2,
+      sideStarts: [20, 21],
+      enemyForward: [8, 10, 15, 16, 19, 22, 23],
+      strongholds: [11, 12, 19, 22, 23],
+      objectives: [4, 6, 7, 13, 14, 17, 18, 20, 21],
+      extraLinks: [[20, 4], [21, 4], [13, 6], [14, 7], [17, 3], [18, 5], [22, 9], [23, 9]]
+    }
+  };
   const SKIRMISH_TERRAIN_LABELS = {
     keep: 'Burg',
     hill: 'Höhe',
@@ -428,7 +470,7 @@
   function getSkirmishRouteEstimate(values) {
     const size = SKIRMISH_SIZES[values.size] || SKIRMISH_SIZES.standard;
     const towerCount = Number((size.towers || '13').match(/\d+/)?.[0]) || 13;
-    return Math.max(7, Math.round(towerCount * 1.55));
+    return Math.max(7, getSkirmishPreviewLinks(values).filter(([a, b]) => a < towerCount && b < towerCount).length);
   }
 
   function getSkirmishTowerCount(values) {
@@ -441,31 +483,71 @@
     return /^#[0-9a-f]{6}$/i.test(value) ? value : '#2f6fa5';
   }
 
+  function getSkirmishFormation(values) {
+    return SKIRMISH_FORMATIONS[values.size] || SKIRMISH_FORMATIONS.standard;
+  }
+
+  function hasPreviewIndex(list, index) {
+    return Array.isArray(list) && list.includes(Number(index));
+  }
+
   function isSkirmishSideStartNode(node, index, values) {
-    if (!node || node.role !== 'neutral') return false;
-    if (values.size === 'war') return index === 20;
-    if (values.size === 'epic') return index === 20 || index === 21;
-    return false;
+    if (!node) return false;
+    return hasPreviewIndex(getSkirmishFormation(values).sideStarts, index);
+  }
+
+  function getSkirmishPreviewLinks(values) {
+    const formation = getSkirmishFormation(values);
+    const links = [...SKIRMISH_PREVIEW_LINKS, ...(formation.extraLinks || [])];
+    if (values.plan === 'raiders' || values.scenario === 'shadow') links.push([8, 9], [10, 9], [15, 8], [16, 10]);
+    if (values.plan === 'fortress' || values.scenario === 'siege' || values.scenario === 'boss') links.push([11, 19], [12, 19], [22, 19], [23, 19]);
+    if (values.plan === 'economy' || values.scenario === 'trade') links.push([6, 13], [7, 14], [18, 14]);
+    if (values.plan === 'conquest' || values.scenario === 'boss') links.push([22, 11], [23, 12], [20, 21]);
+    const seen = new Set();
+    return links.filter(([a, b]) => {
+      const key = `${Math.min(a, b)}:${Math.max(a, b)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   function getSkirmishPreviewNodes(values, towerCount) {
-    const startRankBySize = { compact: 0, standard: 1, large: 1, war: 2, epic: 2 };
-    const startRank = startRankBySize[values.size] || 1;
+    const formation = getSkirmishFormation(values);
+    const startRank = formation.startRank;
     const opponentCount = Math.max(1, Math.min(3, Number(values.opponents) || 1));
     let enemyIndex = 0;
 
     return SKIRMISH_PREVIEW_NODES
       .slice(0, towerCount)
       .map((node, index) => {
-        let owner = node.role;
+        const sideStart = isSkirmishSideStartNode(node, index, values);
+        const forward = hasPreviewIndex(formation.enemyForward, index);
+        const stronghold = hasPreviewIndex(formation.strongholds, index);
+        const objective = hasPreviewIndex(formation.objectives, index);
+        let role = node.role;
+        let terrain = node.terrain;
+        if (sideStart) {
+          role = 'player';
+          terrain = 'keep';
+        } else if (forward && role !== 'player') {
+          role = 'enemy';
+          terrain = values.plan === 'raiders' || values.scenario === 'shadow' ? 'forest' : terrain;
+        }
+        if (stronghold && role !== 'player') terrain = 'keep';
+        if ((values.plan === 'economy' || values.scenario === 'trade') && objective && role !== 'player') terrain = index % 2 === 0 ? 'market' : 'quarry';
+        if ((values.plan === 'fortress' || values.scenario === 'siege' || values.scenario === 'boss') && stronghold) terrain = 'keep';
+        if ((values.plan === 'raiders' || values.scenario === 'shadow') && forward) terrain = index % 2 === 0 ? 'forest' : 'road';
+
+        let owner = role;
         let ownerIndex = 0;
-        if (node.role === 'neutral' && (node.rank <= startRank || isSkirmishSideStartNode(node, index, values))) {
+        if (role === 'neutral' && node.rank <= startRank) {
           owner = 'player';
-        } else if (node.role === 'enemy') {
+        } else if (role === 'enemy') {
           ownerIndex = enemyIndex % opponentCount;
           enemyIndex += 1;
         }
-        return { ...node, index, owner, ownerIndex };
+        return { ...node, index, role, terrain, owner, ownerIndex, objective, stronghold, forward, sideStart };
       });
   }
 
@@ -484,7 +566,7 @@
     const safeColor = getSafeSkirmishColor(values.color);
     const nodes = getSkirmishPreviewNodes(values, towerCount);
     const byIndex = new Map(nodes.map((node) => [node.index, node]));
-    const roads = SKIRMISH_PREVIEW_LINKS
+    const roads = getSkirmishPreviewLinks(values)
       .filter(([a, b]) => byIndex.has(a) && byIndex.has(b))
       .map(([a, b]) => {
         const from = byIndex.get(a);
@@ -498,8 +580,9 @@
       const title = node.owner === 'player'
         ? 'Eigene Startstellung'
         : node.owner === 'enemy' ? `Feindburg ${node.ownerIndex + 1}` : label;
+      const flags = `${node.objective ? ' objective' : ''}${node.stronghold ? ' stronghold' : ''}${node.forward ? ' forward' : ''}${node.sideStart ? ' side-start' : ''}`;
       return `
-        <span class="mastil-preview-node ${ownerClass} terrain-${node.terrain}" style="--x:${(node.x * 100).toFixed(2)}%;--y:${(node.y * 100).toFixed(2)}%;--chosen-color:${safeColor};" title="${title}">
+        <span class="mastil-preview-node ${ownerClass} terrain-${node.terrain}${flags}" style="--x:${(node.x * 100).toFixed(2)}%;--y:${(node.y * 100).toFixed(2)}%;--chosen-color:${safeColor};" title="${title}">
           <i>${label.slice(0, 1)}</i>
         </span>
       `;
@@ -507,6 +590,7 @@
     const ownCount = nodes.filter((node) => node.owner === 'player').length;
     const enemyCount = nodes.filter((node) => node.owner === 'enemy').length;
     const neutralCount = nodes.length - ownCount - enemyCount;
+    const objectiveCount = nodes.filter((node) => node.objective).length;
 
     preview.style.setProperty('--skirmish-map-image', `url("${region.image}")`);
     preview.style.setProperty('--skirmish-map-color', safeColor);
@@ -519,7 +603,7 @@
       <div class="mastil-skirmish-map-intel">
         <span>Kartenplan</span>
         <strong>${region.title} | ${size.label}</strong>
-        <p>${scenario.label}: ${plan.label}. ${difficulty.detail}. ${routeEstimate} Wege verbinden ${towerCount} Orte.</p>
+        <p>${scenario.label}: ${plan.label}. ${difficulty.detail}. ${routeEstimate} Wege verbinden ${towerCount} Orte mit ${objectiveCount} Schlüsselorten.</p>
         <div class="mastil-preview-ledger" aria-label="Kartenwerte">
           <b>${ownCount}<small>Startburgen</small></b>
           <b>${neutralCount}<small>neutral</small></b>

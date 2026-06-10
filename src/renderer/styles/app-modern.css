@@ -1780,6 +1780,31 @@
   background: #8fc7d8;
 }
 
+.mastil-preview-node.objective {
+  box-shadow:
+    0 0 0 3px rgba(255, 226, 138, 0.38),
+    0 0 18px rgba(241, 207, 107, 0.32);
+}
+
+.mastil-preview-node.stronghold {
+  border-radius: 6px;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.mastil-preview-node.stronghold i {
+  transform: rotate(-45deg);
+}
+
+.mastil-preview-node.forward {
+  outline: 2px solid rgba(225, 122, 92, 0.62);
+  outline-offset: 3px;
+}
+
+.mastil-preview-node.side-start {
+  outline: 2px solid rgba(255, 242, 191, 0.74);
+  outline-offset: 4px;
+}
+
 .mastil-preview-front {
   position: absolute;
   right: 12px;
