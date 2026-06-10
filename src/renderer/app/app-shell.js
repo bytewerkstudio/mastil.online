@@ -5,11 +5,71 @@
   };
   const SKIRMISH_KEY = 'mastil-skirmish-config';
   const WORLD_REGIONS = [
-    { id: 'startgebiet', title: 'Startgebiet', waves: '1-5', boss: 'Grenzwacht Roderich', difficulty: 'Einsteiger', terrain: 'Wiesen, Wege, erste Burgen', style: 'Ausgewogen', image: '../../assets/backgrounds/worlds/world-01-startgebiet.png' },
-    { id: 'grenzlande', title: 'Grenzlande', waves: '6-10', boss: 'Der Eisenvogt', difficulty: 'Normal', terrain: 'Engpässe, Signalhöhen, Frontdruck', style: 'Verteidigung', image: '../../assets/backgrounds/worlds/world-02-grenzlande.png' },
-    { id: 'wuestenreich', title: 'Wüstenreich', waves: '11-15', boss: 'Sultan der Sandkrone', difficulty: 'Hart', terrain: 'Märkte, Steinbrüche, weite Wege', style: 'Wirtschaft', image: '../../assets/backgrounds/worlds/world-03-wuestenreich.png' },
-    { id: 'nachtfestung', title: 'Nachtfestung', waves: '16-20', boss: 'Nachtgraf Malrec', difficulty: 'Sehr hart', terrain: 'Waldsaum, Hinterhalte, Nachtwege', style: 'Taktik', image: '../../assets/backgrounds/worlds/world-04-nachtfestung.png' },
-    { id: 'endboss', title: 'Endboss-Zitadelle', waves: '21-25', boss: 'Kaiser Veyron', difficulty: 'Endboss', terrain: 'Zitadellen, Aschefelder, Bossfront', style: 'Belagerung', image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png' }
+    {
+      id: 'startgebiet',
+      title: 'Startgebiet',
+      waves: '1-5',
+      boss: 'Grenzwacht Roderich',
+      difficulty: 'Einsteiger',
+      terrain: 'Wiesen, Wege, erste Burgen',
+      style: 'Ausgewogen',
+      goal: 'Kronlande sichern',
+      reward: 'Startreserve und sicherer Ausbau',
+      tactic: 'Neutrale Orte nehmen, dann Wege schließen.',
+      image: '../../assets/backgrounds/worlds/world-01-startgebiet.png'
+    },
+    {
+      id: 'grenzlande',
+      title: 'Grenzlande',
+      waves: '6-10',
+      boss: 'Der Eisenvogt',
+      difficulty: 'Normal',
+      terrain: 'Engpässe, Signalhöhen, Frontdruck',
+      style: 'Verteidigung',
+      goal: 'Grenzstraßen halten',
+      reward: 'Schnellere Befehle und stärkere Front',
+      tactic: 'Engpässe befestigen, bevor der Eisenvogt drückt.',
+      image: '../../assets/backgrounds/worlds/world-02-grenzlande.png'
+    },
+    {
+      id: 'wuestenreich',
+      title: 'Wüstenreich',
+      waves: '11-15',
+      boss: 'Sultan der Sandkrone',
+      difficulty: 'Hart',
+      terrain: 'Märkte, Steinbrüche, weite Wege',
+      style: 'Wirtschaft',
+      goal: 'Sandschatz sichern',
+      reward: 'Großer Goldzug für Festungen',
+      tactic: 'Märkte halten, sonst werden lange Wege teuer.',
+      image: '../../assets/backgrounds/worlds/world-03-wuestenreich.png'
+    },
+    {
+      id: 'nachtfestung',
+      title: 'Nachtfestung',
+      waves: '16-20',
+      boss: 'Nachtgraf Malrec',
+      difficulty: 'Sehr hart',
+      terrain: 'Waldsaum, Hinterhalte, Nachtwege',
+      style: 'Taktik',
+      goal: 'Schattenwall brechen',
+      reward: 'Befestigte Linien und Gegenmanöver',
+      tactic: 'Ziele markieren und Nebenwege nie offen lassen.',
+      image: '../../assets/backgrounds/worlds/world-04-nachtfestung.png'
+    },
+    {
+      id: 'endboss',
+      title: 'Endboss-Zitadelle',
+      waves: '21-25',
+      boss: 'Kaiser Veyron',
+      difficulty: 'Endboss',
+      terrain: 'Zitadellen, Aschefelder, Bossfront',
+      style: 'Belagerung',
+      goal: 'Kaisersturz',
+      reward: 'Letzter Heerbann und Ruhm der Reiche',
+      tactic: 'Außenburgen brechen, dann die Zitadelle stürmen.',
+      image: '../../assets/backgrounds/worlds/world-05-endboss-zitadelle.png'
+    }
   ];
   const SKIRMISH_SIZES = {
     compact: { label: 'Kompakt', towers: '10 Orte', detail: 'schnelle Trainingsrunde mit kurzer Front' },
@@ -245,9 +305,9 @@
       rank: 'utility'
     },
     progress: {
-      label: 'Auszeichnungen',
-      detail: 'Erfolge, Ziele und freigeschalteter Ruhm.',
-      command: 'Ruhm',
+      label: 'Ruhm und Kampagne',
+      detail: 'Regionen, Sterne, Erfolge und freigeschalteter Ruhm.',
+      command: 'Fortschritt',
       tone: 'red',
       rank: 'utility'
     },
@@ -361,8 +421,17 @@
     modal.innerHTML = `
       <div class="mastil-dialog mastil-progress-dialog" role="dialog" aria-modal="true" aria-labelledby="mastil-progress-title">
         <button class="mastil-action secondary mastil-close-x" id="mastil-progress-x-btn" type="button" aria-label="Schließen">×</button>
-        <h2 id="mastil-progress-title">Auszeichnungen</h2>
-        <p>Dein Ruhm bleibt lokal gespeichert und erscheint in der Windows-Version auf diesem Gerät.</p>
+        <h2 id="mastil-progress-title">Ruhm und Kampagne</h2>
+        <p>Dein Feldzug, deine Sterne und dein Ruhm bleiben lokal auf diesem Gerät gespeichert.</p>
+        <div class="mastil-campaign-progress">
+          <div class="mastil-campaign-progress-head">
+            <span>Kampagnenpfad</span>
+            <strong id="mastil-campaign-progress-title">Startgebiet</strong>
+            <small id="mastil-campaign-progress-detail">Welle 1 | Ziel: Kronlande sichern</small>
+          </div>
+          <div class="mastil-progress-track" aria-hidden="true"><span id="mastil-campaign-progress-fill"></span></div>
+          <div class="mastil-campaign-region-grid" id="mastil-campaign-region-grid"></div>
+        </div>
         <div class="mastil-progress-overview">
           <span id="mastil-progress-count">0/0 freigeschaltet</span>
           <div class="mastil-progress-track" aria-hidden="true"><span id="mastil-progress-fill"></span></div>
@@ -385,9 +454,32 @@
       : [];
     const unlocked = progress.filter((entry) => entry.unlocked).length;
     const total = progress.length || 1;
+    const campaign = getCampaignOverview();
+    const campaignTitle = byId('mastil-campaign-progress-title');
+    const campaignDetail = byId('mastil-campaign-progress-detail');
+    const campaignFill = byId('mastil-campaign-progress-fill');
+    const campaignGrid = byId('mastil-campaign-region-grid');
     const count = byId('mastil-progress-count');
     const fill = byId('mastil-progress-fill');
     const grid = byId('mastil-awards-grid');
+    if (campaignTitle && campaign.current) {
+      campaignTitle.textContent = `${campaign.current.region.title} | ${campaign.totalStars}/${campaign.maxStars} Sterne`;
+    }
+    if (campaignDetail && campaign.current) {
+      campaignDetail.textContent = `Bestwelle ${getBestWave()} | Ziel: ${campaign.current.region.goal} | Belohnung: ${campaign.current.region.reward}`;
+    }
+    if (campaignFill) campaignFill.style.width = `${Math.round(campaign.ratio * 100)}%`;
+    if (campaignGrid) {
+      campaignGrid.innerHTML = campaign.states.map(({ region, state: regionState }) => `
+        <article class="mastil-campaign-region ${regionState.statusClass}">
+          <span>Kapitel ${WORLD_REGIONS.indexOf(region) + 1}</span>
+          <strong>${region.title}</strong>
+          ${renderCampaignStars(regionState.stars)}
+          <small>${regionState.label} | Wellen ${region.waves}</small>
+          <em>${region.goal}</em>
+        </article>
+      `).join('');
+    }
     if (count) count.textContent = `${unlocked}/${total} freigeschaltet`;
     if (fill) fill.style.width = `${Math.round((unlocked / total) * 100)}%`;
     if (grid) {
@@ -442,12 +534,59 @@
     }
   }
 
-  function getRegionProgress(region, bestWave) {
-    const start = Number(region.waves.split('-')[0]);
-    const end = Number(region.waves.split('-')[1]);
-    if (bestWave >= end) return 'Gesichert';
-    if (bestWave >= start) return 'Aktiv';
-    return 'Verschlossen';
+  function getRegionCampaignState(region, bestWave = getBestWave()) {
+    const range = parseRegionWaveRange(region);
+    const span = Math.max(1, range.end - range.start + 1);
+    const reached = Math.max(0, Math.min(span, bestWave - range.start + 1));
+    const ratio = Math.max(0, Math.min(1, reached / span));
+    const cleared = bestWave >= range.end;
+    const active = bestWave >= range.start && !cleared;
+    const unlocked = state.licenseActive || range.start <= 5 || bestWave >= range.start;
+    const label = cleared ? 'Gesichert' : active ? 'Aktiv' : unlocked ? 'Bereit' : 'Verschlossen';
+    const stars = cleared
+      ? 3
+      : active
+        ? Math.max(1, Math.min(2, Math.ceil(ratio * 3)))
+        : 0;
+    const nextWave = cleared ? range.end : Math.max(range.start, Math.min(range.end, bestWave + 1));
+
+    return {
+      range,
+      ratio,
+      stars,
+      label,
+      statusClass: label.toLowerCase(),
+      cleared,
+      active,
+      unlocked,
+      nextWave,
+      wavesDone: reached,
+      wavesTotal: span
+    };
+  }
+
+  function getCampaignOverview(bestWave = getBestWave()) {
+    const states = WORLD_REGIONS.map((region) => ({
+      region,
+      state: getRegionCampaignState(region, bestWave)
+    }));
+    const current = states.find((entry) => entry.state.active) || states.find((entry) => entry.state.unlocked && !entry.state.cleared) || states[states.length - 1];
+    const totalStars = states.reduce((sum, entry) => sum + entry.state.stars, 0);
+    const maxStars = states.length * 3;
+    const cleared = states.filter((entry) => entry.state.cleared).length;
+
+    return {
+      states,
+      current,
+      totalStars,
+      maxStars,
+      cleared,
+      ratio: maxStars ? totalStars / maxStars : 0
+    };
+  }
+
+  function renderCampaignStars(stars) {
+    return `<span class="mastil-campaign-stars" aria-label="${stars} von 3 Sternen">${[0, 1, 2].map((index) => `<i class="${index < stars ? 'filled' : ''}"></i>`).join('')}</span>`;
   }
 
   function getRegionById(id) {
@@ -781,15 +920,19 @@
     const grid = byId('mastil-world-grid');
     if (grid) {
       grid.innerHTML = WORLD_REGIONS.map((region, index) => {
-        const progress = getRegionProgress(region, bestWave);
+        const progress = getRegionCampaignState(region, bestWave);
         return `
-          <button class="mastil-world-card ${progress.toLowerCase()}" type="button" data-region-id="${region.id}" style="--world-image: url('${region.image}')">
+          <button class="mastil-world-card ${progress.statusClass}" type="button" data-region-id="${region.id}" style="--world-image: url('${region.image}');--region-progress:${progress.ratio};">
             <span>Kapitel ${index + 1}</span>
             <strong>${region.title}</strong>
             <small>Wellen ${region.waves} | ${region.difficulty}</small>
-            <small>${region.terrain}</small>
-            <em>Boss: ${region.boss}</em>
-            <b>${progress}</b>
+            <small>Ziel: ${region.goal}</small>
+            <em>${region.tactic}</em>
+            ${renderCampaignStars(progress.stars)}
+            <b>${progress.label}</b>
+            <small>Boss: ${region.boss}</small>
+            <small>Belohnung: ${region.reward}</small>
+            <i class="mastil-world-card-progress" aria-hidden="true"></i>
           </button>
         `;
       }).join('');
@@ -998,8 +1141,9 @@
 
   function updateMenuDashboard() {
     const bestWave = getBestWave();
-    const region = getMenuRegion(bestWave);
-    const progress = getRegionProgress(region, bestWave);
+    const campaign = getCampaignOverview(bestWave);
+    const region = campaign.current ? campaign.current.region : getMenuRegion(bestWave);
+    const progress = campaign.current ? campaign.current.state : getRegionCampaignState(region, bestWave);
     const current = byId('mastil-menu-current-region');
     const boss = byId('mastil-menu-next-boss');
     const license = byId('mastil-menu-license-state');
@@ -1024,20 +1168,20 @@
     const savedPlan = SKIRMISH_PLANS[saved.plan] || SKIRMISH_PLANS.balanced;
     const savedScenario = SKIRMISH_SCENARIOS[saved.scenario] || SKIRMISH_SCENARIOS.training;
 
-    if (current) current.textContent = `${region.title} | ${progress}`;
-    if (boss) boss.textContent = `Bestwelle ${bestWave} | Boss: ${region.boss}`;
+    if (current) current.textContent = `${region.title} | ${progress.label} | ${campaign.totalStars}/${campaign.maxStars} Sterne`;
+    if (boss) boss.textContent = `Bestwelle ${bestWave} | Ziel: ${region.goal} | Boss: ${region.boss}`;
     if (license) license.textContent = state.licenseActive ? 'Vollversion aktiv' : 'Demo bis Welle 5';
     if (online) online.textContent = getBackendStatusText();
     if (skirmish) skirmish.textContent = `${savedScenario.label} | ${savedSize.label}`;
     if (skirmishDetail) skirmishDetail.textContent = `${savedRegion.title}, ${saved.opponents} KI, ${savedDifficulty.label}, ${savedPlan.label}`;
-    if (briefingTitle) briefingTitle.textContent = `${region.title}: ${region.style}`;
-    if (briefingCopy) briefingCopy.textContent = MENU_BRIEFINGS[region.id] || region.terrain;
-    if (briefingWave) briefingWave.textContent = `Wellen ${region.waves}`;
+    if (briefingTitle) briefingTitle.textContent = `${region.title}: ${region.goal}`;
+    if (briefingCopy) briefingCopy.textContent = `${MENU_BRIEFINGS[region.id] || region.terrain} Belohnung: ${region.reward}.`;
+    if (briefingWave) briefingWave.textContent = `Wellen ${region.waves} | ${progress.stars}/3 Sterne`;
     if (briefingBoss) briefingBoss.textContent = `Boss: ${region.boss}`;
     if (briefingPlan) briefingPlan.textContent = `${savedScenario.label}, ${savedDifficulty.label}`;
-    if (commandTitle) commandTitle.textContent = `${region.title} sichern`;
-    if (commandCopy) commandCopy.textContent = MENU_BRIEFINGS[region.id] || 'Lies die Wege, sammle Reserven und führe Angriffe nur mit klarem Ziel.';
-    if (commandRoute) commandRoute.textContent = `Route: Wellen ${region.waves}`;
+    if (commandTitle) commandTitle.textContent = `${region.goal}`;
+    if (commandCopy) commandCopy.textContent = region.tactic || MENU_BRIEFINGS[region.id] || 'Lies die Wege, sammle Reserven und führe Angriffe nur mit klarem Ziel.';
+    if (commandRoute) commandRoute.textContent = `Route: Welle ${progress.nextWave}/${progress.range.end}`;
     if (commandBoss) commandBoss.textContent = `Bossziel: ${region.boss}`;
     if (commandSkirmish) commandSkirmish.textContent = `Gefecht: ${savedScenario.label} | ${savedDifficulty.label}`;
     if (footer) footer.textContent = state.licenseActive
@@ -1048,10 +1192,10 @@
       const detail = document.querySelector(`#start-screen [data-menu-detail="${key}"]`);
       if (detail) detail.textContent = value;
     };
-    setMenuDetail('campaign', `Nächste Front: ${region.title}, Wellen ${region.waves}. Boss: ${region.boss}.`);
+    setMenuDetail('campaign', `Nächste Front: ${region.title}. Ziel: ${region.goal}. ${progress.stars}/3 Sterne.`);
     setMenuDetail('skirmish', `${savedScenario.label}: ${savedRegion.title}, ${savedSize.label}, ${saved.opponents} KI, ${savedDifficulty.label}.`);
     setMenuDetail('online', `${getBackendStatusText()}: Duellräume über den MASTIL-Server.`);
-    setMenuDetail('map', `Weltpfad: ${progress}. ${region.title} ist dein aktueller Einsatz.`);
+    setMenuDetail('map', `Weltpfad: ${campaign.totalStars}/${campaign.maxStars} Sterne. ${region.title} ist dein aktueller Einsatz.`);
     setMenuDetail('legends', `Story, Reiche und Bossfronten aus ${region.title} nachlesen.`);
 
     const menu = document.querySelector('#start-screen .menu-container');
@@ -1063,16 +1207,17 @@
     document.querySelectorAll('.mastil-menu-region-step').forEach((step) => {
       const stepRegion = getRegionById(step.dataset.regionId || '');
       if (!stepRegion) return;
-      const range = parseRegionWaveRange(stepRegion);
-      const unlocked = state.licenseActive || range.start <= 5 || bestWave >= range.start;
-      const cleared = bestWave > range.end;
-      const active = stepRegion.id === region.id && !cleared;
-      step.classList.toggle('active', active);
-      step.classList.toggle('cleared', cleared);
-      step.classList.toggle('locked', !unlocked);
+      const regionState = getRegionCampaignState(stepRegion, bestWave);
+      step.classList.toggle('active', stepRegion.id === region.id && regionState.active);
+      step.classList.toggle('cleared', regionState.cleared);
+      step.classList.toggle('locked', !regionState.unlocked);
       const stateLabel = step.querySelector('.mastil-menu-region-state');
       if (stateLabel) {
-        stateLabel.textContent = cleared ? 'Gesichert' : active ? 'Aktiv' : unlocked ? 'Bereit' : 'Gesperrt';
+        stateLabel.textContent = `${regionState.label} | ${regionState.stars}/3`;
+      }
+      const stars = step.querySelector('.mastil-campaign-stars');
+      if (stars) {
+        stars.outerHTML = renderCampaignStars(regionState.stars);
       }
     });
   }
@@ -1254,6 +1399,7 @@
               <strong>${region.title}</strong>
               <small>Wellen ${region.waves} | ${region.boss}</small>
               <em>${region.terrain}</em>
+              ${renderCampaignStars(0)}
             </span>
             <span class="mastil-menu-region-state">Bereit</span>
           `;

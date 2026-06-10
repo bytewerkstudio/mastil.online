@@ -929,6 +929,10 @@
   font-style: normal;
 }
 
+.mastil-menu-region-copy .mastil-campaign-stars {
+  margin-top: 2px;
+}
+
 .mastil-menu-region-state {
   grid-column: 1 / -1;
   justify-self: start;
@@ -1520,7 +1524,7 @@
 }
 
 .mastil-world-card {
-  min-height: 178px;
+  min-height: 228px;
   display: grid;
   align-content: end;
   gap: 5px;
@@ -1567,6 +1571,53 @@
   color: rgba(244, 230, 191, 0.86);
   font: 750 12px/1.25 "Segoe UI", sans-serif;
   font-style: normal;
+}
+
+.mastil-campaign-stars {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-self: start;
+}
+
+.mastil-world-card .mastil-campaign-stars,
+.mastil-campaign-region .mastil-campaign-stars {
+  padding: 0;
+  background: transparent;
+}
+
+.mastil-campaign-stars i {
+  width: 11px;
+  height: 11px;
+  display: block;
+  clip-path: polygon(50% 0%, 62% 35%, 99% 35%, 69% 56%, 82% 92%, 50% 70%, 18% 92%, 31% 56%, 1% 35%, 38% 35%);
+  background: rgba(244, 230, 191, 0.28);
+  box-shadow: 0 0 0 1px rgba(226, 189, 90, 0.16);
+}
+
+.mastil-campaign-stars i.filled {
+  background: linear-gradient(180deg, #fff2bf, #e2bd5a 62%, #9b6d25);
+  box-shadow: 0 0 10px rgba(226, 189, 90, 0.34);
+}
+
+.mastil-world-card-progress {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.mastil-world-card-progress::before {
+  content: "";
+  display: block;
+  width: calc(var(--region-progress, 0) * 100%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8ec3f0, #e2bd5a);
+  box-shadow: 0 0 14px rgba(226, 189, 90, 0.32);
 }
 
 .mastil-world-card.verschlossen {
@@ -2019,6 +2070,87 @@
 .mastil-progress-overview span {
   color: #fff2bf;
   font: 900 13px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-campaign-progress {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid rgba(142, 195, 240, 0.32);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(47, 111, 165, 0.18), rgba(226, 189, 90, 0.08)),
+    rgba(8, 5, 4, 0.52);
+}
+
+.mastil-campaign-progress-head {
+  display: grid;
+  gap: 4px;
+}
+
+.mastil-campaign-progress-head span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-campaign-progress-head strong {
+  color: #fff2bf;
+  font: 950 18px/1.12 Cinzel, Georgia, serif;
+}
+
+.mastil-campaign-progress-head small {
+  color: rgba(244, 230, 191, 0.72);
+  font: 760 12px/1.3 "Segoe UI", sans-serif;
+}
+
+.mastil-campaign-region-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mastil-campaign-region {
+  display: grid;
+  gap: 6px;
+  min-height: 126px;
+  padding: 10px;
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 8px;
+  background: rgba(8, 5, 4, 0.54);
+}
+
+.mastil-campaign-region.gesichert {
+  border-color: rgba(130, 214, 160, 0.46);
+}
+
+.mastil-campaign-region.aktiv,
+.mastil-campaign-region.bereit {
+  border-color: rgba(226, 189, 90, 0.52);
+}
+
+.mastil-campaign-region.verschlossen {
+  opacity: 0.68;
+  filter: saturate(0.72);
+}
+
+.mastil-campaign-region span {
+  color: rgba(226, 189, 90, 0.82);
+  font: 900 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-campaign-region strong {
+  color: #fff2bf;
+  font: 900 13px/1.12 "Segoe UI", sans-serif;
+}
+
+.mastil-campaign-region small,
+.mastil-campaign-region em {
+  color: rgba(244, 230, 191, 0.72);
+  font: 740 11px/1.25 "Segoe UI", sans-serif;
+  font-style: normal;
 }
 
 .mastil-progress-track {
@@ -4798,6 +4930,7 @@ body:has(#game-container[style*="block"]) #info-panel {
   }
 
   .mastil-world-grid,
+  .mastil-campaign-region-grid,
   .mastil-skirmish-options {
     grid-template-columns: 1fr;
   }
@@ -4849,7 +4982,7 @@ body:has(#game-container[style*="block"]) #info-panel {
   }
 
   .mastil-world-card {
-    min-height: 128px;
+    min-height: 214px;
   }
 
   .mastil-backend-options,
