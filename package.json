@@ -1,6 +1,6 @@
 {
   "name": "mastil-app",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "MASTIL by Bytewerk Studio: browser-playable and Windows strategy game with offline AI, online 1v1 preparation, licensing and installer support.",
   "main": "src/main/main.cjs",
   "author": "Bytewerk Studio",

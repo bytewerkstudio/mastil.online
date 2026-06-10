@@ -1,5 +1,5 @@
 #define MyAppName "MASTIL"
-#define MyAppVersion "3.0.0"
+#define MyAppVersion "3.0.1"
 #define MyAppPublisher "H. Haqmal"
 #define MyAppExeName "MASTIL.exe"
 #define RootDir ".."
