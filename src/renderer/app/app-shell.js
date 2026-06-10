@@ -365,6 +365,24 @@
     return document.getElementById(id);
   }
 
+  function runShellStep(label, task) {
+    try {
+      return task();
+    } catch (error) {
+      console.warn(`MASTIL shell step failed: ${label}`, error);
+      return null;
+    }
+  }
+
+  async function runShellStepAsync(label, task) {
+    try {
+      return await task();
+    } catch (error) {
+      console.warn(`MASTIL shell step failed: ${label}`, error);
+      return null;
+    }
+  }
+
   function showMessage(text) {
     const target = byId('mastil-license-message');
     if (target) target.textContent = text || '';
@@ -1566,7 +1584,6 @@
   function enhanceMenu() {
     const menu = document.querySelector('#start-screen .menu-container');
     if (!menu || menu.dataset.mastilEnhanced === 'true') return;
-    menu.dataset.mastilEnhanced = 'true';
     ensureMenuFrame(menu);
 
     const firstButton = menu.querySelector('.menu-button');
@@ -1597,6 +1614,8 @@
     } else {
       menu.appendChild(progressButton);
     }
+
+    menu.dataset.mastilEnhanced = 'true';
   }
 
   function parseCurrentWave() {
@@ -1630,15 +1649,19 @@
   async function init() {
     if (state.initialized) return;
     state.initialized = true;
-    createBadge();
-    createLicenseModal();
-    createProgressModal();
-    createWorldMapModal();
-    addBranding();
-    enhanceMenu();
-    installBackendOptions();
-    installDemoGate();
-    await refreshLicenseBadge();
+    runShellStep('branding', addBranding);
+    runShellStep('menu', enhanceMenu);
+    runShellStep('license badge', createBadge);
+    runShellStep('license modal', createLicenseModal);
+    runShellStep('progress modal', createProgressModal);
+    runShellStep('world map modal', createWorldMapModal);
+    runShellStep('backend options', installBackendOptions);
+    runShellStep('demo gate', installDemoGate);
+    await runShellStepAsync('license status', refreshLicenseBadge);
+    setTimeout(() => {
+      runShellStep('menu retry', enhanceMenu);
+      runShellStep('dashboard retry', updateMenuDashboard);
+    }, 250);
   }
 
   window.MastilShell = {

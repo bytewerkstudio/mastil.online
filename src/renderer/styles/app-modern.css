@@ -1092,11 +1092,26 @@
 #start-screen .menu-button .button-text {
   color: #fff2bf;
   font: 950 15px/1.08 "Segoe UI", sans-serif;
-  overflow-wrap: anywhere;
+  hyphens: none;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 #start-screen .menu-button.mastil-menu-primary .button-text {
   font: 950 18px/1.08 Cinzel, Georgia, serif;
+}
+
+#start-screen .menu-button:not(.mastil-menu-item) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+#start-screen .menu-button:not(.mastil-menu-item) .button-text {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  display: block;
+  text-align: left;
+  white-space: normal;
 }
 
 #start-screen .menu-button small {

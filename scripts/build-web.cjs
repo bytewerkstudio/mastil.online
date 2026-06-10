@@ -92,7 +92,7 @@ const CORE_ASSETS = [
   './src/shared/game-core.js?v=3.2.0',
   './src/renderer/index.html',
   './src/renderer/legacy/legacy-styles.css?v=3.2.0',
-  './src/renderer/styles/app-modern.css?v=4.37.0',
+  './src/renderer/styles/app-modern.css?v=4.38.0',
   './src/renderer/legacy/version-history.js?v=3.27.0',
   './src/renderer/legacy/legacy-game.js?v=3.8.2',
   './src/renderer/app/audio-engine.js?v=3.7.0',
@@ -101,7 +101,7 @@ const CORE_ASSETS = [
   './src/renderer/app/browser-compat.js?v=1.0.0',
   './src/renderer/app/license-client.js?v=4.1.0',
   './src/renderer/app/online-client.js?v=3.4.0',
-  './src/renderer/app/app-shell.js?v=4.28.0'
+  './src/renderer/app/app-shell.js?v=4.29.0'
 ];
 
 async function cacheAsset(cache, asset) {
