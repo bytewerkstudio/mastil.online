@@ -1,0 +1,4944 @@
+:root {
+  --mastil-ink: #130d08;
+  --mastil-panel: rgba(28, 18, 12, 0.92);
+  --mastil-line: rgba(230, 190, 92, 0.42);
+  --mastil-gold: #e2bd5a;
+  --mastil-red: #8f2524;
+  --mastil-blue: #1d4e71;
+  --mastil-cream: #f4e6bf;
+}
+
+#game-canvas {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  background-color: #101715 !important;
+  background-image:
+    radial-gradient(circle at 50% 42%, rgba(65, 85, 72, 0.32), transparent 34rem),
+    linear-gradient(145deg, #18241e, #0f1514 48%, #1d1710) !important;
+}
+
+.royal-welcome {
+  top: 78px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(560px, calc(100vw - 28px)) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 46px;
+  gap: 7px 12px;
+  align-items: center;
+  padding: 14px 14px 12px 16px !important;
+  color: #fff2bf !important;
+  text-align: left !important;
+  pointer-events: auto !important;
+  border: 1px solid rgba(226, 189, 90, 0.58) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(145deg, rgba(32, 21, 13, 0.94), rgba(9, 7, 5, 0.9)),
+    url("../../../assets/backgrounds/panel-bg.png") center/cover no-repeat !important;
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.48), inset 0 0 34px rgba(226, 189, 90, 0.08) !important;
+  opacity: 0;
+  animation: mastilWelcomeIn 260ms ease forwards, mastilWelcomeOut 320ms ease 3.9s forwards !important;
+}
+
+.royal-welcome.leaving {
+  animation: mastilWelcomeOut 220ms ease forwards !important;
+}
+
+.royal-welcome::before,
+.royal-welcome::after {
+  display: none !important;
+}
+
+.royal-welcome-title,
+.royal-welcome-message,
+.royal-welcome-signature,
+.royal-welcome-progress {
+  grid-column: 1;
+}
+
+.royal-welcome-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0 !important;
+  color: #ffe18a !important;
+  font: 950 17px/1.14 Cinzel, Georgia, serif !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+.royal-welcome .mastil-inline-icon {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.royal-welcome-message {
+  margin: 0 !important;
+  color: rgba(244, 230, 191, 0.86) !important;
+  font: 750 13px/1.38 "Segoe UI", sans-serif !important;
+  text-shadow: none !important;
+}
+
+.royal-welcome-signature {
+  margin: 0 !important;
+  color: rgba(142, 195, 240, 0.92) !important;
+  font: 900 12px/1.28 "Segoe UI", sans-serif !important;
+  text-shadow: none !important;
+}
+
+.royal-seal {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  justify-self: center;
+  width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  border: 1px solid rgba(255, 242, 191, 0.48);
+  background: radial-gradient(circle at 36% 28%, #ffe18a, #a56c24) !important;
+}
+
+.royal-seal::before {
+  content: "" !important;
+  width: 24px;
+  height: 24px;
+  background: #2a180b;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M45 4l15 15-8 3-21 21 7 7-8 8-7-7-10 10-6-6 10-10-7-7 8-8 7 7 21-21 3-12zM8 8l10 4 28 28-8 8L10 20 8 8z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M45 4l15 15-8 3-21 21 7 7-8 8-7-7-10 10-6-6 10-10-7-7 8-8 7 7 21-21 3-12zM8 8l10 4 28 28-8 8L10 20 8 8z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.royal-welcome-close {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: #fff2bf;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 50%;
+  background: rgba(8, 5, 4, 0.6);
+  cursor: pointer;
+  font: 900 16px/1 "Segoe UI", sans-serif;
+}
+
+.royal-welcome-progress {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.royal-welcome-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #8fc3f0, #ffe18a);
+  animation: mastilWelcomeProgress 4s linear forwards;
+}
+
+@keyframes mastilWelcomeIn {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes mastilWelcomeOut {
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, -12px); }
+}
+
+@keyframes mastilWelcomeProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.mastil-music-btn,
+.mastil-sfx-btn {
+  display: inline-grid !important;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  border-radius: 50% !important;
+  border: 1px solid rgba(226, 189, 90, 0.48) !important;
+  background: rgba(18, 11, 7, 0.64) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3), inset 0 0 18px rgba(226, 189, 90, 0.08);
+}
+
+#start-sfx-btn {
+  position: fixed;
+  top: 18px;
+  right: 68px;
+  z-index: 5;
+}
+
+.top-bar-controls .mastil-sfx-btn {
+  position: static;
+}
+
+.mastil-music-icon,
+.mastil-sfx-icon,
+.mastil-loader-mark,
+.mastil-attack-icon,
+.mastil-check-icon,
+.mastil-play-icon,
+.mastil-home-icon {
+  display: inline-block;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  color: #f1cf6b;
+}
+
+.mastil-music-icon::before,
+.mastil-sfx-icon::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  clip-path: polygon(0 30%, 42% 30%, 100% 0, 100% 100%, 42% 70%, 0 70%);
+}
+
+.mastil-music-icon::after,
+.mastil-sfx-icon::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 3px;
+  width: 10px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-left: 0;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+}
+
+.mastil-sfx-icon::after {
+  width: 7px;
+  right: 2px;
+}
+
+.mastil-audio-off .mastil-music-icon::after,
+.mastil-audio-off .mastil-sfx-icon::after {
+  display: none;
+}
+
+.mastil-audio-off .mastil-music-icon,
+.mastil-audio-off .mastil-sfx-icon {
+  color: rgba(244, 230, 191, 0.58);
+}
+
+.mastil-audio-off .mastil-music-icon::before,
+.mastil-audio-off .mastil-sfx-icon::before {
+  background: rgba(244, 230, 191, 0.58);
+}
+
+.mastil-audio-off .mastil-music-icon {
+  transform: rotate(-8deg);
+}
+
+.mastil-loader-mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 244, 191, 0.18), transparent 54%),
+    rgba(18, 11, 7, 0.58);
+  border: 1px solid rgba(226, 189, 90, 0.55);
+}
+
+.mastil-loader-mark::before,
+.mastil-attack-icon::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  background: linear-gradient(180deg, #fff2a8, #b7822d);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M45 4l15 15-8 3-21 21 7 7-8 8-7-7-10 10-6-6 10-10-7-7 8-8 7 7 21-21 3-12zM8 8l10 4 28 28-8 8L10 20 8 8z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M45 4l15 15-8 3-21 21 7 7-8 8-7-7-10 10-6-6 10-10-7-7 8-8 7 7 21-21 3-12zM8 8l10 4 28 28-8 8L10 20 8 8z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.mastil-attack-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: -4px;
+}
+
+.mastil-attack-icon::before {
+  inset: 1px;
+}
+
+.mastil-check-icon::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 13px;
+  height: 8px;
+  border-left: 3px solid #fff2a8;
+  border-bottom: 3px solid #fff2a8;
+  transform: rotate(-45deg);
+}
+
+.mastil-play-icon::before {
+  content: "";
+  position: absolute;
+  inset: 3px 2px 3px 5px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.mastil-home-icon::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: currentColor;
+  clip-path: polygon(50% 0, 100% 38%, 84% 38%, 84% 100%, 58% 100%, 58% 68%, 42% 68%, 42% 100%, 16% 100%, 16% 38%, 0 38%);
+}
+
+#start-screen {
+  background: #0c0805 !important;
+  isolation: isolate;
+}
+
+#start-screen::before {
+  content: "";
+  position: fixed;
+  inset: -22px;
+  pointer-events: none;
+  background: url("../../../assets/backgrounds/start-bg.png") center/cover no-repeat;
+  filter: none;
+  opacity: 0.42;
+  transform: none;
+  z-index: 0;
+}
+
+#start-screen::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 50% 20%, rgba(245, 214, 139, 0.12), transparent 18rem),
+    linear-gradient(180deg, rgba(6, 4, 3, 0.16), rgba(6, 4, 3, 0.14) 44%, rgba(6, 4, 3, 0.62) 100%),
+    url("../../../assets/backgrounds/start-bg.png");
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-size: 100% 100%, 100% 100%, contain;
+  z-index: 1;
+}
+
+#start-screen > * {
+  position: relative;
+  z-index: 2;
+}
+
+#start-screen #start-music-btn {
+  position: fixed !important;
+  top: 18px !important;
+  left: 146px !important;
+  right: auto !important;
+  z-index: 151 !important;
+}
+
+#start-screen #start-sfx-btn {
+  position: fixed !important;
+  top: 18px !important;
+  left: 196px !important;
+  right: auto !important;
+  z-index: 151 !important;
+}
+
+.mastil-brand-mark {
+  width: min(72px, 13vw);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(226, 189, 90, 0.55);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 36px rgba(226, 189, 90, 0.24);
+  margin-bottom: 0.2rem;
+}
+
+#start-screen .start-title-container {
+  margin-top: clamp(10px, 2vh, 22px) !important;
+  margin-bottom: 0.35rem !important;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.25rem;
+}
+
+#start-screen .game-title {
+  font-size: clamp(2.55rem, 6vw, 4.7rem) !important;
+  line-height: 0.86 !important;
+  margin: 0 !important;
+  letter-spacing: 0 !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+#start-screen .game-title.glow,
+#start-screen .game-title::before,
+#start-screen .game-title::after {
+  animation: none !important;
+}
+
+#start-screen .game-subtitle {
+  max-width: min(860px, 88vw);
+  margin: 0 auto !important;
+  font-size: clamp(0.86rem, 1.25vw, 1.04rem) !important;
+  white-space: normal !important;
+}
+
+#start-screen .menu-container {
+  position: relative !important;
+  z-index: 3;
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: min(1220px, 95vw) !important;
+  max-height: min(70vh, calc(100vh - 238px), 700px);
+  overflow: auto;
+  margin: auto auto clamp(22px, 4vh, 36px) !important;
+  padding: 12px !important;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 14% 12%, rgba(115, 183, 220, 0.16), transparent 22rem),
+    radial-gradient(circle at 84% 18%, rgba(225, 122, 92, 0.14), transparent 21rem),
+    linear-gradient(90deg, rgba(36, 68, 83, 0.12), transparent 38%, rgba(58, 31, 36, 0.12)),
+    linear-gradient(145deg, rgba(18, 13, 10, 0.93), rgba(6, 6, 6, 0.88)),
+    url("../../../assets/backgrounds/panel-bg.png") center/cover no-repeat;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.52), inset 0 0 44px rgba(226, 189, 90, 0.08);
+  backdrop-filter: none;
+  inset: auto !important;
+  transform: none !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.68) rgba(12, 8, 6, 0.48);
+}
+
+#start-screen .menu-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(8, 6, 5, 0.88), rgba(8, 6, 5, 0.56) 46%, rgba(8, 6, 5, 0.88)),
+    var(--menu-current-image, url("../../../assets/backgrounds/worlds/world-01-startgebiet.png")) right center / min(58%, 680px) auto no-repeat;
+  opacity: 0.26;
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+
+#start-screen .menu-container::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+  border: 1px solid rgba(226, 189, 90, 0.13);
+  border-radius: 8px;
+  background-image:
+    linear-gradient(90deg, rgba(226, 189, 90, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(142, 195, 240, 0.055) 1px, transparent 1px);
+  background-size: 68px 68px, 68px 68px;
+  opacity: 0.48;
+  z-index: 0;
+}
+
+#start-screen .menu-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+#start-screen .menu-container::-webkit-scrollbar {
+  width: 10px;
+}
+
+#start-screen .menu-container::-webkit-scrollbar-track {
+  background: rgba(12, 8, 6, 0.5);
+  border-radius: 999px;
+}
+
+#start-screen .menu-container::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(12, 8, 6, 0.5);
+  border-radius: 999px;
+  background: rgba(226, 189, 90, 0.74);
+}
+
+.mastil-menu-header,
+.mastil-menu-footer {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mastil-menu-header {
+  order: 1;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid rgba(226, 189, 90, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(226, 189, 90, 0.13), rgba(115, 183, 220, 0.08)),
+    rgba(10, 7, 5, 0.62);
+  box-shadow: inset 0 0 32px rgba(255, 242, 191, 0.035);
+}
+
+.mastil-menu-briefing {
+  order: 3;
+  grid-column: 1 / -1;
+  min-height: 118px;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid rgba(142, 195, 240, 0.28);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(20, 41, 50, 0.78), rgba(12, 8, 6, 0.68)),
+    radial-gradient(circle at 82% 18%, rgba(226, 189, 90, 0.12), transparent 18rem);
+  box-shadow: inset 0 0 34px rgba(115, 183, 220, 0.08);
+  overflow: hidden;
+}
+
+.mastil-menu-briefing-map {
+  min-height: 94px;
+  position: relative;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(8, 6, 5, 0.34), rgba(8, 6, 5, 0.82)),
+    var(--menu-current-image, url("../../../assets/backgrounds/worlds/world-01-startgebiet.png")) center/cover no-repeat;
+  overflow: hidden;
+}
+
+.mastil-menu-briefing-map::before {
+  content: "";
+  position: absolute;
+  inset: 15% 14%;
+  border-top: 2px solid rgba(226, 189, 90, 0.68);
+  border-right: 2px solid rgba(142, 195, 240, 0.62);
+  border-radius: 44% 56% 38% 62%;
+  transform: rotate(-8deg);
+  opacity: 0.8;
+}
+
+.mastil-menu-briefing-map span,
+.mastil-menu-briefing-map i {
+  position: absolute;
+  width: 14px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f1cf6b;
+  box-shadow: 0 0 0 5px rgba(241, 207, 107, 0.16), 0 0 22px rgba(241, 207, 107, 0.32);
+}
+
+.mastil-menu-briefing-map span {
+  left: 23%;
+  top: 62%;
+}
+
+.mastil-menu-briefing-map i {
+  right: 19%;
+  top: 28%;
+  background: #e17a5c;
+  box-shadow: 0 0 0 5px rgba(225, 122, 92, 0.14), 0 0 22px rgba(225, 122, 92, 0.32);
+}
+
+.mastil-menu-briefing-copy {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mastil-menu-briefing-copy span,
+.mastil-menu-command {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-menu-briefing-copy strong {
+  color: #fff2bf;
+  font: 950 clamp(1.2rem, 2.2vw, 1.75rem)/1.08 Cinzel, Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-briefing-copy p {
+  max-width: 780px;
+  margin: 0;
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 13px/1.48 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-briefing-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.mastil-menu-briefing-tags small {
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid rgba(142, 195, 240, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.052);
+  padding: 7px 10px;
+  font: 850 11px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-command-table {
+  order: 4;
+  grid-column: 1 / -1;
+  min-height: 96px;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.34fr) minmax(0, 1fr) minmax(210px, 0.32fr);
+  gap: 12px;
+  align-items: stretch;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid rgba(226, 189, 90, 0.26);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(226, 189, 90, 0.12), transparent 35%, rgba(142, 195, 240, 0.08)),
+    linear-gradient(145deg, rgba(27, 19, 13, 0.82), rgba(8, 7, 6, 0.76));
+  box-shadow: inset 0 0 34px rgba(226, 189, 90, 0.055);
+  overflow: hidden;
+}
+
+.mastil-command-table-map {
+  position: relative;
+  min-height: 76px;
+  border: 1px solid rgba(226, 189, 90, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(6, 5, 4, 0.42), rgba(6, 5, 4, 0.72)),
+    var(--menu-current-image, url("../../../assets/backgrounds/worlds/world-01-startgebiet.png")) center/cover no-repeat;
+  overflow: hidden;
+}
+
+.mastil-command-table-map::before {
+  content: "";
+  position: absolute;
+  inset: 12px 18px;
+  border: 2px solid rgba(226, 189, 90, 0.5);
+  border-left-color: transparent;
+  border-bottom-color: rgba(142, 195, 240, 0.48);
+  border-radius: 50%;
+  transform: rotate(-16deg);
+}
+
+.mastil-table-route {
+  position: absolute;
+  left: 22%;
+  right: 18%;
+  top: 50%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f1cf6b, #8ec3f0, #e17a5c);
+  transform: rotate(-12deg);
+  box-shadow: 0 0 18px rgba(241, 207, 107, 0.22);
+}
+
+.mastil-command-table-map i {
+  position: absolute;
+  width: 13px;
+  aspect-ratio: 1;
+  border: 2px solid rgba(23, 13, 8, 0.88);
+  border-radius: 50%;
+  background: #f1cf6b;
+  box-shadow: 0 0 0 5px rgba(241, 207, 107, 0.12);
+}
+
+.mastil-command-table-map i:nth-of-type(1) { left: 16%; top: 62%; }
+.mastil-command-table-map i:nth-of-type(2) { left: 38%; top: 42%; background: #8ec3f0; box-shadow: 0 0 0 5px rgba(142, 195, 240, 0.12); }
+.mastil-command-table-map i:nth-of-type(3) { left: 62%; top: 36%; background: #f1cf6b; }
+.mastil-command-table-map i:nth-of-type(4) { right: 14%; top: 24%; background: #e17a5c; box-shadow: 0 0 0 5px rgba(225, 122, 92, 0.12); }
+
+.mastil-command-table-copy {
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.mastil-command-table-copy span,
+.mastil-command-table-orders small {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-command-table-copy strong {
+  color: #fff2bf;
+  font: 950 1.25rem/1.08 Cinzel, Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-command-table-copy p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.76);
+  font: 750 12px/1.46 "Segoe UI", sans-serif;
+}
+
+.mastil-command-table-orders {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mastil-command-table-orders small {
+  display: block;
+  min-width: 0;
+  color: rgba(244, 230, 191, 0.84);
+  text-transform: none;
+  border: 1px solid rgba(226, 189, 90, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 10px;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-titleline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.mastil-menu-seal {
+  width: 74px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(226, 189, 90, 0.5);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 28%, rgba(255, 242, 191, 0.22), transparent 30%),
+    rgba(10, 7, 5, 0.62);
+  box-shadow: 0 0 30px rgba(226, 189, 90, 0.16);
+}
+
+.mastil-menu-seal img {
+  width: 82%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.mastil-menu-header span,
+.mastil-menu-footer span {
+  color: rgba(226, 189, 90, 0.88);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-menu-header strong {
+  color: #fff2bf;
+  font: 950 clamp(1.4rem, 2.7vw, 2.18rem)/1.02 Cinzel, Georgia, serif;
+}
+
+.mastil-menu-header p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 12px/1.4 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 1px;
+}
+
+.mastil-menu-dashboard {
+  order: 5;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mastil-menu-dashboard article {
+  min-height: 82px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(16, 22, 23, 0.72), rgba(10, 7, 5, 0.58)),
+    radial-gradient(circle at 18% 16%, rgba(226, 189, 90, 0.12), transparent 46%);
+}
+
+.mastil-menu-dashboard article:nth-child(4) {
+  border-color: rgba(142, 195, 240, 0.28);
+  background:
+    linear-gradient(145deg, rgba(13, 31, 38, 0.7), rgba(10, 7, 5, 0.58)),
+    radial-gradient(circle at 18% 16%, rgba(142, 195, 240, 0.14), transparent 46%);
+}
+
+.mastil-menu-dashboard span {
+  color: rgba(226, 189, 90, 0.82);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-menu-dashboard strong {
+  color: #fff2bf;
+  font: 950 16px/1.08 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-dashboard small {
+  color: rgba(244, 230, 191, 0.72);
+  font: 750 11px/1.32 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-warpath {
+  order: 6;
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid rgba(226, 189, 90, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(7, 8, 8, 0.76), rgba(18, 12, 8, 0.64)),
+    radial-gradient(circle at 30% 18%, rgba(226, 189, 90, 0.1), transparent 42%);
+}
+
+.mastil-menu-warpath-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mastil-menu-warpath-head span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-menu-warpath-head strong {
+  color: rgba(244, 230, 191, 0.9);
+  font: 900 12px/1.1 "Segoe UI", sans-serif;
+  text-align: right;
+}
+
+.mastil-menu-region-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mastil-menu-region-step {
+  --region-state: rgba(226, 189, 90, 0.74);
+  min-width: 0;
+  min-height: 112px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 9px;
+  color: #f4e6bf;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--region-state) 48%, rgba(244, 230, 191, 0.12));
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(8, 7, 6, 0.62), rgba(8, 7, 6, 0.84)),
+    var(--region-image) center/cover no-repeat;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.mastil-menu-region-step:hover,
+.mastil-menu-region-step:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--region-state) 76%, white);
+}
+
+.mastil-menu-region-step.active {
+  --region-state: #8ec3f0;
+}
+
+.mastil-menu-region-step.cleared {
+  --region-state: #82d6a0;
+}
+
+.mastil-menu-region-step.locked {
+  --region-state: #a17873;
+  filter: saturate(0.72);
+}
+
+.mastil-menu-region-index {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: #160d08;
+  border-radius: 50%;
+  background: var(--region-state);
+  font: 950 12px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-region-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mastil-menu-region-copy strong {
+  color: #fff2bf;
+  font: 950 13px/1.05 Cinzel, Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-region-copy small,
+.mastil-menu-region-copy em {
+  color: rgba(244, 230, 191, 0.76);
+  font: 750 10px/1.22 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-region-copy em {
+  color: rgba(244, 230, 191, 0.58);
+  font-style: normal;
+}
+
+.mastil-menu-region-state {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 4px 7px;
+  color: #160d08;
+  border-radius: 999px;
+  background: var(--region-state);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-badges small,
+.mastil-menu-footer strong {
+  color: rgba(244, 230, 191, 0.82);
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 6px 9px;
+  font: 850 11px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-menu-footer {
+  order: 9;
+  padding: 7px 10px 1px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  border-top: 1px solid rgba(226, 189, 90, 0.16);
+}
+
+.mastil-menu-footer strong {
+  width: fit-content;
+  justify-self: end;
+  border-radius: 8px;
+}
+
+#start-screen .menu-button {
+  --menu-tone-a: #e2bd5a;
+  --menu-tone-b: #8f6a23;
+  grid-column: span 3;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 84px !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 11px !important;
+  color: #f7e7b8 !important;
+  text-align: left !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  border: 1px solid rgba(226, 189, 90, 0.28) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--menu-tone-a) 18%, transparent), transparent 46%),
+    radial-gradient(circle at 12% 12%, color-mix(in srgb, var(--menu-tone-a) 18%, transparent), transparent 46%),
+    linear-gradient(145deg, color-mix(in srgb, var(--menu-tone-b) 28%, rgba(255, 255, 255, 0.07)), rgba(0, 0, 0, 0.3)) !important;
+  box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.035), 0 12px 28px rgba(0, 0, 0, 0.28) !important;
+  overflow: hidden;
+  position: relative;
+}
+
+#start-screen .menu-button.mastil-menu-item,
+#start-screen .menu-button.mastil-menu-item * {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+#start-screen .menu-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--menu-tone-a) 14%, transparent), transparent);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+#start-screen .menu-button::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--menu-tone-a) 26%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--menu-tone-a) 10%, transparent), transparent 34%, color-mix(in srgb, var(--menu-tone-a) 8%, transparent)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 42%);
+  opacity: 0.82;
+  z-index: 1;
+}
+
+#start-screen .menu-button .mastil-menu-icon,
+#start-screen .menu-button .mastil-menu-copy {
+  position: relative;
+  z-index: 2;
+}
+
+#start-screen .menu-button:hover,
+#start-screen .menu-button:focus-visible {
+  transform: translateY(-2px) !important;
+  border-color: color-mix(in srgb, var(--menu-tone-a) 76%, white) !important;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--menu-tone-b) 36%, rgba(255, 255, 255, 0.08)), rgba(6, 5, 5, 0.22)) !important;
+}
+
+#start-screen .menu-button:hover::after,
+#start-screen .menu-button:focus-visible::after {
+  opacity: 1;
+}
+
+#start-screen .menu-button.mastil-menu-primary {
+  order: 2;
+  grid-column: span 4;
+  min-height: 104px !important;
+  grid-template-columns: 52px minmax(0, 1fr);
+  padding: 12px !important;
+  border-color: color-mix(in srgb, var(--menu-tone-a) 46%, rgba(244, 230, 191, 0.26)) !important;
+}
+
+#start-screen .menu-button[data-menu-key="campaign"] {
+  grid-column: span 5;
+  background:
+    linear-gradient(90deg, rgba(115, 183, 220, 0.24), transparent 48%),
+    linear-gradient(180deg, rgba(8, 6, 5, 0.24), rgba(8, 6, 5, 0.74)),
+    var(--menu-current-image, url("../../../assets/backgrounds/worlds/world-01-startgebiet.png")) center/cover no-repeat !important;
+}
+
+#start-screen .menu-button[data-menu-key="skirmish"] {
+  grid-column: span 4;
+}
+
+#start-screen .menu-button[data-menu-key="online"] {
+  grid-column: span 3;
+}
+
+#start-screen .menu-button.mastil-menu-secondary {
+  order: 7;
+  min-height: 96px !important;
+}
+
+#start-screen .menu-button.mastil-menu-utility {
+  order: 8;
+  min-height: 74px !important;
+  grid-column: span 2;
+}
+
+.mastil-menu-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mastil-menu-command {
+  color: color-mix(in srgb, var(--menu-tone-a) 86%, white);
+}
+
+#start-screen .menu-button .button-text {
+  color: #fff2bf;
+  font: 950 15px/1.08 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+#start-screen .menu-button.mastil-menu-primary .button-text {
+  font: 950 18px/1.08 Cinzel, Georgia, serif;
+}
+
+#start-screen .menu-button small {
+  color: rgba(244, 230, 191, 0.68);
+  font: 750 11px/1.32 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-menu-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--menu-tone-a) 62%, rgba(244, 230, 191, 0.4));
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 28%, rgba(255, 255, 255, 0.28), transparent 34%),
+    linear-gradient(180deg, var(--menu-tone-a), var(--menu-tone-b));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--menu-tone-a) 28%, transparent);
+  position: relative;
+}
+
+.mastil-menu-primary .mastil-menu-icon {
+  width: 52px;
+  height: 52px;
+}
+
+.mastil-menu-icon::before,
+.mastil-menu-icon::after {
+  content: "";
+  position: absolute;
+  background: #160d08;
+}
+
+.mastil-menu-icon-campaign::before,
+.mastil-menu-icon-skirmish::before,
+.mastil-menu-icon-online::before {
+  width: 23px;
+  height: 23px;
+  clip-path: polygon(50% 0, 100% 38%, 82% 38%, 82% 100%, 58% 100%, 58% 66%, 42% 66%, 42% 100%, 18% 100%, 18% 38%, 0 38%);
+}
+
+.mastil-menu-icon-skirmish::after {
+  width: 28px;
+  height: 4px;
+  transform: rotate(-38deg);
+  border-radius: 999px;
+}
+
+.mastil-menu-icon-online::before {
+  clip-path: polygon(50% 0, 65% 34%, 100% 38%, 74% 62%, 82% 100%, 50% 80%, 18% 100%, 26% 62%, 0 38%, 35% 34%);
+}
+
+.mastil-menu-icon-map::before {
+  width: 24px;
+  height: 18px;
+  border: 3px solid #160d08;
+  border-radius: 3px;
+  background: transparent;
+}
+
+.mastil-menu-icon-map::after {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  box-shadow: -7px -2px 0 #160d08, 7px 5px 0 #160d08;
+}
+
+.mastil-menu-icon-license::before,
+.mastil-menu-icon-buy::before {
+  width: 18px;
+  height: 22px;
+  border-radius: 3px;
+  clip-path: polygon(0 0, 100% 0, 100% 82%, 62% 82%, 50% 100%, 38% 82%, 0 82%);
+}
+
+.mastil-menu-icon-buy::after {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: 3px solid #160d08;
+}
+
+.mastil-menu-icon-legends::before,
+.mastil-menu-icon-credits::before {
+  width: 23px;
+  height: 18px;
+  border: 3px solid #160d08;
+  border-radius: 2px 8px 8px 2px;
+  background: transparent;
+}
+
+.mastil-menu-icon-options::before {
+  width: 23px;
+  height: 23px;
+  border: 4px solid #160d08;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-menu-icon-options::after {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.mastil-menu-icon-highscores::before,
+.mastil-menu-icon-progress::before {
+  width: 25px;
+  height: 23px;
+  clip-path: polygon(50% 0, 62% 35%, 100% 35%, 70% 56%, 82% 100%, 50% 74%, 18% 100%, 30% 56%, 0 35%, 38% 35%);
+}
+
+.mastil-menu-tone-blue {
+  --menu-tone-a: #73b7dc;
+  --menu-tone-b: #214f76;
+}
+
+.mastil-menu-tone-red {
+  --menu-tone-a: #e17a5c;
+  --menu-tone-b: #7d2a25;
+}
+
+.mastil-menu-tone-green {
+  --menu-tone-a: #82d6a0;
+  --menu-tone-b: #27664e;
+}
+
+.mastil-menu-tone-gold {
+  --menu-tone-a: #f3cf69;
+  --menu-tone-b: #8c6525;
+}
+
+.mastil-menu-tone-violet {
+  --menu-tone-a: #c4a8ff;
+  --menu-tone-b: #5b3f85;
+}
+
+#start-screen .copyright {
+  position: fixed !important;
+  left: auto !important;
+  right: 20px !important;
+  bottom: 12px !important;
+  transform: none !important;
+  margin: 0 !important;
+  text-align: right !important;
+  z-index: 151;
+}
+
+.mastil-publisher-mark {
+  position: fixed;
+  right: 20px;
+  top: 18px;
+  z-index: 150;
+  color: #f4e6bf;
+  border: 1px solid rgba(226, 189, 90, 0.34);
+  border-radius: 6px;
+  background: rgba(15, 10, 7, 0.64);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+  padding: 8px 11px;
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-top-note {
+  position: fixed;
+  left: 18px;
+  bottom: 14px;
+  z-index: 150;
+  color: rgba(244, 230, 191, 0.78);
+  font: 600 12px/1.35 "Segoe UI", sans-serif;
+  background: rgba(15, 10, 7, 0.62);
+  border: 1px solid rgba(226, 189, 90, 0.28);
+  padding: 8px 10px;
+  max-width: min(440px, calc(100vw - 36px));
+}
+
+.mastil-license-badge {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mastil-cream);
+  background: rgba(20, 12, 8, 0.78);
+  border: 1px solid var(--mastil-line);
+  padding: 8px 12px;
+  font: 700 12px/1 "Segoe UI", sans-serif;
+  letter-spacing: 0.02em;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+.mastil-license-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #c94b42;
+  box-shadow: 0 0 12px rgba(201, 75, 66, 0.8);
+}
+
+.mastil-license-badge.active::before {
+  background: #5bd18a;
+  box-shadow: 0 0 12px rgba(91, 209, 138, 0.8);
+}
+
+.mastil-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(7, 5, 4, 0.76);
+  backdrop-filter: none;
+}
+
+.mastil-modal.active {
+  display: flex;
+}
+
+.mastil-dialog {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: min(86vh, 740px);
+  overflow: auto;
+  color: var(--mastil-cream);
+  background:
+    linear-gradient(145deg, rgba(42, 26, 16, 0.96), rgba(16, 10, 7, 0.96)),
+    url("../../../assets/backgrounds/panel-bg.png") center/cover no-repeat;
+  border: 1px solid rgba(226, 189, 90, 0.56);
+  border-radius: 8px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.62);
+  padding: 22px;
+}
+
+.mastil-close-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  min-height: 34px;
+  border-radius: 50%;
+  padding: 0;
+  color: var(--mastil-cream);
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.mastil-dialog h2,
+.mastil-dialog h3 {
+  color: var(--mastil-gold);
+  font-family: Cinzel, Georgia, serif;
+  letter-spacing: 0;
+  margin: 0 0 10px;
+}
+
+.mastil-dialog p {
+  color: rgba(244, 230, 191, 0.86);
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.mastil-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mastil-field {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.mastil-field label {
+  color: rgba(244, 230, 191, 0.78);
+  font: 700 12px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-field input {
+  width: 100%;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 6px;
+  background: rgba(8, 5, 4, 0.72);
+  color: #fff7dd;
+  padding: 11px 12px;
+  font: 600 14px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.mastil-action {
+  border: 1px solid rgba(226, 189, 90, 0.62);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #d3ad4d, #8d641e);
+  color: #160d06;
+  cursor: pointer;
+  font: 800 13px/1 "Segoe UI", sans-serif;
+  min-height: 42px;
+  padding: 0 16px;
+  text-transform: uppercase;
+}
+
+.mastil-action.secondary {
+  color: var(--mastil-cream);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mastil-message {
+  min-height: 22px;
+  margin-top: 12px;
+  color: #f6d97b;
+  font: 700 13px/1.4 "Segoe UI", sans-serif;
+}
+
+.mastil-edict-modal {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(226, 189, 90, 0.16), transparent 22rem),
+    rgba(7, 5, 4, 0.82);
+}
+
+.mastil-edict-dialog {
+  width: min(840px, 100%);
+  overflow: visible;
+  text-align: center;
+}
+
+.mastil-edict-kicker {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: rgba(226, 189, 90, 0.9);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-edict-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.mastil-edict-card {
+  min-height: 178px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 15px;
+  color: var(--mastil-cream);
+  text-align: left;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(61, 39, 19, 0.92), rgba(12, 8, 5, 0.9)),
+    radial-gradient(circle at 20% 12%, rgba(255, 225, 138, 0.18), transparent 42%);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.mastil-edict-card:hover,
+.mastil-edict-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(255, 225, 138, 0.78);
+  background:
+    linear-gradient(145deg, rgba(83, 55, 24, 0.96), rgba(18, 12, 7, 0.94)),
+    radial-gradient(circle at 20% 12%, rgba(255, 225, 138, 0.24), transparent 42%);
+}
+
+.mastil-edict-card span {
+  justify-self: start;
+  padding: 5px 8px;
+  color: #1a1008;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f6dc85, #c08b2e);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-edict-card strong {
+  color: #fff2bf;
+  font: 950 18px/1.1 "Segoe UI", sans-serif;
+}
+
+.mastil-edict-card small {
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 13px/1.4 "Segoe UI", sans-serif;
+}
+
+.mastil-progress-dialog {
+  width: min(860px, 100%);
+}
+
+.mastil-world-dialog {
+  width: min(1120px, 96vw);
+  max-height: 90vh;
+}
+
+.mastil-world-head {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.mastil-world-head span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-world-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mastil-world-card {
+  min-height: 178px;
+  display: grid;
+  align-content: end;
+  gap: 5px;
+  overflow: hidden;
+  position: relative;
+  padding: 12px;
+  color: #fff2bf;
+  border: 1px solid rgba(226, 189, 90, 0.34);
+  border-radius: 8px;
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
+  background:
+    linear-gradient(180deg, rgba(8, 5, 4, 0.08), rgba(8, 5, 4, 0.78)),
+    var(--world-image) center/cover no-repeat;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.mastil-world-card:hover,
+.mastil-world-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 226, 138, 0.76);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+  filter: brightness(1.05);
+}
+
+.mastil-world-card span,
+.mastil-world-card b {
+  justify-self: start;
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: rgba(10, 7, 5, 0.72);
+  color: #f4d77a;
+  font: 900 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-world-card strong {
+  font: 950 18px/1.05 "Segoe UI", sans-serif;
+}
+
+.mastil-world-card small,
+.mastil-world-card em {
+  color: rgba(244, 230, 191, 0.86);
+  font: 750 12px/1.25 "Segoe UI", sans-serif;
+  font-style: normal;
+}
+
+.mastil-world-card.verschlossen {
+  opacity: 0.72;
+}
+
+.mastil-world-card.aktiv {
+  border-color: rgba(255, 226, 138, 0.78);
+  box-shadow: 0 0 0 1px rgba(255, 226, 138, 0.24), 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.mastil-world-card.selected {
+  border-color: rgba(142, 195, 240, 0.9);
+  box-shadow: 0 0 0 2px rgba(142, 195, 240, 0.28), 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
+.mastil-skirmish-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(226, 189, 90, 0.3);
+  border-radius: 8px;
+  background: rgba(8, 5, 4, 0.46);
+}
+
+.mastil-skirmish-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: end;
+}
+
+.mastil-skirmish-panel h3 {
+  margin: 0;
+}
+
+.mastil-skirmish-panel-head p {
+  max-width: 520px;
+  margin: 0;
+  color: rgba(244, 230, 191, 0.68);
+  font: 750 12px/1.35 "Segoe UI", sans-serif;
+  text-align: right;
+}
+
+.mastil-skirmish-presets {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mastil-skirmish-preset {
+  min-height: 88px;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 11px;
+  color: rgba(244, 230, 191, 0.86);
+  text-align: left;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(244, 230, 191, 0.07), rgba(0, 0, 0, 0.26)),
+    rgba(12, 8, 6, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.mastil-skirmish-preset:hover,
+.mastil-skirmish-preset.selected {
+  color: #fff2bf;
+  border-color: rgba(255, 226, 138, 0.76);
+  transform: translateY(-2px);
+  background:
+    linear-gradient(145deg, rgba(226, 189, 90, 0.18), rgba(47, 111, 165, 0.1)),
+    rgba(12, 8, 6, 0.66);
+}
+
+.mastil-skirmish-preset strong {
+  color: #f4d77a;
+  font: 950 13px/1.1 "Segoe UI", sans-serif;
+}
+
+.mastil-skirmish-preset small {
+  color: rgba(244, 230, 191, 0.7);
+  font: 750 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-skirmish-map-preview {
+  --skirmish-map-color: #2f6fa5;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(250px, 0.72fr);
+  gap: 12px;
+  align-items: stretch;
+  min-height: 240px;
+  padding: 12px;
+  border: 1px solid rgba(142, 195, 240, 0.28);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(24, 42, 48, 0.66), rgba(8, 5, 4, 0.54)),
+    radial-gradient(circle at 88% 12%, rgba(226, 189, 90, 0.12), transparent 16rem);
+  overflow: hidden;
+}
+
+.mastil-skirmish-map-stage {
+  position: relative;
+  min-height: 216px;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(8, 6, 5, 0.2), rgba(8, 6, 5, 0.72)),
+    var(--skirmish-map-image, url("../../../assets/backgrounds/worlds/world-01-startgebiet.png")) center/cover no-repeat;
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.mastil-skirmish-map-stage::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.15);
+  border-radius: 8px;
+  background-image:
+    linear-gradient(90deg, rgba(226, 189, 90, 0.07) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(142, 195, 240, 0.055) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.mastil-preview-road {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(216, 196, 154, 0.74);
+  box-shadow: 0 0 0 2px rgba(13, 8, 5, 0.42), 0 0 16px rgba(226, 189, 90, 0.16);
+  transform: rotate(var(--angle));
+  transform-origin: left center;
+}
+
+.mastil-preview-road.contested {
+  background: linear-gradient(90deg, var(--skirmish-map-color), #f1cf6b, #e17a5c);
+  box-shadow: 0 0 0 2px rgba(13, 8, 5, 0.48), 0 0 18px rgba(241, 207, 107, 0.24);
+}
+
+.mastil-preview-node {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 24px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  color: #170f09;
+  border: 2px solid rgba(16, 10, 6, 0.86);
+  border-radius: 50%;
+  background: #cdbd98;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.22), 0 0 18px rgba(255, 242, 191, 0.16);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.mastil-preview-node i {
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  font-style: normal;
+}
+
+.mastil-preview-node.player {
+  width: 30px;
+  background: var(--chosen-color, var(--skirmish-map-color));
+  border-color: rgba(255, 242, 191, 0.86);
+  box-shadow: 0 0 0 5px rgba(47, 111, 165, 0.22), 0 0 22px color-mix(in srgb, var(--chosen-color, var(--skirmish-map-color)) 38%, transparent);
+}
+
+.mastil-preview-node.enemy {
+  width: 28px;
+  background: #b8483f;
+  border-color: rgba(255, 211, 190, 0.74);
+  color: #fff2bf;
+}
+
+.mastil-preview-node.enemy-2 {
+  background: #c87735;
+}
+
+.mastil-preview-node.enemy-3 {
+  background: #7651a6;
+}
+
+.mastil-preview-node.terrain-keep {
+  border-radius: 7px;
+}
+
+.mastil-preview-node.terrain-market {
+  background: #f0c85c;
+}
+
+.mastil-preview-node.terrain-barracks {
+  background: #8fc3f0;
+}
+
+.mastil-preview-node.terrain-forest {
+  background: #9ed6a2;
+}
+
+.mastil-preview-node.terrain-quarry {
+  background: #c9c0aa;
+}
+
+.mastil-preview-node.terrain-ford {
+  background: #8fc7d8;
+}
+
+.mastil-preview-front {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  color: #fff2bf;
+  border: 1px solid rgba(225, 122, 92, 0.42);
+  border-radius: 999px;
+  background: rgba(23, 11, 7, 0.7);
+  padding: 6px 9px;
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  z-index: 3;
+}
+
+.mastil-skirmish-map-intel {
+  display: grid;
+  align-content: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.mastil-skirmish-map-intel span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-skirmish-map-intel strong {
+  color: #fff2bf;
+  font: 950 18px/1.12 Cinzel, Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-skirmish-map-intel p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 12px/1.48 "Segoe UI", sans-serif;
+}
+
+.mastil-preview-ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.mastil-preview-ledger b {
+  display: grid;
+  gap: 3px;
+  min-height: 54px;
+  place-items: center;
+  color: #fff2bf;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.24);
+  font: 950 16px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-preview-ledger small {
+  color: rgba(244, 230, 191, 0.62);
+  font: 800 9px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.mastil-skirmish-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mastil-skirmish-options label,
+.mastil-backend-options {
+  display: grid;
+  gap: 6px;
+  color: rgba(244, 230, 191, 0.82);
+  font: 850 12px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-skirmish-options select,
+.mastil-skirmish-options input,
+.mastil-backend-control input {
+  width: 100%;
+  min-height: 38px;
+  color: #fff7dc;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 6px;
+  background: rgba(8, 5, 4, 0.72);
+  padding: 0 10px;
+}
+
+.mastil-skirmish-brief {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1.4fr) minmax(260px, 0.82fr);
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid rgba(142, 195, 240, 0.26);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(47, 111, 165, 0.2), rgba(226, 189, 90, 0.08)),
+    rgba(8, 5, 4, 0.38);
+}
+
+.mastil-skirmish-brief strong {
+  color: #d8e9ff;
+  font: 950 15px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-skirmish-brief span {
+  color: rgba(244, 230, 191, 0.86);
+  font: 750 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-skirmish-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mastil-skirmish-stats b {
+  display: grid;
+  gap: 2px;
+  place-items: center;
+  min-height: 50px;
+  color: #fff2bf;
+  font: 950 15px/1 "Segoe UI", sans-serif;
+  border: 1px solid rgba(226, 189, 90, 0.26);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.mastil-skirmish-stats small {
+  color: rgba(244, 230, 191, 0.62);
+  font: 800 9px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-skirmish-brief em {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: rgba(244, 230, 191, 0.78);
+  font: 800 11px/1.25 "Segoe UI", sans-serif;
+  font-style: normal;
+}
+
+.mastil-skirmish-brief em i {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 242, 191, 0.55);
+  border-radius: 50%;
+  background: var(--chosen-color, #2f6fa5);
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.18);
+}
+
+#game-over.mastil-victory-screen {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(226, 189, 90, 0.2), transparent 22rem),
+    linear-gradient(180deg, rgba(7, 28, 22, 0.9), rgba(9, 6, 4, 0.95)) !important;
+  border-color: rgba(142, 215, 191, 0.62) !important;
+  box-shadow: 0 28px 86px rgba(0, 0, 0, 0.64), 0 0 34px rgba(142, 215, 191, 0.14) !important;
+}
+
+#game-over.mastil-victory-screen .medieval-title {
+  color: #ffe18a !important;
+  text-shadow: 0 0 24px rgba(226, 189, 90, 0.42), 0 3px 18px rgba(0, 0, 0, 0.88) !important;
+}
+
+#game-over.mastil-victory-screen .royal-message {
+  color: #d7f3df !important;
+}
+
+#game-over.mastil-victory-screen .wave-counter {
+  color: #fff2bf !important;
+  border: 1px solid rgba(142, 215, 191, 0.36);
+  border-radius: 8px;
+  background: rgba(9, 33, 27, 0.42);
+  padding: 10px 12px;
+}
+
+.mastil-backend-options {
+  grid-template-columns: 170px minmax(0, 1fr);
+  align-items: start;
+  margin: 10px 0;
+}
+
+.mastil-backend-control {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.mastil-backend-control small {
+  grid-column: 1 / -1;
+  color: rgba(244, 230, 191, 0.68);
+  font: 750 12px/1.3 "Segoe UI", sans-serif;
+}
+
+.mastil-progress-overview {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mastil-progress-overview span {
+  color: #fff2bf;
+  font: 900 13px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-progress-track {
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(226, 189, 90, 0.36);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.mastil-progress-track span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #2f6fa5, #e2bd5a, #9ed6a2);
+  box-shadow: 0 0 18px rgba(226, 189, 90, 0.4);
+  transition: width 240ms ease;
+}
+
+.mastil-awards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mastil-award {
+  min-height: 132px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 8px;
+  background: rgba(8, 5, 4, 0.54);
+}
+
+.mastil-award.unlocked {
+  border-color: rgba(255, 225, 138, 0.62);
+  background: linear-gradient(145deg, rgba(66, 43, 19, 0.66), rgba(12, 8, 5, 0.56));
+}
+
+.mastil-award-mark {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(226, 189, 90, 0.42);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mastil-award.unlocked .mastil-award-mark {
+  background: linear-gradient(180deg, #f5db83, #9b6d25);
+  box-shadow: 0 0 18px rgba(226, 189, 90, 0.28);
+}
+
+.mastil-award strong {
+  color: #fff2bf;
+  font: 900 14px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-award small {
+  color: rgba(244, 230, 191, 0.76);
+  font: 700 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-award.locked {
+  opacity: 0.68;
+}
+
+#highscore-modal .highscore-list {
+  width: min(980px, 94vw) !important;
+  margin: 0 auto !important;
+}
+
+.mastil-highscore-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 4px auto 14px;
+}
+
+.mastil-highscore-summary div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.3);
+  border-radius: 8px;
+  background: rgba(8, 5, 4, 0.48);
+  text-align: center;
+}
+
+.mastil-highscore-summary span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-highscore-summary strong {
+  color: #fff2bf;
+  font: 950 22px/1 "Segoe UI", sans-serif;
+}
+
+#highscore-modal .highscore-entry {
+  min-height: 58px !important;
+  display: grid !important;
+  grid-template-columns: 54px minmax(0, 1fr) minmax(96px, auto);
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 7px !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(226, 189, 90, 0.18) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+#highscore-modal .highscore-rank {
+  width: 36px !important;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 50%;
+  color: #f4e6bf !important;
+  background: rgba(0, 0, 0, 0.32);
+  font: 950 12px/1 "Segoe UI", sans-serif !important;
+}
+
+#highscore-modal .highscore-rank.gold {
+  color: #1b1007 !important;
+  background: linear-gradient(180deg, #ffe18a, #ae741d);
+}
+
+#highscore-modal .highscore-rank.silver {
+  color: #1b1007 !important;
+  background: linear-gradient(180deg, #f2f0e6, #9c9b92);
+}
+
+#highscore-modal .highscore-rank.bronze {
+  color: #1b1007 !important;
+  background: linear-gradient(180deg, #e6b077, #8b5227);
+}
+
+#highscore-modal .highscore-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  margin-left: 0 !important;
+}
+
+#highscore-modal .highscore-name strong {
+  overflow-wrap: anywhere;
+  color: #fff2bf;
+  font: 900 14px/1.15 "Segoe UI", sans-serif;
+}
+
+#highscore-modal .highscore-name small {
+  color: rgba(244, 230, 191, 0.68);
+  font: 750 11px/1.2 "Segoe UI", sans-serif;
+}
+
+#highscore-modal .highscore-score {
+  width: auto !important;
+  color: #f4d77a !important;
+  font: 950 15px/1 "Segoe UI", sans-serif !important;
+}
+
+.mastil-credits-publisher {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid rgba(226, 189, 90, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mastil-credits-publisher span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-credits-publisher strong {
+  color: #fff2bf;
+  font: 950 18px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-credits-publisher small {
+  color: rgba(244, 230, 191, 0.78);
+  font: 750 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-audio-option-row {
+  align-items: center;
+}
+
+.mastil-range-control {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 48px;
+  align-items: center;
+  gap: 10px;
+  width: min(330px, 100%);
+}
+
+.mastil-range-control input[type="range"] {
+  width: 100%;
+  accent-color: #d7ad48;
+  cursor: pointer;
+}
+
+.mastil-range-control span {
+  color: #f4e6bf;
+  font: 800 12px/1 "Segoe UI", sans-serif;
+  text-align: right;
+}
+
+#mastil-online-canvas {
+  position: static !important;
+  width: 100%;
+  height: auto !important;
+  max-height: min(48vh, 430px);
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 6px;
+  background: #e7d7b7;
+  display: block;
+}
+
+#loading-screen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(235, 191, 92, 0.16), transparent 23rem),
+    linear-gradient(180deg, rgba(4, 3, 2, 0.18), rgba(4, 3, 2, 0.74)),
+    url("../../../assets/backgrounds/loading-bg.png") center/cover no-repeat !important;
+  backdrop-filter: none !important;
+}
+
+#loading-screen::before,
+#loading-screen::after {
+  content: "" !important;
+  position: absolute;
+  pointer-events: none;
+}
+
+#loading-screen::before {
+  inset: -18%;
+  background:
+    radial-gradient(circle at 32% 30%, rgba(226, 189, 90, 0.14), transparent 13rem),
+    radial-gradient(circle at 72% 52%, rgba(80, 126, 148, 0.14), transparent 16rem);
+  animation: none !important;
+}
+
+#loading-screen::after {
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.52), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.52)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.48), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.62));
+}
+
+.mastil-loading-panel {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  width: min(700px, calc(100vw - 38px));
+  padding: 28px 30px 26px;
+  color: var(--mastil-cream);
+  background:
+    linear-gradient(145deg, rgba(30, 21, 16, 0.92), rgba(8, 8, 8, 0.86)),
+    linear-gradient(90deg, rgba(48, 94, 115, 0.22), transparent 42%, rgba(126, 44, 36, 0.18));
+  border: 1px solid rgba(226, 189, 90, 0.62);
+  border-radius: 8px;
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.62),
+    inset 0 0 54px rgba(226, 189, 90, 0.08);
+  backdrop-filter: none;
+}
+
+.mastil-loading-panel::before,
+.mastil-loading-panel::after {
+  content: "";
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(226, 189, 90, 0.72), transparent);
+}
+
+.mastil-loading-panel::before {
+  top: 14px;
+}
+
+.mastil-loading-panel::after {
+  bottom: 14px;
+}
+
+.mastil-loading-mark {
+  width: 74px;
+  height: 74px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(244, 230, 191, 0.78);
+  box-shadow: 0 0 34px rgba(226, 189, 90, 0.28);
+  margin-bottom: 10px;
+}
+
+.mastil-loading-kicker {
+  color: rgba(244, 230, 191, 0.72);
+  font: 800 12px/1.2 "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+#loading-screen .loading-text {
+  position: static !important;
+  top: auto !important;
+  margin: 0 0 8px !important;
+  padding: 0 !important;
+  color: #f4d77a !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: 800 2.2rem/1.08 Cinzel, Georgia, serif !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.92), 0 0 20px rgba(226, 189, 90, 0.24) !important;
+}
+
+.mastil-loading-subtext {
+  color: rgba(244, 230, 191, 0.78);
+  font: 700 14px/1.4 "Segoe UI", sans-serif;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.mastil-loading-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: min(560px, 82vw);
+  margin: 2px 0 14px;
+}
+
+.mastil-loading-step {
+  position: relative;
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 6px 8px;
+  color: rgba(244, 230, 191, 0.68);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  border: 1px solid rgba(226, 189, 90, 0.26);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(244, 230, 191, 0.08), rgba(0, 0, 0, 0.14)),
+    rgba(10, 8, 7, 0.56);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.mastil-loading-step::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  margin-bottom: 5px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: radial-gradient(circle, currentColor 0 2px, transparent 3px);
+  opacity: 0.72;
+}
+
+.mastil-loading-step.is-active {
+  color: #ffe7a0;
+  border-color: rgba(255, 220, 126, 0.76);
+  background:
+    linear-gradient(180deg, rgba(226, 189, 90, 0.22), rgba(48, 94, 115, 0.14)),
+    rgba(18, 13, 10, 0.7);
+  box-shadow: 0 0 22px rgba(226, 189, 90, 0.16), inset 0 0 0 1px rgba(255, 240, 180, 0.08);
+}
+
+.mastil-loading-step.is-complete {
+  color: rgba(142, 215, 191, 0.9);
+  border-color: rgba(142, 215, 191, 0.36);
+}
+
+#loading-bar-container {
+  width: min(520px, 76vw) !important;
+  height: 7px !important;
+  margin: 0 !important;
+  transform: none !important;
+  overflow: hidden !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(226, 189, 90, 0.32) !important;
+  background: rgba(7, 5, 4, 0.58) !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+#loading-bar-container::before,
+#loading-bar-container::after {
+  content: "" !important;
+  display: none !important;
+}
+
+#loading-bar {
+  height: 100% !important;
+  width: 0%;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(90deg, #2f6fa5 0%, #d5a33e 48%, #8ed7bf 100%) !important;
+  background-size: 100% 100% !important;
+  box-shadow: 0 0 16px rgba(226, 189, 90, 0.24) !important;
+  animation: none !important;
+}
+
+#loading-bar-glow {
+  display: none !important;
+  top: -6px !important;
+  height: 30px !important;
+  width: 92px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 248, 214, 0.86), transparent) !important;
+  filter: none !important;
+  opacity: 0.78 !important;
+}
+
+@keyframes mastilLoadingFlow {
+  0% { background-position: 100% 0; }
+  100% { background-position: -120% 0; }
+}
+
+@keyframes mastilLoadingMist {
+  0% { transform: translate3d(-1.4%, -0.8%, 0) scale(1); opacity: 0.78; }
+  100% { transform: translate3d(1.4%, 0.8%, 0) scale(1.03); opacity: 1; }
+}
+
+.mastil-faction-icon {
+  --mastil-icon-color-a: #f6dc84;
+  --mastil-icon-color-b: #a87323;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M10 56V24h8V12h8v12h12V12h8v12h8v32H38V42H26v14H10zm10-22h8v-8h-8v8zm16 0h8v-8h-8v8z'/%3E%3C/svg%3E");
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  position: relative;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.34), transparent 27%),
+    linear-gradient(145deg, rgba(255, 244, 189, 0.25), rgba(60, 33, 13, 0.18));
+  box-shadow: inset 0 0 0 1px rgba(91, 57, 25, 0.35), 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+.mastil-faction-icon::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  background: linear-gradient(180deg, var(--mastil-icon-color-a), var(--mastil-icon-color-b));
+  -webkit-mask: var(--mastil-icon) center / contain no-repeat;
+  mask: var(--mastil-icon) center / contain no-repeat;
+}
+
+.mastil-icon-england {
+  --mastil-icon-color-a: #f4d96e;
+  --mastil-icon-color-b: #825322;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M10 56V24h8V12h8v12h12V12h8v12h8v32H38V42H26v14H10zm10-22h8v-8h-8v8zm16 0h8v-8h-8v8z'/%3E%3C/svg%3E");
+}
+
+.mastil-icon-spain {
+  --mastil-icon-color-a: #72d2ee;
+  --mastil-icon-color-b: #1e627f;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M30 7h4v9h10v8H34v20c5-1 9-5 10-11h8c-2 13-10 21-20 24-10-3-18-11-20-24h8c1 6 5 10 10 11V24H20v-8h10V7z'/%3E%3C/svg%3E");
+}
+
+.mastil-icon-maya {
+  --mastil-icon-color-a: #f2a34e;
+  --mastil-icon-color-b: #8d3a20;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M6 56h52L32 8 6 56zm16-8h20l-5-9H27l-5 9zm10-18 4 7h-8l4-7z'/%3E%3C/svg%3E");
+}
+
+.mastil-icon-abbasid {
+  --mastil-icon-color-a: #c7a8ff;
+  --mastil-icon-color-b: #55308c;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' fill-rule='evenodd' d='M42 8c-10 3-17 12-17 24s7 21 17 24C25 59 10 48 10 32S25 5 42 8zm4 22 4-8 4 8 8 2-8 3-4 7-4-7-8-3 8-2z'/%3E%3C/svg%3E");
+}
+
+.mastil-icon-hre {
+  --mastil-icon-color-a: #ffd96f;
+  --mastil-icon-color-b: #b44336;
+  --mastil-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='black' d='M8 50h48v8H8v-8zm0-30 13 12 11-22 11 22 13-12-5 26H13L8 20z'/%3E%3C/svg%3E");
+}
+
+.mastil-inline-icon {
+  width: 28px;
+  height: 28px;
+  margin-right: 9px;
+  vertical-align: -7px;
+}
+
+#game-container {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 232, 166, 0.08), transparent 22rem),
+    url("../../../assets/backgrounds/game-world.png") center/cover no-repeat !important;
+}
+
+#playername-modal {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(48, 94, 115, 0.18), transparent 20rem),
+    radial-gradient(circle at 72% 62%, rgba(126, 44, 36, 0.14), transparent 22rem),
+    linear-gradient(180deg, rgba(6, 4, 3, 0.18), rgba(6, 4, 3, 0.54)),
+    url("../../../assets/backgrounds/name-screen-bg.png") center/cover no-repeat !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat !important;
+  background-size: 100% 100%, 100% 100%, 100% 100%, cover !important;
+  background-position: center, center, center, center !important;
+  padding: 18px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#playername-modal .modal-content {
+  width: min(820px, 94vw);
+  min-width: 0 !important;
+  max-height: min(90vh, 760px);
+  overflow: auto !important;
+  color: var(--mastil-cream);
+  background:
+    linear-gradient(145deg, rgba(37, 27, 22, 0.92), rgba(9, 9, 9, 0.89)),
+    linear-gradient(90deg, rgba(48, 94, 115, 0.18), transparent 45%, rgba(126, 44, 36, 0.12)) !important;
+  border: 1px solid rgba(226, 189, 90, 0.7) !important;
+  border-radius: 8px !important;
+  padding: 38px 28px 24px !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.66), inset 0 0 50px rgba(226, 189, 90, 0.1) !important;
+  backdrop-filter: none;
+}
+
+#playername-modal .modal-content::after {
+  content: "" !important;
+  width: 58px !important;
+  height: 58px !important;
+  top: -30px !important;
+  z-index: 2 !important;
+  background:
+    url("../../../assets/branding/mastil-logo.png") center/cover no-repeat,
+    radial-gradient(circle, #d4af37 0%, #715018 100%) !important;
+  border: 2px solid rgba(244, 230, 191, 0.86) !important;
+}
+
+.mastil-name-head {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  max-width: 620px;
+  margin: 0 auto 18px;
+  text-align: center;
+}
+
+.mastil-name-kicker {
+  color: rgba(142, 215, 191, 0.9);
+  font: 900 11px/1.2 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-name-head h2 {
+  margin: 0;
+  color: #f4d77a;
+  font: 900 2rem/1.05 Cinzel, Georgia, serif;
+  letter-spacing: 0;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.8);
+}
+
+.mastil-name-head p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.76);
+  font: 700 13px/1.45 "Segoe UI", sans-serif;
+}
+
+#playername-modal label,
+#playername-modal .faction-selection-title {
+  color: #f2cf69 !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.82) !important;
+  letter-spacing: 0 !important;
+  font-weight: 900 !important;
+}
+
+#playername-modal input[type="text"] {
+  width: min(420px, 86vw) !important;
+  max-width: 420px !important;
+  color: #fff7dc !important;
+  background: rgba(10, 7, 5, 0.78) !important;
+  border: 1px solid rgba(226, 189, 90, 0.66) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 10px 24px rgba(0, 0, 0, 0.28) !important;
+}
+
+#playername-modal .faction-selection {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(90px, 1fr));
+  gap: 10px !important;
+  max-width: 650px;
+  margin: 12px auto !important;
+}
+
+#playername-modal .faction-button {
+  position: relative;
+  min-width: 0 !important;
+  max-width: none !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(226, 189, 90, 0.34) !important;
+  background:
+    linear-gradient(180deg, rgba(244, 230, 191, 0.9), rgba(190, 157, 92, 0.88)) !important;
+  color: #231810 !important;
+  min-height: 122px;
+  padding: 10px 8px !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255, 252, 220, 0.18) !important;
+}
+
+#playername-modal .faction-icon {
+  font-size: 25px !important;
+  line-height: 1 !important;
+}
+
+#playername-modal .faction-name {
+  font-size: 0.82rem !important;
+  line-height: 1.15 !important;
+  overflow-wrap: anywhere;
+}
+
+#playername-modal .mastil-faction-perk {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  color: rgba(38, 24, 14, 0.76);
+  font: 800 10px/1.15 "Segoe UI", sans-serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+#playername-modal .faction-button:hover,
+#playername-modal .faction-button.active {
+  background:
+    linear-gradient(180deg, #fff4c6, #d4af37) !important;
+  border-color: rgba(255, 229, 142, 0.95) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28), 0 0 22px rgba(226, 189, 90, 0.22) !important;
+}
+
+#playername-modal .faction-button.active::after {
+  content: "Bereit";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 7px;
+  color: #0d201c;
+  font: 900 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: #8ed7bf;
+}
+
+.mastil-name-note {
+  width: min(560px, 86vw);
+  margin: 4px auto 10px;
+  color: rgba(244, 230, 191, 0.72);
+  font: 700 12px/1.45 "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+#playername-modal .mastil-name-submit {
+  min-width: min(280px, 84vw) !important;
+  margin-top: 4px !important;
+  padding: 13px 24px !important;
+  color: #27190d !important;
+  background:
+    linear-gradient(180deg, #ffe69a, #c99731) !important;
+  border: 1px solid rgba(255, 237, 176, 0.9) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.34), 0 0 22px rgba(226, 189, 90, 0.18) !important;
+}
+
+#playername-modal .mastil-name-submit.nation-selected {
+  background:
+    linear-gradient(180deg, #fff0b6, #d7ad48 55%, #9fcfbf) !important;
+}
+
+#playername-modal .mastil-name-submit.submitting {
+  transform: translateY(1px) scale(0.99) !important;
+  opacity: 0.82;
+}
+
+#mastil-game-controls {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 1550;
+  display: none;
+  grid-template-columns: repeat(14, minmax(52px, 1fr));
+  gap: 7px;
+  width: min(1190px, calc(100vw - 28px));
+  padding: 8px;
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(17, 10, 7, 0.88);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: none;
+}
+
+#mastil-strategy-panel {
+  position: fixed;
+  left: 16px;
+  top: 82px;
+  z-index: 1545;
+  display: none;
+  width: min(300px, calc(100vw - 32px));
+  padding: 10px 12px;
+  color: var(--mastil-cream);
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(17, 10, 7, 0.9);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+#mastil-objective-panel {
+  position: fixed;
+  right: 16px;
+  top: 82px;
+  z-index: 1545;
+  display: none;
+  width: min(310px, calc(100vw - 32px));
+  max-height: calc(100vh - 178px);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.62) rgba(18, 11, 7, 0.34);
+  padding: 12px;
+  color: var(--mastil-cream);
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(17, 10, 7, 0.9);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  backdrop-filter: none;
+  pointer-events: auto;
+}
+
+#mastil-objective-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+#mastil-objective-panel::-webkit-scrollbar-track {
+  background: rgba(18, 11, 7, 0.34);
+  border-radius: 999px;
+}
+
+#mastil-objective-panel::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(18, 11, 7, 0.34);
+  border-radius: 999px;
+  background: rgba(226, 189, 90, 0.72);
+}
+
+.mastil-objective-head {
+  display: grid;
+  gap: 2px;
+}
+
+.mastil-objective-head span {
+  color: rgba(226, 189, 90, 0.82);
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-objective-head strong {
+  color: #fff2bf;
+  font: 900 15px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-objective-detail {
+  margin-top: 6px;
+  color: rgba(244, 230, 191, 0.88);
+  font: 750 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-boss-status {
+  margin-top: 7px;
+  padding: 6px 8px;
+  color: rgba(244, 230, 191, 0.78);
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.045);
+  font: 850 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-boss-status.active {
+  color: #fff2bf;
+  border-color: rgba(255, 177, 126, 0.52);
+  background: rgba(143, 37, 36, 0.32);
+}
+
+.mastil-boss-command {
+  --boss-command-color: #ffb17e;
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.78);
+  border: 1px solid rgba(255, 177, 126, 0.24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mastil-boss-command.active {
+  color: rgba(244, 230, 191, 0.9);
+  border-color: color-mix(in srgb, var(--boss-command-color) 48%, transparent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--boss-command-color) 16%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(20, 10, 8, 0.2);
+}
+
+.mastil-boss-command.warning {
+  border-color: color-mix(in srgb, var(--boss-command-color) 76%, #ffe18a);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--boss-command-color) 18%, transparent);
+}
+
+.mastil-boss-command strong {
+  color: color-mix(in srgb, var(--boss-command-color) 82%, #fff2bf);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-boss-command span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-boss-command em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.mastil-boss-command i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--boss-command-color), #ffe18a);
+  transition: width 220ms ease;
+}
+
+.mastil-condition-panel {
+  --condition-color: #d8e9ff;
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid color-mix(in srgb, var(--condition-color) 40%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--condition-color) 15%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(13, 9, 7, 0.18);
+}
+
+.mastil-condition-panel strong {
+  color: color-mix(in srgb, var(--condition-color) 82%, #fff2bf);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-condition-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-morale-panel {
+  --morale-color: #d8c49a;
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid color-mix(in srgb, var(--morale-color) 42%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--morale-color) 18%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(13, 9, 7, 0.18);
+}
+
+.mastil-morale-panel strong {
+  color: color-mix(in srgb, var(--morale-color) 84%, #fff2bf);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-morale-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-morale-panel em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.mastil-morale-panel i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--morale-color), #ffe18a);
+  transition: width 240ms ease;
+}
+
+.mastil-morale-panel.high {
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--morale-color) 16%, transparent);
+}
+
+.mastil-morale-panel.low {
+  border-color: color-mix(in srgb, var(--morale-color) 72%, #ff8a6d);
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--morale-color) 18%, transparent);
+}
+
+.mastil-incident-panel {
+  --incident-color: #d8c49a;
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.76);
+  border: 1px solid rgba(216, 196, 154, 0.22);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mastil-incident-panel.active {
+  color: rgba(244, 230, 191, 0.9);
+  border-color: color-mix(in srgb, var(--incident-color) 48%, transparent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--incident-color) 15%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(13, 9, 7, 0.18);
+}
+
+.mastil-incident-panel.reward {
+  --incident-color: #f6d873;
+}
+
+.mastil-incident-panel.danger {
+  --incident-color: #ff8a6d;
+}
+
+.mastil-incident-panel strong {
+  color: color-mix(in srgb, var(--incident-color) 86%, #fff2bf);
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-incident-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-incident-panel em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.mastil-incident-panel i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--incident-color), #ffe18a);
+  transition: width 220ms linear;
+}
+
+.mastil-war-contract {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid rgba(142, 195, 240, 0.26);
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(47, 111, 165, 0.18), rgba(255, 255, 255, 0.045));
+}
+
+.mastil-war-contract strong {
+  color: #d8e9ff;
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-war-contract span {
+  font: 760 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-war-contract em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.mastil-war-contract i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8fc3f0, #f4d77a);
+  transition: width 220ms ease;
+}
+
+.mastil-site-panel {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid rgba(232, 198, 93, 0.28);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(232, 198, 93, 0.17), rgba(158, 214, 162, 0.07)),
+    rgba(13, 9, 7, 0.18);
+}
+
+.mastil-site-panel strong {
+  color: #ffe18a;
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-site-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-site-panel em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.mastil-site-panel i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f0c85c, #9ed6a2);
+  transition: width 220ms ease;
+}
+
+.mastil-site-panel.strong {
+  border-color: rgba(255, 225, 138, 0.48);
+  box-shadow: inset 0 0 22px rgba(232, 198, 93, 0.11);
+}
+
+.mastil-threat-panel {
+  --threat-color: #ff8a6d;
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 8px;
+  color: rgba(244, 230, 191, 0.84);
+  border: 1px solid color-mix(in srgb, var(--threat-color) 42%, transparent);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--threat-color) 20%, transparent), rgba(255, 255, 255, 0.04)),
+    rgba(20, 10, 8, 0.2);
+}
+
+.mastil-threat-panel strong {
+  color: #fff2bf;
+  font: 900 11px/1.15 "Segoe UI", sans-serif;
+}
+
+.mastil-threat-panel span {
+  font: 760 11px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-threat-panel em {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.36);
+}
+
+.mastil-threat-panel i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--threat-color), #ffe18a);
+  transition: width 220ms ease;
+}
+
+.mastil-threat-panel.warning {
+  border-color: color-mix(in srgb, var(--threat-color) 72%, #ffe18a);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--threat-color) 18%, transparent);
+}
+
+.mastil-objective-bar {
+  height: 9px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 189, 90, 0.42);
+  background: rgba(0, 0, 0, 0.36);
+}
+
+.mastil-objective-bar span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2f6fa5, #e2bd5a);
+  box-shadow: 0 0 16px rgba(226, 189, 90, 0.38);
+  transition: width 220ms ease;
+}
+
+.mastil-objective-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: rgba(244, 230, 191, 0.82);
+  font: 800 11px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-objective-stats span {
+  padding: 5px 7px;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mastil-event-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.mastil-event-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-height: 22px;
+  color: rgba(244, 230, 191, 0.84);
+  font: 750 11px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-event-item span {
+  color: rgba(226, 189, 90, 0.72);
+}
+
+.mastil-event-item strong {
+  font-weight: 850;
+}
+
+.mastil-event-capture strong {
+  color: #9ed6a2;
+}
+
+.mastil-event-danger strong {
+  color: #ffb0a6;
+}
+
+.mastil-event-threat strong {
+  color: #ffcf9c;
+}
+
+.mastil-event-siege strong {
+  color: #ffc66d;
+}
+
+.mastil-event-condition strong {
+  color: #d8e9ff;
+}
+
+.mastil-event-supply strong {
+  color: #8fc3f0;
+}
+
+.mastil-event-front strong {
+  color: #ffb17e;
+}
+
+.mastil-event-assault strong {
+  color: #ffc66d;
+}
+
+.mastil-event-morale strong {
+  color: #f6d873;
+}
+
+.mastil-event-incident strong {
+  color: #ffe18a;
+}
+
+.mastil-event-site strong {
+  color: #9ed6a2;
+}
+
+.mastil-event-veteran strong {
+  color: #d8e9ff;
+}
+
+.mastil-event-upgrade strong,
+.mastil-event-wave strong {
+  color: #f4d77a;
+}
+
+.mastil-event-defense strong {
+  color: #d8e9ff;
+}
+
+.mastil-event-achievement strong,
+.mastil-event-edict strong,
+.mastil-event-spoils strong {
+  color: #ffe18a;
+}
+
+#mastil-achievement-toast {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  z-index: 2600;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: min(390px, calc(100vw - 28px));
+  padding: 10px 12px;
+  color: var(--mastil-cream);
+  border: 1px solid rgba(255, 225, 138, 0.64);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(43, 28, 14, 0.95), rgba(13, 9, 7, 0.93)),
+    radial-gradient(circle at 16% 20%, rgba(255, 225, 138, 0.28), transparent 36%);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.48), inset 0 0 30px rgba(226, 189, 90, 0.1);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -18px) scale(0.98);
+}
+
+#mastil-achievement-toast.active {
+  animation: mastilAchievementToast 4.2s ease forwards;
+}
+
+.mastil-achievement-mark {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 225, 138, 0.7);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f5db83, #9b6d25);
+  box-shadow: inset 0 0 0 4px rgba(42, 25, 12, 0.28), 0 0 20px rgba(226, 189, 90, 0.32);
+}
+
+.mastil-achievement-mark::before,
+.mastil-achievement-mark::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 2px;
+  background: #25160b;
+  transform: rotate(45deg);
+}
+
+.mastil-achievement-mark::after {
+  inset: 15px;
+  background: #fff1bd;
+}
+
+.mastil-achievement-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mastil-achievement-copy em {
+  color: rgba(226, 189, 90, 0.86);
+  font: 900 10px/1 "Segoe UI", sans-serif;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.mastil-achievement-copy strong {
+  overflow-wrap: anywhere;
+  color: #fff2bf;
+  font: 950 16px/1.1 "Segoe UI", sans-serif;
+}
+
+.mastil-achievement-copy small {
+  overflow-wrap: anywhere;
+  color: rgba(244, 230, 191, 0.84);
+  font: 750 12px/1.25 "Segoe UI", sans-serif;
+}
+
+@keyframes mastilAchievementToast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -18px) scale(0.98);
+  }
+  12%,
+  82% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px) scale(0.99);
+  }
+}
+
+#mastil-match-summary {
+  width: min(480px, 86vw);
+  margin: 10px auto 12px;
+  padding: 12px;
+  color: var(--mastil-cream);
+  border: 1px solid rgba(226, 189, 90, 0.38);
+  border-radius: 8px;
+  background: rgba(12, 8, 5, 0.54);
+  box-shadow: inset 0 0 26px rgba(226, 189, 90, 0.08);
+}
+
+.mastil-summary-score {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(226, 189, 90, 0.25);
+}
+
+.mastil-summary-score span {
+  color: rgba(226, 189, 90, 0.88);
+  font: 900 12px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-summary-score strong {
+  color: #fff2bf;
+  font: 950 26px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mastil-summary-grid span {
+  min-height: 42px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 7px;
+  color: rgba(244, 230, 191, 0.82);
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  font: 800 11px/1.1 "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+.mastil-summary-grid strong {
+  color: #f4d77a;
+  font-size: 16px;
+}
+
+.mastil-summary-awards {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(226, 189, 90, 0.22);
+  text-align: left;
+}
+
+.mastil-summary-awards span {
+  color: rgba(226, 189, 90, 0.84);
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-summary-awards strong {
+  color: rgba(244, 230, 191, 0.92);
+  font: 800 12px/1.35 "Segoe UI", sans-serif;
+}
+
+.mastil-strategy-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+  font: 800 12px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-strategy-label {
+  color: rgba(226, 189, 90, 0.82);
+  text-transform: uppercase;
+}
+
+.mastil-strategy-selected,
+.mastil-strategy-upgrade,
+.mastil-strategy-advice {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(226, 189, 90, 0.22);
+}
+
+.mastil-strategy-upgrade {
+  color: rgba(216, 233, 255, 0.92);
+}
+
+.mastil-strategy-upgrade.ready {
+  color: #ffe18a;
+}
+
+.mastil-strategy-upgrade.waiting {
+  color: rgba(142, 195, 240, 0.86);
+}
+
+.mastil-strategy-advice {
+  color: rgba(244, 230, 191, 0.9);
+}
+
+#game-container[style*="block"] ~ #mastil-game-controls,
+body:has(#game-container[style*="block"]) #mastil-game-controls {
+  display: grid;
+}
+
+body:has(#game-container[style*="block"]) #mastil-strategy-panel {
+  display: block;
+}
+
+body:has(#game-container[style*="block"]) #mastil-objective-panel {
+  display: block;
+}
+
+body:has(#game-container[style*="block"]) .mastil-license-badge,
+body:has(#game-container[style*="block"]) .mastil-top-note,
+body:has(#game-container[style*="block"]) .mastil-publisher-mark {
+  display: none;
+}
+
+body:has(#game-container[style*="block"]) #info-panel {
+  bottom: 78px !important;
+  max-width: min(520px, calc(100vw - 34px)) !important;
+  z-index: 1540;
+}
+
+#mastil-game-controls button {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  min-width: 0;
+  padding: 6px 5px;
+  border: 1px solid rgba(226, 189, 90, 0.58);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ddbd61, #8e651f);
+  color: #1c1007;
+  cursor: pointer;
+  font: 900 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.42), 0 8px 16px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+#mastil-game-controls button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+#mastil-game-controls button.mastil-key-pressed {
+  animation: mastil-command-key-pulse 180ms ease-out;
+}
+
+@keyframes mastil-command-key-pulse {
+  0% {
+    transform: translateY(0) scale(0.96);
+    box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.5), 0 0 0 rgba(142, 195, 240, 0);
+  }
+
+  70% {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.58), 0 0 24px rgba(142, 195, 240, 0.38);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.42), 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+}
+
+#mastil-game-controls button::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: calc(var(--cooldown-progress, 0) * 100%);
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(18, 11, 7, 0.08), rgba(18, 11, 7, 0.44));
+  opacity: 0;
+  transition: height 160ms linear, opacity 160ms ease;
+}
+
+#mastil-game-controls button.cooling::after {
+  opacity: 1;
+}
+
+#mastil-game-controls button span:last-child {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.02;
+}
+
+#mastil-game-controls button small {
+  position: absolute;
+  z-index: 2;
+  right: 4px;
+  top: 3px;
+  min-width: 24px;
+  padding: 2px 4px;
+  color: #fff2bf;
+  border: 1px solid rgba(255, 242, 191, 0.42);
+  border-radius: 999px;
+  background: rgba(18, 11, 7, 0.72);
+  font: 900 9px/1 "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+#mastil-game-controls button small:empty {
+  display: none;
+}
+
+#mastil-game-controls button.cooling {
+  color: rgba(255, 242, 191, 0.86);
+  border-color: rgba(226, 189, 90, 0.34);
+  background: linear-gradient(180deg, rgba(114, 86, 38, 0.9), rgba(47, 32, 15, 0.92));
+}
+
+#mastil-game-controls button.ready:not(.cooling) {
+  border-color: rgba(255, 235, 156, 0.86);
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 242, 191, 0.3), transparent 45%),
+    linear-gradient(180deg, #efcc6d, #9b6f25);
+  box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.5), 0 0 18px rgba(255, 225, 138, 0.22);
+}
+
+#mastil-game-controls button.waiting:not(.cooling) {
+  border-color: rgba(255, 177, 126, 0.62);
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 177, 126, 0.22), transparent 46%),
+    linear-gradient(180deg, #c7a152, #6f4520);
+}
+
+#mastil-game-controls button.blocked:not(.cooling) {
+  color: rgba(244, 230, 191, 0.62);
+  border-color: rgba(244, 230, 191, 0.22);
+  background:
+    linear-gradient(180deg, rgba(84, 66, 42, 0.72), rgba(35, 25, 18, 0.82));
+  filter: saturate(0.72);
+}
+
+#mastil-game-controls button.blocked:not(.cooling):hover {
+  transform: none;
+  filter: saturate(0.72);
+}
+
+#mastil-game-controls button[data-action="ability"] {
+  border-color: color-mix(in srgb, var(--faction-accent, #e2bd5a) 68%, rgba(28, 16, 7, 0.7));
+  background:
+    radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--faction-accent, #e2bd5a) 36%, transparent), transparent 48%),
+    linear-gradient(180deg, #e8ca72, #8d5f1c);
+}
+
+#mastil-game-controls button[data-action="upgrade"].ready {
+  border-color: rgba(255, 235, 156, 0.92);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 242, 191, 0.35), transparent 45%),
+    linear-gradient(180deg, #f3d878, #9c7025);
+  box-shadow: inset 0 1px 0 rgba(255, 245, 196, 0.5), 0 0 18px rgba(255, 225, 138, 0.28);
+}
+
+#mastil-game-controls button[data-action="upgrade"].waiting {
+  border-color: rgba(142, 195, 240, 0.5);
+}
+
+#mastil-game-controls button[data-action="attack"].ready {
+  border-color: rgba(142, 195, 240, 0.78);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(142, 195, 240, 0.28), transparent 46%),
+    linear-gradient(180deg, #dfc36e, #8a641f);
+}
+
+#mastil-game-controls button.off {
+  color: rgba(244, 230, 191, 0.82);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mastil-command-icon {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(28, 16, 7, 0.7);
+  border-radius: 50%;
+  background: rgba(255, 242, 191, 0.52);
+  box-shadow: inset 0 0 0 3px rgba(28, 16, 7, 0.08);
+}
+
+.mastil-command-icon::before,
+.mastil-command-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #1c1007;
+}
+
+.mastil-icon-select::before {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #1c1007;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-icon-select::after {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.mastil-icon-council::before {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #1c1007;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-icon-council::after {
+  width: 4px;
+  height: 14px;
+  border-radius: 3px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: -5px 5px 0 -1px #1c1007, 5px -5px 0 -1px #1c1007;
+}
+
+.mastil-icon-attack::before,
+.mastil-icon-assault::before {
+  width: 14px;
+  height: 3px;
+  border-radius: 3px;
+}
+
+.mastil-icon-plan::before {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #1c1007;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-icon-plan::after {
+  width: 14px;
+  height: 2px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: 0 0 0 0 #1c1007;
+}
+
+.mastil-icon-attack::after {
+  width: 8px;
+  height: 8px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: translate(-10%, -50%);
+}
+
+.mastil-icon-assault::before {
+  box-shadow: 0 -5px 0 #1c1007, 0 5px 0 #1c1007;
+}
+
+.mastil-icon-assault::after,
+.mastil-icon-flank::after,
+.mastil-icon-rally::after {
+  width: 8px;
+  height: 8px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: translate(8%, -50%);
+}
+
+.mastil-icon-flank::before {
+  width: 16px;
+  height: 14px;
+  border: 2px solid #1c1007;
+  border-top-color: transparent;
+  border-radius: 0 0 14px 14px;
+  background: transparent;
+  transform: translate(-50%, -38%);
+}
+
+.mastil-icon-rally::before {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #1c1007;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.mastil-icon-reserve::before {
+  width: 15px;
+  height: 3px;
+  border-radius: 3px;
+  box-shadow: 0 -5px 0 #1c1007, 0 5px 0 #1c1007;
+}
+
+.mastil-icon-reserve::after {
+  width: 7px;
+  height: 7px;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: translate(8%, -50%);
+  box-shadow: -11px 0 0 -1px #1c1007;
+}
+
+.mastil-icon-siege::before {
+  width: 15px;
+  height: 5px;
+  border-radius: 4px;
+  transform: translate(-50%, 10%) rotate(-16deg);
+}
+
+.mastil-icon-siege::after {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translate(18%, -92%);
+  box-shadow: -8px 11px 0 -2px #1c1007, 7px 9px 0 -2px #1c1007;
+}
+
+.mastil-icon-upgrade::before {
+  width: 4px;
+  height: 14px;
+}
+
+.mastil-icon-upgrade::after {
+  width: 12px;
+  height: 12px;
+  clip-path: polygon(50% 0, 100% 48%, 70% 48%, 70% 100%, 30% 100%, 30% 48%, 0 48%);
+}
+
+.mastil-icon-specialize::before {
+  width: 14px;
+  height: 14px;
+  clip-path: polygon(50% 0, 62% 34%, 98% 34%, 69% 55%, 80% 90%, 50% 68%, 20% 90%, 31% 55%, 2% 34%, 38% 34%);
+}
+
+.mastil-icon-ability::before {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid #1c1007;
+}
+
+.mastil-icon-ability::after {
+  width: 14px;
+  height: 14px;
+  clip-path: polygon(50% 0, 58% 36%, 94% 22%, 69% 50%, 94% 78%, 58% 64%, 50% 100%, 42% 64%, 6% 78%, 31% 50%, 6% 22%, 42% 36%);
+}
+
+.mastil-icon-fortify::before {
+  width: 13px;
+  height: 15px;
+  border-radius: 0 0 7px 7px;
+  clip-path: polygon(0 0, 100% 0, 88% 68%, 50% 100%, 12% 68%);
+}
+
+.mastil-icon-map::before {
+  width: 14px;
+  height: 12px;
+  border: 2px solid #1c1007;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.mastil-icon-map::after {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  box-shadow: -4px -2px 0 #1c1007, 4px 3px 0 #1c1007;
+}
+
+.mastil-online-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.mastil-room-code {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(226, 189, 90, 0.32);
+  border-radius: 6px;
+  padding: 9px 11px;
+  font: 800 14px/1 Consolas, monospace;
+}
+
+#legends-modal,
+#credits-modal {
+  width: min(1040px, 92vw) !important;
+  max-width: 1040px !important;
+  max-height: 88vh !important;
+  padding: 28px !important;
+  box-sizing: border-box !important;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto;
+  gap: 0;
+  overflow: hidden !important;
+  color: var(--mastil-cream) !important;
+  border: 1px solid rgba(226, 189, 90, 0.62) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(145deg, rgba(34, 22, 14, 0.95), rgba(8, 6, 5, 0.94)),
+    url("../../../assets/backgrounds/loading-bg.png") center/cover no-repeat !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.68), inset 0 0 64px rgba(226, 189, 90, 0.08) !important;
+  z-index: 2400 !important;
+  isolation: isolate;
+}
+
+#legends-modal::before,
+#credits-modal::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+  border: 1px solid rgba(226, 189, 90, 0.12);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, transparent, rgba(226, 189, 90, 0.06), transparent),
+    radial-gradient(circle at 100% 0%, rgba(142, 195, 240, 0.08), transparent 18rem);
+  z-index: -1;
+}
+
+#credits-modal {
+  grid-template-rows: minmax(0, 1fr) auto auto;
+}
+
+#legends-modal.mastil-window-open,
+#credits-modal.mastil-window-open {
+  display: grid !important;
+}
+
+#legends-modal h2,
+#credits-modal h2 {
+  margin-bottom: 12px !important;
+  color: #f1cf6b !important;
+  letter-spacing: 0 !important;
+}
+
+#legends-modal .medieval-divider {
+  margin: 10px 0 14px !important;
+}
+
+.legends-intro {
+  color: rgba(244, 230, 191, 0.78) !important;
+  font: 700 14px/1.4 "Segoe UI", sans-serif !important;
+  margin-bottom: 14px !important;
+}
+
+.legends-selection {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px !important;
+  margin: 0 0 16px !important;
+  align-items: stretch;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 0 10px;
+  background: linear-gradient(180deg, rgba(24, 16, 10, 0.96), rgba(24, 16, 10, 0.76));
+  backdrop-filter: blur(8px);
+}
+
+.legend-button {
+  min-height: 50px;
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr);
+  justify-items: start;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 9px !important;
+  color: #24160d !important;
+  text-align: left !important;
+  background: linear-gradient(180deg, rgba(244, 230, 191, 0.9), rgba(197, 174, 126, 0.86)) !important;
+  border: 1px solid rgba(226, 189, 90, 0.48) !important;
+  border-radius: 8px !important;
+  font: 800 12px/1.15 "Segoe UI", sans-serif !important;
+}
+
+.legend-button:hover,
+.legend-button.active {
+  transform: translateY(-2px) !important;
+  background: linear-gradient(180deg, #fff1bd, #d6ad46) !important;
+  border-color: rgba(255, 229, 142, 0.95) !important;
+}
+
+.legend-button .legend-icon {
+  margin: 0 !important;
+  width: 28px;
+  height: 28px;
+}
+
+.legend-name {
+  overflow-wrap: anywhere;
+}
+
+.civilization-legend {
+  display: none;
+  min-height: 0;
+  max-height: min(54vh, 590px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  padding: 18px !important;
+  color: rgba(244, 230, 191, 0.86) !important;
+  border: 1px solid rgba(226, 189, 90, 0.35) !important;
+  border-radius: 8px !important;
+  background: rgba(7, 5, 4, 0.48) !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.7) rgba(11, 7, 5, 0.48);
+}
+
+#legend-content {
+  box-shadow: inset 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.civilization-legend h3 {
+  color: #f1cf6b !important;
+  margin-top: 0 !important;
+}
+
+.civilization-legend p {
+  line-height: 1.55;
+}
+
+.legend-accordion-title {
+  width: 100%;
+  min-height: 42px;
+  color: #f4e6bf !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(226, 189, 90, 0.26) !important;
+  border-radius: 6px !important;
+  text-align: left;
+}
+
+.legend-accordion-title.active,
+.legend-accordion-title:hover {
+  background: rgba(226, 189, 90, 0.16) !important;
+}
+
+.legend-accordion-panel {
+  color: rgba(244, 230, 191, 0.82) !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 0 0 6px 6px;
+}
+
+#credits-modal .credits-content {
+  min-height: 0;
+  max-height: min(70vh, 720px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.7) rgba(11, 7, 5, 0.48);
+}
+
+#legends-modal .close-button,
+#credits-modal .close-button {
+  position: sticky !important;
+  bottom: 0;
+  justify-self: center;
+  margin-top: 12px !important;
+  box-shadow: 0 -14px 32px rgba(8, 5, 4, 0.54) !important;
+}
+
+#credits-modal .credits-content::-webkit-scrollbar,
+.civilization-legend::-webkit-scrollbar,
+#tutorial::-webkit-scrollbar,
+#options-modal::-webkit-scrollbar,
+#highscore-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+#credits-modal .credits-content::-webkit-scrollbar-track,
+.civilization-legend::-webkit-scrollbar-track,
+#tutorial::-webkit-scrollbar-track,
+#options-modal::-webkit-scrollbar-track,
+#highscore-modal::-webkit-scrollbar-track {
+  background: rgba(11, 7, 5, 0.5);
+  border-radius: 999px;
+}
+
+#credits-modal .credits-content::-webkit-scrollbar-thumb,
+.civilization-legend::-webkit-scrollbar-thumb,
+#tutorial::-webkit-scrollbar-thumb,
+#options-modal::-webkit-scrollbar-thumb,
+#highscore-modal::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(11, 7, 5, 0.5);
+  border-radius: 999px;
+  background: rgba(226, 189, 90, 0.78);
+}
+
+.mastil-kicker {
+  display: inline-block;
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 11px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-lore-home,
+.mastil-credit-hero,
+.mastil-credit-note,
+.mastil-version-section,
+.mastil-lore-prologue,
+.mastil-lore-command {
+  display: grid;
+  gap: 10px;
+}
+
+.mastil-lore-home h3,
+.mastil-credit-hero h2 {
+  margin: 0 !important;
+  color: #fff2bf !important;
+  font: 950 clamp(1.5rem, 3.2vw, 2.45rem)/1.05 Cinzel, Georgia, serif !important;
+}
+
+.mastil-lore-home p,
+.mastil-credit-hero p,
+.mastil-credit-note p,
+.mastil-lore-chapter p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.84);
+  font: 750 14px/1.58 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-routes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 4px;
+}
+
+.mastil-world-lore,
+.mastil-lore-playbook,
+.mastil-status-grid,
+.mastil-doctrine-grid,
+.mastil-archive-command-strip,
+.mastil-lore-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.mastil-archive-command-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mastil-lore-steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mastil-doctrine-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mastil-world-lore {
+  margin-top: 4px;
+}
+
+.mastil-world-lore-card,
+.mastil-lore-playbook article,
+.mastil-status-card,
+.mastil-doctrine-grid article,
+.mastil-archive-command-strip article,
+.mastil-lore-step {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(0, 0, 0, 0.2));
+}
+
+.mastil-world-lore-card span,
+.mastil-lore-playbook span,
+.mastil-doctrine-grid span,
+.mastil-archive-command-strip span,
+.mastil-lore-step span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-archive-command-strip strong {
+  width: fit-content;
+  padding: 5px 8px;
+  color: #171009;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe18a, #b9842e);
+  font: 950 12px/1 "Segoe UI", sans-serif;
+}
+
+.mastil-world-lore-card strong,
+.mastil-status-card strong,
+.mastil-lore-step strong {
+  color: #fff2bf;
+  font: 950 13px/1.16 "Segoe UI", sans-serif;
+}
+
+.mastil-world-lore-card small {
+  color: rgba(255, 225, 138, 0.78);
+  font: 850 10px/1.25 "Segoe UI", sans-serif;
+}
+
+.mastil-world-lore-card p,
+.mastil-status-card p,
+.mastil-doctrine-grid p,
+.mastil-archive-command-strip p,
+.mastil-lore-step p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.72);
+  font: 750 11px/1.42 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-prologue,
+.mastil-lore-command {
+  padding: 13px;
+  border: 1px solid rgba(142, 195, 240, 0.26);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(24, 42, 48, 0.62), rgba(8, 6, 5, 0.32)),
+    radial-gradient(circle at 88% 18%, rgba(226, 189, 90, 0.12), transparent 12rem);
+}
+
+.mastil-lore-prologue strong {
+  color: #fff2bf;
+  font: 950 15px/1.2 Cinzel, Georgia, serif;
+}
+
+.mastil-lore-command {
+  margin-bottom: 12px;
+}
+
+.mastil-lore-tactic-flow {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.mastil-lore-command span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-lore-route {
+  min-height: 120px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 12px 9px;
+  color: #22150c !important;
+  border: 1px solid rgba(226, 189, 90, 0.46) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, rgba(244, 230, 191, 0.94), rgba(197, 174, 126, 0.9)) !important;
+  text-align: center;
+}
+
+.mastil-lore-route .mastil-faction-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.mastil-lore-route strong {
+  font: 950 12px/1.15 "Segoe UI", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.mastil-lore-route small {
+  color: rgba(34, 21, 12, 0.68);
+  font: 800 10px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-scroll-hint {
+  padding: 9px 11px;
+  border: 1px dashed rgba(226, 189, 90, 0.32);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.mastil-lore-hero {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--lore-color) 58%, #e2bd5a);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 42px 38px, color-mix(in srgb, var(--lore-color) 24%, transparent), transparent 78px),
+    rgba(255, 255, 255, 0.05);
+}
+
+.mastil-lore-emblem {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 1px solid rgba(244, 230, 191, 0.68);
+  background-color: color-mix(in srgb, var(--lore-color) 55%, #d7ad48);
+}
+
+.mastil-lore-hero span,
+.mastil-lore-section-head span,
+.mastil-lore-stats span,
+.mastil-credit-card span {
+  color: rgba(226, 189, 90, 0.86);
+  font: 950 10px/1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.mastil-lore-hero h3 {
+  margin: 3px 0 5px !important;
+  color: #fff2bf !important;
+  font: 950 clamp(1.45rem, 3vw, 2.2rem)/1.05 Cinzel, Georgia, serif !important;
+}
+
+.mastil-lore-hero p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.82);
+  font: 800 14px/1.4 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mastil-lore-back {
+  width: fit-content;
+  min-height: 36px;
+  margin-bottom: 10px;
+  padding: 8px 11px;
+  color: #fff2bf !important;
+  border: 1px solid rgba(226, 189, 90, 0.32) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  font: 900 12px/1 "Segoe UI", sans-serif !important;
+}
+
+.mastil-lore-back:hover,
+.mastil-lore-back:focus-visible {
+  background: rgba(226, 189, 90, 0.16) !important;
+}
+
+.mastil-lore-stats div,
+.mastil-credit-card,
+.mastil-credit-note {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.mastil-lore-stats strong,
+.mastil-credit-card strong,
+.mastil-lore-playbook strong {
+  color: #fff2bf;
+  font: 900 12px/1.28 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-grid,
+.mastil-credit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mastil-lore-chapter {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(226, 189, 90, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.mastil-lore-chapter h4 {
+  margin: 0;
+  color: #f4d77a;
+  font: 950 14px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-lore-section-head {
+  display: grid;
+  gap: 3px;
+  margin: 14px 0 8px;
+}
+
+.mastil-lore-section-head strong {
+  color: #fff2bf;
+  font: 950 16px/1.2 "Segoe UI", sans-serif;
+}
+
+.legend-accordion-title {
+  display: flex !important;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 13px !important;
+}
+
+.legend-accordion-title span {
+  color: #fff2bf;
+  font-weight: 950;
+}
+
+.legend-accordion-title small {
+  color: rgba(244, 230, 191, 0.62);
+  font: 800 11px/1.2 "Segoe UI", sans-serif;
+  text-align: right;
+}
+
+.mastil-credit-hero {
+  padding: 16px;
+  border: 1px solid rgba(226, 189, 90, 0.36);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(226, 189, 90, 0.14), transparent 12rem),
+    rgba(255, 255, 255, 0.05);
+}
+
+.mastil-credit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mastil-credit-meta span,
+.mastil-credit-signature {
+  color: rgba(244, 230, 191, 0.76);
+  border: 1px solid rgba(226, 189, 90, 0.24);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 7px 10px;
+  font: 850 11px/1.2 "Segoe UI", sans-serif;
+}
+
+.mastil-credit-card p {
+  margin: 0;
+  color: rgba(244, 230, 191, 0.76);
+  font: 750 12px/1.45 "Segoe UI", sans-serif;
+}
+
+#credits-modal .mastil-credit-hero p,
+#credits-modal .mastil-credit-note p {
+  font: 750 14px/1.55 "Segoe UI", sans-serif !important;
+}
+
+#credits-modal .mastil-credit-card strong {
+  font: 900 13px/1.25 "Segoe UI", sans-serif !important;
+}
+
+#credits-modal .mastil-credit-card p,
+#credits-modal .mastil-status-card p {
+  font: 750 12px/1.42 "Segoe UI", sans-serif !important;
+}
+
+#credits-modal .mastil-status-card strong {
+  font: 950 13px/1.18 "Segoe UI", sans-serif !important;
+}
+
+.mastil-current-section {
+  display: grid;
+  gap: 8px;
+}
+
+.mastil-version-log {
+  display: grid;
+  gap: 7px;
+}
+
+#credits-modal .accordion-title,
+#credits-modal .inner-accordion-title {
+  width: 100%;
+  min-height: 42px;
+  color: #fff2bf !important;
+  border: 1px solid rgba(226, 189, 90, 0.24) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  text-align: left;
+  font: 900 13px/1.2 "Segoe UI", sans-serif !important;
+}
+
+#credits-modal .accordion-panel,
+#credits-modal .inner-accordion-panel {
+  color: rgba(244, 230, 191, 0.8) !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+  border-radius: 0 0 8px 8px;
+}
+
+#credits-modal .version-entry {
+  border-bottom: 1px solid rgba(226, 189, 90, 0.16);
+}
+
+#credits-modal .version-number {
+  color: #f4d77a !important;
+  font-weight: 950 !important;
+}
+
+.mastil-credit-signature {
+  display: block;
+  width: fit-content;
+  margin: 16px auto 0;
+  border-radius: 8px;
+}
+
+#tutorial,
+#options-modal,
+#highscore-modal {
+  max-height: min(88vh, 780px) !important;
+  overflow: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 189, 90, 0.7) rgba(11, 7, 5, 0.48);
+}
+
+@media (max-width: 720px) {
+  .mastil-top-note {
+    display: none;
+  }
+
+  .mastil-publisher-mark {
+    right: 10px;
+    top: 10px;
+    font-size: 10px;
+    padding: 7px 9px;
+  }
+
+  #start-screen .menu-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: min(440px, 88vw) !important;
+    max-height: min(62vh, 610px);
+    margin-bottom: clamp(18px, 4vh, 28px) !important;
+    padding: 11px !important;
+  }
+
+  .mastil-menu-header {
+    padding: 9px;
+  }
+
+  .mastil-menu-briefing {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 10px;
+  }
+
+  .mastil-menu-briefing-map {
+    min-height: 104px;
+  }
+
+  .mastil-menu-briefing-copy strong {
+    font-size: 1.12rem;
+  }
+
+  .mastil-menu-briefing-copy p {
+    font-size: 12px;
+  }
+
+  .mastil-menu-briefing-tags small {
+    font-size: 10px;
+  }
+
+  .mastil-menu-command-table {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 10px;
+  }
+
+  .mastil-command-table-map {
+    min-height: 92px;
+  }
+
+  .mastil-command-table-copy strong {
+    font-size: 1.06rem;
+  }
+
+  .mastil-command-table-orders {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .mastil-menu-titleline {
+    grid-template-columns: minmax(0, 1fr) 52px;
+    gap: 10px;
+  }
+
+  .mastil-menu-seal {
+    width: 52px;
+  }
+
+  .mastil-menu-header strong {
+    font-size: 1.22rem;
+  }
+
+  .mastil-menu-header p {
+    font-size: 12px;
+  }
+
+  .mastil-menu-badges {
+    display: none;
+  }
+
+  .mastil-menu-dashboard {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .mastil-menu-dashboard article {
+    min-height: 74px;
+    padding: 10px;
+  }
+
+  .mastil-menu-dashboard strong {
+    font-size: 14px;
+  }
+
+  .mastil-menu-warpath {
+    padding: 9px;
+  }
+
+  .mastil-menu-warpath-head {
+    display: grid;
+    gap: 5px;
+  }
+
+  .mastil-menu-warpath-head strong {
+    text-align: left;
+  }
+
+  .mastil-menu-region-list {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-menu-region-step {
+    min-height: 84px;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: center;
+  }
+
+  .mastil-menu-region-state {
+    grid-column: auto;
+    white-space: nowrap;
+  }
+
+  .mastil-menu-footer {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .mastil-menu-footer strong {
+    justify-self: start;
+  }
+
+  #start-screen .menu-button,
+  #start-screen .menu-button.mastil-menu-primary,
+  #start-screen .menu-button.mastil-menu-secondary,
+  #start-screen .menu-button.mastil-menu-utility,
+  #start-screen .menu-button[data-menu-key="campaign"],
+  #start-screen .menu-button[data-menu-key="skirmish"],
+  #start-screen .menu-button[data-menu-key="online"] {
+    grid-column: span 2;
+    min-height: 88px !important;
+    grid-template-columns: 42px minmax(0, 1fr);
+    padding: 10px !important;
+  }
+
+  #start-screen .menu-button.mastil-menu-utility {
+    grid-column: span 2;
+    min-height: 78px !important;
+    align-content: center;
+  }
+
+  #start-screen .menu-button.mastil-menu-utility .mastil-menu-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  #start-screen .menu-button .button-text,
+  #start-screen .menu-button.mastil-menu-primary .button-text {
+    font-size: 14px;
+  }
+
+  #start-screen .menu-button small {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  #mastil-game-controls {
+    width: calc(100vw - 20px);
+    bottom: 10px;
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body:has(#game-container[style*="block"]) #mastil-game-controls {
+    display: grid;
+  }
+
+  body:has(#game-container[style*="block"]) #mastil-strategy-panel {
+    top: 68px;
+    left: 10px;
+    width: calc(50vw - 16px);
+    padding: 8px 10px;
+  }
+
+  body:has(#game-container[style*="block"]) #mastil-objective-panel {
+    top: 68px;
+    right: 10px;
+    width: calc(50vw - 16px);
+    padding: 8px 10px;
+  }
+
+  #mastil-achievement-toast {
+    top: 72px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    padding: 9px 10px;
+  }
+
+  .mastil-achievement-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mastil-achievement-copy strong {
+    font-size: 14px;
+  }
+
+  #mastil-match-summary {
+    width: min(430px, 88vw);
+    padding: 10px;
+  }
+
+  .mastil-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mastil-event-list {
+    display: none;
+  }
+
+  #mastil-game-controls button {
+    min-width: 0;
+    min-height: 36px;
+  }
+
+  #start-screen .game-title {
+    font-size: clamp(3rem, 17vw, 5.2rem) !important;
+  }
+
+  #start-screen .menu-button:not(.mastil-menu-item),
+  #start-screen .menu-button:not(.mastil-menu-item):nth-child(-n + 3) {
+    min-height: 44px !important;
+  }
+
+  .mastil-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-dialog {
+    padding: 16px;
+  }
+
+  .mastil-awards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-world-grid,
+  .mastil-skirmish-options {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-skirmish-panel-head {
+    display: grid;
+  }
+
+  .mastil-skirmish-panel-head p {
+    text-align: left;
+  }
+
+  .mastil-skirmish-presets {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-skirmish-map-preview {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 10px;
+  }
+
+  .mastil-skirmish-map-stage {
+    min-height: 210px;
+  }
+
+  .mastil-preview-node {
+    width: 22px;
+  }
+
+  .mastil-preview-node.player {
+    width: 27px;
+  }
+
+  .mastil-preview-node.enemy {
+    width: 25px;
+  }
+
+  .mastil-preview-ledger {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mastil-skirmish-brief {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-skirmish-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mastil-world-card {
+    min-height: 128px;
+  }
+
+  .mastil-backend-options,
+  .mastil-backend-control {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-edict-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-edict-dialog {
+    max-height: 90vh;
+    overflow: auto;
+  }
+
+  .mastil-edict-card {
+    min-height: 118px;
+  }
+
+  .mastil-award {
+    min-height: 94px;
+  }
+
+  .mastil-highscore-summary {
+    grid-template-columns: 1fr;
+  }
+
+  #highscore-modal .highscore-entry {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  #highscore-modal .highscore-score {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .mastil-license-badge {
+    top: 10px;
+    left: 10px;
+  }
+
+  #loading-screen {
+    padding: 14px !important;
+  }
+
+  .mastil-loading-panel {
+    padding: 22px 16px 20px;
+  }
+
+  .mastil-loading-mark {
+    width: 60px;
+    height: 60px;
+  }
+
+  #loading-screen .loading-text {
+    font-size: 1.65rem !important;
+  }
+
+  .mastil-loading-subtext {
+    font-size: 12px;
+  }
+
+  .mastil-loading-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(380px, 82vw);
+  }
+
+  .mastil-loading-step {
+    min-height: 36px;
+    font-size: 10px;
+  }
+
+  #loading-bar-container {
+    width: min(420px, 82vw) !important;
+  }
+
+  #playername-modal {
+    padding: 12px;
+  }
+
+  #playername-modal .modal-content {
+    width: min(560px, 94vw);
+    padding: 36px 16px 22px !important;
+    max-height: 90vh;
+    overflow: auto !important;
+  }
+
+  .mastil-name-head h2 {
+    font-size: 1.55rem;
+  }
+
+  .mastil-name-head p {
+    font-size: 12px;
+  }
+
+  #playername-modal .modal-content::after {
+    top: -20px !important;
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  #playername-modal .faction-selection {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 360px;
+  }
+
+  #playername-modal .faction-button {
+    min-height: 92px;
+  }
+
+  .legends-selection {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #legends-modal,
+  #credits-modal {
+    width: 94vw !important;
+    max-height: 90vh !important;
+    padding: 18px !important;
+  }
+
+  .legend-button {
+    min-height: 54px;
+  }
+
+  .civilization-legend {
+    padding: 13px !important;
+  }
+
+  .mastil-lore-routes,
+  .mastil-world-lore,
+  .mastil-doctrine-grid,
+  .mastil-archive-command-strip,
+  .mastil-lore-playbook,
+  .mastil-lore-steps,
+  .mastil-lore-stats,
+  .mastil-lore-grid,
+  .mastil-status-grid,
+  .mastil-credit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mastil-lore-hero {
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 10px;
+    padding: 11px;
+  }
+
+  .mastil-lore-emblem {
+    width: 46px;
+    height: 46px;
+  }
+
+  .legend-accordion-title {
+    display: grid !important;
+    gap: 4px;
+  }
+
+  .legend-accordion-title small {
+    text-align: left;
+  }
+
+  .mastil-credit-meta {
+    display: grid;
+  }
+
+  #tutorial,
+  #options-modal,
+  #highscore-modal {
+    width: 94vw !important;
+    max-height: 90vh !important;
+  }
+}
